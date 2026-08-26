@@ -1,0 +1,167 @@
+"use client";
+
+import Link from "next/link";
+import Image from "next/image";
+import {
+  ArrowDownLeft,
+  ArrowUpRight,
+  Phone,
+  Receipt,
+  Send,
+  WalletCards,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Field, Input } from "@/components/ui/input";
+import { StatusBadge } from "@/components/ui/badge";
+import { formatDate, formatXAF } from "@/lib/format";
+import { useApp } from "@/lib/store";
+import { useState } from "react";
+
+const actions = [
+  { href: "/wallet/send", label: "Send Money", icon: Send },
+  { href: "/wallet/request", label: "Request Money", icon: WalletCards },
+  { href: "/wallet/airtime", label: "Buy Airtime", icon: Phone },
+  { href: "/wallet/bills", label: "Pay Bills", icon: Receipt },
+];
+
+export default function WalletPage() {
+  const { state, sendMoney } = useApp();
+  const [to, setTo] = useState("");
+  const [amount, setAmount] = useState("");
+
+  return (
+    <div className="grid gap-6 lg:grid-cols-12">
+      <div className="flex flex-col gap-6 lg:col-span-8">
+        <section className="relative overflow-hidden rounded-3xl bg-brand p-6 text-white shadow-lg">
+          <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/10 blur-3xl" />
+          <div className="relative z-10 flex items-start justify-between">
+            <div>
+              <p className="text-sm text-white/80">Wallet Balance</p>
+              <h1 className="mt-1 text-4xl font-black tracking-tight md:text-5xl">
+                {formatXAF(state.balance, { withCurrency: false })}{" "}
+                <span className="text-2xl font-semibold opacity-80">XAF</span>
+              </h1>
+            </div>
+            <div className="flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-sm font-mono">
+              @{state.user.lbpayId}
+            </div>
+          </div>
+          <div className="relative z-10 mt-8 grid grid-cols-2 gap-3">
+            <Link href="/wallet/deposit">
+              <Button className="w-full bg-white text-brand hover:bg-brand-soft">
+                <ArrowDownLeft className="h-4 w-4" /> Deposit
+              </Button>
+            </Link>
+            <Link href="/wallet/withdraw">
+              <Button className="w-full border border-white/30 bg-white/10 text-white hover:bg-white/20">
+                <ArrowUpRight className="h-4 w-4" /> Withdraw
+              </Button>
+            </Link>
+          </div>
+        </section>
+
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          {actions.map((action) => (
+            <Link key={action.href} href={action.href}>
+              <Card className="flex h-full flex-col items-center gap-3 p-5 transition hover:border-brand/40 hover:shadow-[0_10px_30px_rgba(0,179,105,0.12)]">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-soft text-brand">
+                  <action.icon className="h-5 w-5" />
+                </div>
+                <span className="text-sm font-semibold">{action.label}</span>
+              </Card>
+            </Link>
+          ))}
+        </div>
+
+        <Card className="p-5">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-sm font-bold uppercase tracking-wide text-muted">
+              Recent activity
+            </h2>
+            <Link href="/wallet/history" className="text-sm font-bold text-brand">
+              View all
+            </Link>
+          </div>
+          <div className="divide-y divide-line">
+            {state.transactions.slice(0, 5).map((tx) => (
+              <div key={tx.id} className="flex items-center justify-between py-3">
+                <div>
+                  <p className="font-semibold">{tx.counterparty}</p>
+                  <p className="text-xs text-muted">
+                    {tx.kind.replace("_", " ")} · {formatDate(tx.createdAt)}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="font-mono text-sm font-semibold">
+                    {["send", "withdraw", "airtime", "bill", "cross_network"].includes(tx.kind)
+                      ? "−"
+                      : "+"}
+                    {formatXAF(tx.amount, { withCurrency: false })}
+                  </p>
+                  <StatusBadge status={tx.status} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
+
+      <div className="flex flex-col gap-6 lg:col-span-4">
+        <Card className="p-5">
+          <h2 className="text-lg font-bold">Cross-network transfer</h2>
+          <p className="mt-1 text-sm text-muted">Send from LBPay to MTN or Orange in one step.</p>
+          <div className="mt-4 flex items-center gap-2">
+            <span className="rounded-full bg-mtn px-2 py-1 text-[10px] font-black text-black">MTN</span>
+            <span className="text-muted">→</span>
+            <span className="rounded-full bg-om px-2 py-1 text-[10px] font-black text-white">OM</span>
+          </div>
+          <form
+            className="mt-4 flex flex-col gap-3"
+            onSubmit={(e) => {
+              e.preventDefault();
+              sendMoney({ amount: Number(amount), to, network: "orange" });
+              setAmount("");
+            }}
+          >
+            <Field label="To (Orange Mobile Money)">
+              <Input
+                placeholder="6XXXXXXXX or @handle"
+                value={to}
+                onChange={(e) => setTo(e.target.value)}
+                required
+              />
+            </Field>
+            <Field label="Amount (XAF)">
+              <Input
+                type="number"
+                placeholder="20000"
+                className="font-mono"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                required
+              />
+            </Field>
+            <Button type="submit">Send now</Button>
+          </form>
+        </Card>
+
+        <Card className="overflow-hidden">
+          <Image
+            src="/illustrations/cross-network.png"
+            alt="MTN to Orange"
+            width={800}
+            height={540}
+            className="h-40 w-full object-cover"
+          />
+          <div className="p-4">
+            <p className="text-sm font-semibold">Receive with QR or @handle</p>
+            <Link href="/wallet/qr" className="mt-2 inline-block text-sm font-bold text-brand">
+              Show my QR
+            </Link>
+          </div>
+        </Card>
+      </div>
+    </div>
+  );
+}

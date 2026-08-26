@@ -1,0 +1,49 @@
+export function formatXAF(amount: number, options?: { withCurrency?: boolean }) {
+  const withCurrency = options?.withCurrency ?? true;
+  const formatted = new Intl.NumberFormat("fr-CM", {
+    maximumFractionDigits: 0,
+  }).format(Math.round(amount));
+  return withCurrency ? `${formatted} XAF` : formatted;
+}
+
+export function formatCompact(amount: number) {
+  if (amount >= 1_000_000) {
+    return `${(amount / 1_000_000).toFixed(amount % 1_000_000 === 0 ? 0 : 1)}M`;
+  }
+  if (amount >= 1_000) {
+    return `${(amount / 1_000).toFixed(amount % 1_000 === 0 ? 0 : 1)}k`;
+  }
+  return String(amount);
+}
+
+export function formatDate(iso: string) {
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(iso));
+}
+
+export function formatRelative(iso: string) {
+  const delta = Date.now() - new Date(iso).getTime();
+  const minutes = Math.round(delta / 60_000);
+  if (minutes < 1) return "Just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.round(hours / 24);
+  return `${days}d ago`;
+}
+
+export function slugify(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "")
+    .slice(0, 48);
+}
+
+export function uid(prefix: string) {
+  return `${prefix}_${Math.random().toString(36).slice(2, 8)}${Date.now().toString(36).slice(-4)}`;
+}
