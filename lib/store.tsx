@@ -14,7 +14,9 @@ import type {
   ApiEnvironment,
   AppState,
   PaymentMethod,
+  Transaction,
   TransactionKind,
+  UserProfile,
 } from "@/lib/types";
 
 const STORAGE_KEY = "lbpay.demo.v1";
@@ -30,6 +32,13 @@ type AppContextValue = {
   state: AppState;
   login: () => void;
   logout: () => void;
+  lockPin: () => void;
+  unlockPin: () => void;
+  hydrateFromServer: (input: {
+    user: UserProfile;
+    balance: number;
+    transactions: Transaction[];
+  }) => void;
   setEnvironment: (env: ApiEnvironment) => void;
   sendMoney: (input: SendInput) => { ok: boolean; message: string };
   deposit: (amount: number, method: PaymentMethod) => { ok: boolean; message: string };
@@ -61,7 +70,7 @@ function readStorage(): AppState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return initialState;
-    return { ...initialState, ...(JSON.parse(raw) as AppState), toast: null };
+    return { ...initialState, ...(JSON.parse(raw) as AppState), session: false, pinUnlocked: false, toast: null };
   } catch {
     return initialState;
   }
@@ -74,7 +83,10 @@ if (typeof window !== "undefined") {
 function persist(next: AppState) {
   memory = next;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...next, toast: null }));
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ ...next, session: false, pinUnlocked: false, toast: null }),
+    );
   } catch {
     /* private mode */
   }
@@ -119,13 +131,35 @@ export function AppProvider({ children }: { children: ReactNode }) {
     persist({
       ...memory,
       session: true,
+      pinUnlocked: true,
       toast: `Welcome back, ${memory.user.name.split(" ")[0]}`,
     });
   }, []);
 
   const logout = useCallback(() => {
-    persist({ ...memory, session: false, toast: "Signed out" });
+    persist({ ...memory, session: false, pinUnlocked: false, toast: "Signed out" });
   }, []);
+
+  const lockPin = useCallback(() => {
+    persist({ ...memory, pinUnlocked: false });
+  }, []);
+
+  const unlockPin = useCallback(() => {
+    persist({ ...memory, pinUnlocked: true });
+  }, []);
+
+  const hydrateFromServer = useCallback(
+    (input: { user: UserProfile; balance: number; transactions: Transaction[] }) => {
+      persist({
+        ...memory,
+        session: true,
+        user: input.user,
+        balance: input.balance,
+        transactions: input.transactions,
+      });
+    },
+    [],
+  );
 
   const setEnvironment = useCallback((env: ApiEnvironment) => {
     persist({ ...memory, environment: env, toast: `Switched to ${env}` });
@@ -326,6 +360,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       state,
       login,
       logout,
+      lockPin,
+      unlockPin,
+      hydrateFromServer,
       setEnvironment,
       sendMoney,
       deposit,
@@ -341,6 +378,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       state,
       login,
       logout,
+      lockPin,
+      unlockPin,
+      hydrateFromServer,
       setEnvironment,
       sendMoney,
       deposit,

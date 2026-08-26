@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
-import { AppProvider } from "@/lib/store";
-import { Toast } from "@/components/toast";
+import { AppProviders } from "@/components/providers";
 import "./globals.css";
 
 const inter = Inter({
@@ -31,10 +30,9 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} ${jetbrains.variable} h-full`}>
       <body className="min-h-full bg-paper font-sans text-ink antialiased">
-        <AppProvider>
+        <AppProviders>
           {children}
-          <Toast />
-        </AppProvider>
+        </AppProviders>
       </body>
     </html>
   );

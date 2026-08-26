@@ -8,6 +8,7 @@ export const DEMO_PASSWORD = "demo123";
 
 export const initialState: AppState = {
   session: false,
+  pinUnlocked: false,
   user: {
     id: "usr_modest",
     name: "Modest Tatoh",

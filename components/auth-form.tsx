@@ -8,89 +8,159 @@ import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Field, Input } from "@/components/ui/input";
-import { DEMO_PASSWORD } from "@/lib/demo/seed";
+import { PinPad } from "@/components/auth/pin-pad";
+import { isMobileClient } from "@/lib/device";
+import { useNotify } from "@/lib/notify";
 import { useApp } from "@/lib/store";
+import { useQueryClient } from "@tanstack/react-query";
 
 export function AuthForm({ mode }: { mode: "login" | "signup" }) {
-  const { login, state } = useApp();
   const router = useRouter();
-  const [email, setEmail] = useState(state.user.email);
-  const [password, setPassword] = useState(DEMO_PASSWORD);
+  const notify = useNotify();
+  const queryClient = useQueryClient();
+  const { login, unlockPin } = useApp();
+  const [step, setStep] = useState<"form" | "pin">("form");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("modest@lbpay.cm");
+  const [phone, setPhone] = useState("670112233");
+  const [password, setPassword] = useState("demo123");
+  const [pin, setPin] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  async function finishSession() {
+    await queryClient.invalidateQueries({ queryKey: ["me"] });
+    login();
+    unlockPin();
+    notify.success("You're in", "Welcome back to LBPay.");
+    router.push("/wallet");
+  }
+
+  async function submitForm(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch(mode === "login" ? "/api/auth/login" : "/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, phone, password, lbpayId: name }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not continue");
+      if (data.step === "otp") {
+        const q = new URLSearchParams({ email });
+        if (data.devOtp) q.set("dev", data.devOtp);
+        notify.info("Check your email", data.delivered ? "We sent a 6-digit code." : `Demo code: ${data.devOtp}`);
+        router.push(`/verify?${q.toString()}`);
+        return;
+      }
+      if (data.step === "pin-setup") {
+        router.push("/pin/setup");
+        return;
+      }
+      setStep("pin");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function submitPin(value: string) {
+    setLoading(true);
+    const res = await fetch("/api/auth/pin", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pin: value, mobile: isMobileClient() }),
+    });
+    const data = await res.json().catch(() => ({}));
+    setLoading(false);
+    if (!res.ok) {
+      setError(data.error || "Incorrect PIN");
+      setPin("");
+      return;
+    }
+    await finishSession();
+  }
 
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
       <div className="relative hidden overflow-hidden bg-brand-soft lg:block">
-        <Image
-          src="/illustrations/hero-send-money.png"
-          alt=""
-          fill
-          className="object-cover"
-          priority
-        />
+        <Image src="/illustrations/hero-send-money.png" alt="" fill className="object-cover" priority />
       </div>
       <div className="flex flex-col justify-center px-6 py-12 md:px-16">
         <Logo />
-        <h1 className="mt-10 text-3xl font-bold tracking-tight">
-          {mode === "login" ? "Sign in to LBPay" : "Create your LBPay wallet"}
-        </h1>
-        <p className="mt-2 text-muted">
-          Demo mode is on. Continue as Modest or use {state.user.email} / {DEMO_PASSWORD}.
-        </p>
-        <Card className="mt-8 p-6">
-          <form
-            className="flex flex-col gap-4"
-            onSubmit={(e) => {
-              e.preventDefault();
-              login();
-              router.push("/wallet");
-            }}
-          >
-            <Field label="Email">
-              <Input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </Field>
-            <Field label="Password">
-              <Input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </Field>
-            <Button type="submit">{mode === "login" ? "Sign in" : "Create account"}</Button>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => {
-                login();
-                router.push("/wallet");
+        {step === "form" ? (
+          <>
+            <h1 className="mt-10 text-3xl font-bold tracking-tight">
+              {mode === "login" ? "Sign in to LBPay" : "Create your LBPay wallet"}
+            </h1>
+            <p className="mt-2 text-muted">
+              {mode === "login"
+                ? "Email and password, then your PIN."
+                : "We'll email a one-time code, then you set a PIN."}
+            </p>
+            <Card className="mt-8 p-6">
+              <form className="flex flex-col gap-4" onSubmit={submitForm}>
+                {mode === "signup" ? (
+                  <>
+                    <Field label="Full name">
+                      <Input value={name} onChange={(e) => setName(e.target.value)} required />
+                    </Field>
+                    <Field label="Phone">
+                      <Input value={phone} onChange={(e) => setPhone(e.target.value)} required />
+                    </Field>
+                  </>
+                ) : null}
+                <Field label="Email">
+                  <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                </Field>
+                <Field label="Password">
+                  <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+                </Field>
+                {error ? <p className="text-sm font-semibold text-danger">{error}</p> : null}
+                <Button type="submit" disabled={loading}>
+                  {loading ? "Please wait…" : mode === "login" ? "Continue" : "Create account"}
+                </Button>
+              </form>
+            </Card>
+            <p className="mt-6 text-sm text-muted">
+              {mode === "login" ? (
+                <>
+                  New here?{" "}
+                  <Link href="/signup" className="font-semibold text-brand">
+                    Create an account
+                  </Link>
+                </>
+              ) : (
+                <>
+                  Already have an account?{" "}
+                  <Link href="/login" className="font-semibold text-brand">
+                    Sign in
+                  </Link>
+                </>
+              )}
+            </p>
+            {mode === "login" ? (
+              <p className="mt-4 text-xs text-muted">Demo: modest@lbpay.cm / demo123 / PIN 1234</p>
+            ) : null}
+          </>
+        ) : (
+          <div className="mt-10">
+            <h1 className="text-3xl font-bold">Enter your PIN</h1>
+            <p className="mt-2 mb-6 text-muted">This confirms it is you.</p>
+            <PinPad
+              value={pin}
+              onChange={(next) => {
+                setPin(next);
+                setError("");
+                if (next.length === 4) void submitPin(next);
               }}
-            >
-              Continue as @{state.user.lbpayId}
-            </Button>
-          </form>
-        </Card>
-        <p className="mt-6 text-sm text-muted">
-          {mode === "login" ? (
-            <>
-              New here?{" "}
-              <Link href="/signup" className="font-semibold text-brand">
-                Create an account
-              </Link>
-            </>
-          ) : (
-            <>
-              Already have an account?{" "}
-              <Link href="/login" className="font-semibold text-brand">
-                Sign in
-              </Link>
-            </>
-          )}
-        </p>
+              error={error}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

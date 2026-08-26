@@ -37,6 +37,6 @@ yarn-error.log*
 # vercel
 .vercel
 
-# typescript
-*.tsbuildinfo
+# local demo ledger / user store
+/data/*.json
 next-env.d.ts

@@ -75,7 +75,7 @@ export function BottomNav() {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 z-50 flex h-[4.5rem] w-full items-center justify-around border-t border-line bg-white pb-safe lg:hidden">
+    <nav className="fixed bottom-0 left-0 z-50 flex h-[4.5rem] w-full items-center justify-around border-t border-line bg-white pb-safe md:hidden">
       {items.map((item) => {
         const active =
           item.href === "/wallet"

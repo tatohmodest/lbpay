@@ -2,14 +2,18 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { LEGAL_NOTE } from "@/lib/flags";
 import { useApp } from "@/lib/store";
+import { useNotify } from "@/lib/notify";
 
 export default function ProfilePage() {
   const { state, logout } = useApp();
   const router = useRouter();
+  const notify = useNotify();
+  const queryClient = useQueryClient();
 
   return (
     <div className="mx-auto max-w-xl">
@@ -27,8 +31,11 @@ export default function ProfilePage() {
         <Button
           className="mt-6"
           variant="secondary"
-          onClick={() => {
+          onClick={async () => {
+            await fetch("/api/auth/logout", { method: "POST" });
+            queryClient.clear();
             logout();
+            notify.info("Signed out", "Come back anytime. Your PIN will be required.");
             router.push("/");
           }}
         >

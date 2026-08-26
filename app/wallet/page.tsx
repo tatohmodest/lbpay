@@ -12,11 +12,11 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Field, Input } from "@/components/ui/input";
 import { StatusBadge } from "@/components/ui/badge";
-import { formatDate, formatXAF } from "@/lib/format";
+import { formatDate, formatXAF, isMoneyOut } from "@/lib/format";
 import { useApp } from "@/lib/store";
-import { useState } from "react";
+import { useMe } from "@/lib/hooks/wallet";
+import type { Transaction } from "@/lib/types";
 
 const actions = [
   { href: "/wallet/send", label: "Send Money", icon: Send },
@@ -26,9 +26,10 @@ const actions = [
 ];
 
 export default function WalletPage() {
-  const { state, sendMoney } = useApp();
-  const [to, setTo] = useState("");
-  const [amount, setAmount] = useState("");
+  const { state } = useApp();
+  const me = useMe();
+  const balance = me.data?.balance ?? state.balance;
+  const transactions = (me.data?.transactions as Transaction[] | undefined) ?? state.transactions;
 
   return (
     <div className="grid gap-6 lg:grid-cols-12">
@@ -39,7 +40,7 @@ export default function WalletPage() {
             <div>
               <p className="text-sm text-white/80">Wallet Balance</p>
               <h1 className="mt-1 text-4xl font-black tracking-tight md:text-5xl">
-                {formatXAF(state.balance, { withCurrency: false })}{" "}
+                {formatXAF(balance, { withCurrency: false })}{" "}
                 <span className="text-2xl font-semibold opacity-80">XAF</span>
               </h1>
             </div>
@@ -84,66 +85,52 @@ export default function WalletPage() {
             </Link>
           </div>
           <div className="divide-y divide-line">
-            {state.transactions.slice(0, 5).map((tx) => (
-              <div key={tx.id} className="flex items-center justify-between py-3">
-                <div>
-                  <p className="font-semibold">{tx.counterparty}</p>
-                  <p className="text-xs text-muted">
-                    {tx.kind.replace("_", " ")} · {formatDate(tx.createdAt)}
-                  </p>
+            {transactions.length === 0 ? (
+              <p className="py-8 text-center text-sm text-muted">No movements yet. Deposit or receive to get started.</p>
+            ) : (
+              transactions.slice(0, 5).map((tx) => (
+                <div key={tx.id} className="flex items-center justify-between py-3">
+                  <div>
+                    <p className="font-semibold">{tx.counterparty}</p>
+                    <p className="text-xs text-muted">
+                      {tx.kind.replace("_", " ")} · {formatDate(tx.createdAt)}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-mono text-sm font-semibold">
+                      {isMoneyOut(tx.kind) ? "−" : "+"}
+                      {formatXAF(tx.amount, { withCurrency: false })}
+                    </p>
+                    <StatusBadge status={tx.status} />
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="font-mono text-sm font-semibold">
-                    {["send", "withdraw", "airtime", "bill", "cross_network"].includes(tx.kind)
-                      ? "−"
-                      : "+"}
-                    {formatXAF(tx.amount, { withCurrency: false })}
-                  </p>
-                  <StatusBadge status={tx.status} />
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </Card>
       </div>
 
       <div className="flex flex-col gap-6 lg:col-span-4">
         <Card className="p-5">
-          <h2 className="text-lg font-bold">Cross-network transfer</h2>
-          <p className="mt-1 text-sm text-muted">Send from LBPay to MTN or Orange in one step.</p>
+          <h2 className="text-lg font-bold">Send out of LBPay</h2>
+          <p className="mt-1 text-sm text-muted">
+            Disburse wallet cash to MTN or Orange. Wallet-to-wallet stays inside LBPay.
+          </p>
           <div className="mt-4 flex items-center gap-2">
             <span className="rounded-full bg-mtn px-2 py-1 text-[10px] font-black text-black">MTN</span>
             <span className="text-muted">→</span>
             <span className="rounded-full bg-om px-2 py-1 text-[10px] font-black text-white">OM</span>
           </div>
-          <form
-            className="mt-4 flex flex-col gap-3"
-            onSubmit={(e) => {
-              e.preventDefault();
-              sendMoney({ amount: Number(amount), to, network: "orange" });
-              setAmount("");
-            }}
-          >
-            <Field label="To (Orange Mobile Money)">
-              <Input
-                placeholder="6XXXXXXXX or @handle"
-                value={to}
-                onChange={(e) => setTo(e.target.value)}
-                required
-              />
-            </Field>
-            <Field label="Amount (XAF)">
-              <Input
-                type="number"
-                placeholder="20000"
-                className="font-mono"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                required
-              />
-            </Field>
-            <Button type="submit">Send now</Button>
-          </form>
+          <div className="mt-4 grid gap-2">
+            <Link href="/wallet/send?via=mtn">
+              <Button className="w-full" variant="secondary">
+                Disburse to MTN
+              </Button>
+            </Link>
+            <Link href="/wallet/send?via=orange">
+              <Button className="w-full">Disburse to Orange</Button>
+            </Link>
+          </div>
         </Card>
 
         <Card className="overflow-hidden">

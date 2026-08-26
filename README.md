@@ -13,12 +13,33 @@ Brand color: `#00b369`. Amounts are XAF.
 ## Stack
 
 - Next.js (App Router)
-- Supabase (Postgres + Auth + RLS)
+- Nodemailer (email OTP)
+- TanStack Query (wallet mutations)
+- PayUnit REST (`https://gateway.payunit.net`) when credentials are set
+- Supabase (Postgres schema ready; local demo uses `data/lbpay.json`)
 - Tailwind CSS v4
 
-## Demo
+## Auth
 
-The UI runs in demo mode without Supabase credentials. Sign in as `modest@lbpay.cm` / `demo123` or click **Continue as @modest**.
+1. Create an account with name, email, phone, and password.
+2. Verify email with a 6-digit OTP (SMTP, or printed in the server log if SMTP is empty).
+3. Set a 4-digit PIN.
+4. Later logins: email + password, then PIN.
+
+Demo: `modest@lbpay.cm` / `demo123` / PIN `1234`. Seeded wallets also exist for `@kossi` and `@marie`.
+
+**Sessions**
+
+- **Mobile:** cookie lasts a long time. If the app is backgrounded / the window is not active, coming back asks for the PIN.
+- **Web:** no PIN overlay. About 18 minutes of inactivity signs the user out. Bottom navigation is phone-only.
+
+## Money movement
+
+- **Wallet transfer** — LBPay → LBPay. Ledger only. Recipient can withdraw later.
+- **Disbursement / withdraw** — LBPay → MTN or Orange via PayUnit. Review + PIN required.
+- **Deposit** — MTN, Orange, or card → LBPay wallet via PayUnit collect.
+
+## Run locally
 
 ```bash
 npm install
@@ -26,12 +47,12 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000). Add SMTP credentials when you want real OTP email. Add PayUnit keys when you want the live rail; otherwise the sandbox adapter is used.
 
 ## Supabase
 
 1. Create a project.
-2. Run `supabase/migrations/0001_init.sql` in the SQL editor.
+2. Run `supabase/migrations/0001_init.sql` then `0002_auth_pin.sql` in the SQL editor.
 3. Put the project URL and anon key in `.env.local`.
 4. Set `NEXT_PUBLIC_DEMO_MODE=false` when you switch the app data layer onto Supabase.
 

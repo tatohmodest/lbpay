@@ -1,3 +1,5 @@
+import type { TransactionKind } from "@/lib/types";
+
 export function formatXAF(amount: number, options?: { withCurrency?: boolean }) {
   const withCurrency = options?.withCurrency ?? true;
   const formatted = new Intl.NumberFormat("fr-CM", {
@@ -46,4 +48,18 @@ export function slugify(value: string) {
 
 export function uid(prefix: string) {
   return `${prefix}_${Math.random().toString(36).slice(2, 8)}${Date.now().toString(36).slice(-4)}`;
+}
+
+const MONEY_OUT: TransactionKind[] = [
+  "send",
+  "withdraw",
+  "airtime",
+  "data",
+  "bill",
+  "cross_network",
+  "payout",
+];
+
+export function isMoneyOut(kind: string) {
+  return MONEY_OUT.includes(kind as TransactionKind);
 }

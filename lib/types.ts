@@ -40,6 +40,7 @@ export type Transaction = {
   counterparty: string;
   note?: string;
   createdAt: string;
+  railRef?: string;
 };
 
 export type Beneficiary = {
@@ -123,6 +124,7 @@ export type SubscriptionPlan = {
 
 export type AppState = {
   session: boolean;
+  pinUnlocked: boolean;
   user: UserProfile;
   balance: number;
   environment: ApiEnvironment;

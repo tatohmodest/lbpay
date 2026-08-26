@@ -2,7 +2,7 @@ export type RailCollectInput = {
   amount: number;
   currency: "XAF";
   method: "mtn" | "orange" | "card";
-  customer: { phone?: string; email?: string };
+  customer: { phone?: string; email?: string; name?: string };
   reference: string;
 };
 
@@ -12,6 +12,8 @@ export type RailDisburseInput = {
   network: "mtn" | "orange";
   phone: string;
   reference: string;
+  beneficiaryName?: string;
+  note?: string;
 };
 
 export type RailResult = {
@@ -20,6 +22,7 @@ export type RailResult = {
   providerRef?: string;
   status: "success" | "failed" | "pending";
   raw?: unknown;
+  hostedUrl?: string;
 };
 
 export interface PaymentRail {

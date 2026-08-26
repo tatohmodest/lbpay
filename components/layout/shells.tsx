@@ -1,21 +1,14 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useMe } from "@/lib/hooks/wallet";
 import { AppHeader, BottomNav } from "@/components/layout/app-header";
 import { ConsoleSidebar, type NavItem } from "@/components/layout/console-sidebar";
-import { useApp } from "@/lib/store";
 import { cn } from "@/lib/cn";
 
 export function Guard({ children }: { children: React.ReactNode }) {
-  const { state } = useApp();
-  const router = useRouter();
+  const me = useMe();
 
-  useEffect(() => {
-    if (!state.session) router.replace("/login");
-  }, [state.session, router]);
-
-  if (!state.session) {
+  if (!me.isFetched || !me.data?.session) {
     return (
       <div className="grid min-h-screen place-items-center text-sm text-muted">
         Opening your account…
@@ -29,7 +22,7 @@ export function Guard({ children }: { children: React.ReactNode }) {
 export function WalletShell({ children }: { children: React.ReactNode }) {
   return (
     <Guard>
-      <div className="min-h-screen pb-24 lg:pb-0">
+      <div className="min-h-screen pb-24 md:pb-0">
         <AppHeader />
         <main className="mx-auto max-w-7xl px-4 py-6 md:px-8 md:py-8">{children}</main>
         <BottomNav />
@@ -58,7 +51,7 @@ export function ConsoleShell({
           <AppHeader />
         </div>
         <ConsoleSidebar title={title} subtitle={subtitle} items={items} cta={cta} />
-        <main className={cn("px-4 py-6 pb-24 md:px-8 lg:ml-64 lg:pb-8")}>{children}</main>
+        <main className={cn("px-4 py-6 pb-24 md:px-8 md:pb-8 lg:ml-64")}>{children}</main>
         <BottomNav />
       </div>
     </Guard>

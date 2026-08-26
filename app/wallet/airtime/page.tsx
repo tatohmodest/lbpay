@@ -1,52 +1,121 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Field, Input } from "@/components/ui/input";
-import { MoneyForm } from "@/components/money-form";
+import { Button } from "@/components/ui/button";
+import { ConfirmSheet } from "@/components/confirm-sheet";
 import { useApp } from "@/lib/store";
+import { formatXAF } from "@/lib/format";
+import { useMe, useSpend } from "@/lib/hooks/wallet";
+import { useNotify } from "@/lib/notify";
 
 export default function AirtimePage() {
-  const { buyAirtime, state } = useApp();
+  const { state } = useApp();
+  const me = useMe();
   const router = useRouter();
+  const notify = useNotify();
+  const spend = useSpend();
   const [phone, setPhone] = useState(state.user.phone);
   const [network, setNetwork] = useState<"mtn" | "orange">("mtn");
+  const [amount, setAmount] = useState("");
+  const [open, setOpen] = useState(false);
+  const [pinError, setPinError] = useState("");
+
+  const balance = me.data?.balance ?? state.balance;
+  const value = Number(amount) || 0;
+  const ready = value >= 100 && value <= balance && phone.length >= 9;
+
+  const details = useMemo(
+    () => [
+      { label: "Type", value: "Airtime" },
+      { label: "Network", value: network.toUpperCase() },
+      { label: "Phone", value: phone },
+      { label: "Paid from", value: "LBPay wallet" },
+    ],
+    [network, phone],
+  );
+
+  const confirm = useCallback(
+    async (pin: string) => {
+      setPinError("");
+      try {
+        await spend.mutateAsync({
+          amount: value,
+          pin,
+          kind: "airtime",
+          counterparty: `${network.toUpperCase()} ${phone}`,
+        });
+        notify.moneyOut(value, `Airtime sent to ${phone}`);
+        setOpen(false);
+        router.push("/wallet");
+      } catch (err) {
+        setPinError(err instanceof Error ? err.message : "Could not buy airtime");
+        notify.error("Airtime failed", err instanceof Error ? err.message : "Could not buy airtime");
+      }
+    },
+    [spend, value, network, phone, notify, router],
+  );
 
   return (
     <div className="mx-auto max-w-xl">
       <h1 className="text-2xl font-black">Buy airtime & data</h1>
+      <p className="mt-1 text-sm text-muted">Paid from your wallet. Available {formatXAF(balance)}.</p>
       <Card className="mt-6 p-6">
-        <MoneyForm
-          submitLabel="Buy airtime"
-          extra={
-            <>
-              <div className="grid grid-cols-2 gap-2">
-                {(["mtn", "orange"] as const).map((item) => (
-                  <button
-                    key={item}
-                    type="button"
-                    onClick={() => setNetwork(item)}
-                    className={`rounded-xl border py-3 font-semibold uppercase ${
-                      network === item ? "border-brand bg-brand-soft" : "border-line"
-                    }`}
-                  >
-                    {item}
-                  </button>
-                ))}
-              </div>
-              <Field label="Phone">
-                <Input value={phone} onChange={(e) => setPhone(e.target.value)} required />
-              </Field>
-            </>
-          }
-          onSubmit={(amount) => {
-            const result = buyAirtime(amount, phone, network);
-            if (result.ok) router.push("/wallet");
-            return result;
+        <form
+          className="flex flex-col gap-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!ready) return;
+            setPinError("");
+            setOpen(true);
           }}
-        />
+        >
+          <div className="grid grid-cols-2 gap-2">
+            {(["mtn", "orange"] as const).map((item) => (
+              <button
+                key={item}
+                type="button"
+                onClick={() => setNetwork(item)}
+                className={`rounded-xl border py-3 font-semibold uppercase ${
+                  network === item ? "border-brand bg-brand-soft" : "border-line"
+                }`}
+              >
+                {item}
+              </button>
+            ))}
+          </div>
+          <Field label="Phone">
+            <Input value={phone} onChange={(e) => setPhone(e.target.value)} required />
+          </Field>
+          <Field label="Amount (XAF)">
+            <Input
+              type="number"
+              min={100}
+              className="font-mono text-lg"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              required
+            />
+          </Field>
+          <Button type="submit" disabled={!ready}>
+            Review airtime
+          </Button>
+        </form>
       </Card>
+      <ConfirmSheet
+        open={open}
+        title="Confirm airtime"
+        subtitle="This debit uses your LBPay wallet balance."
+        amount={value}
+        details={details}
+        loading={spend.isPending}
+        error={pinError}
+        confirmLabel="Enter PIN to buy"
+        onClose={() => setOpen(false)}
+        onConfirm={confirm}
+      />
     </div>
   );
 }
