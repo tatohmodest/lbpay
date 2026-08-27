@@ -21,13 +21,29 @@ const nextConfig: NextConfig = {
       {
         pathname: "/illustrations/**",
       },
+      {
+        pathname: "/icons/**",
+      },
     ],
   },
   async headers() {
-    return noIndexSources.map((source) => ({
-      source,
-      headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
-    }));
+    return [
+      ...noIndexSources.map((source) => ({
+        source,
+        headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
+      })),
+      {
+        source: "/sw.js",
+        headers: [
+          { key: "Cache-Control", value: "no-cache, no-store, must-revalidate" },
+          { key: "Service-Worker-Allowed", value: "/" },
+        ],
+      },
+      {
+        source: "/manifest.webmanifest",
+        headers: [{ key: "Cache-Control", value: "public, max-age=3600" }],
+      },
+    ];
   },
 };
 

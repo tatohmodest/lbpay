@@ -3,12 +3,13 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, Code2, Menu, Store, Wallet } from "lucide-react";
+import { BookOpen, Code2, Download, Menu, Store, Wallet } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { RightDrawer } from "@/components/ui/right-drawer";
 import { Container } from "@/components/marketing/container";
 import { cn } from "@/lib/cn";
+import { openInstallPrompt, useStandaloneDisplay } from "@/lib/pwa";
 
 const links = [
   { href: "/products/wallet", label: "Personal", icon: Wallet, copy: "XAF wallet and transfers" },
@@ -21,6 +22,8 @@ export function SiteHeader() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [menuPath, setMenuPath] = useState(pathname);
+  const standalone = useStandaloneDisplay();
+  const showInstall = !standalone;
   if (pathname !== menuPath) {
     setMenuPath(pathname);
     setOpen(false);
@@ -49,6 +52,15 @@ export function SiteHeader() {
             })}
           </nav>
           <div className="hidden items-center gap-2 lg:flex">
+            {showInstall ? (
+              <button
+                type="button"
+                onClick={() => openInstallPrompt()}
+                className="px-3 text-sm font-medium text-muted hover:text-ink"
+              >
+                Get app
+              </button>
+            ) : null}
             <Link href="/login" className="px-3 text-sm font-medium text-muted hover:text-ink">
               Sign in
             </Link>
@@ -56,15 +68,27 @@ export function SiteHeader() {
               <Button size="sm">Open wallet</Button>
             </Link>
           </div>
-          <button
-            type="button"
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-line text-ink lg:hidden"
-            aria-expanded={open}
-            aria-label="Open menu"
-            onClick={() => setOpen(true)}
-          >
-            <Menu className="h-5 w-5" />
-          </button>
+          <div className="flex items-center gap-2 lg:hidden">
+            {showInstall ? (
+              <button
+                type="button"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-line text-ink"
+                aria-label="Get the LBPay app"
+                onClick={() => openInstallPrompt()}
+              >
+                <Download className="h-4 w-4" />
+              </button>
+            ) : null}
+            <button
+              type="button"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-line text-ink"
+              aria-expanded={open}
+              aria-label="Open menu"
+              onClick={() => setOpen(true)}
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+          </div>
         </Container>
       </header>
 
@@ -74,15 +98,29 @@ export function SiteHeader() {
         title="Menu"
         subtitle="Move money across Cameroon."
         footer={
-          <div className="grid grid-cols-2 gap-2">
-            <Link href="/login">
-              <Button variant="secondary" className="w-full">
-                Sign in
+          <div className="grid gap-2">
+            {showInstall ? (
+              <Button
+                variant="secondary"
+                className="w-full"
+                onClick={() => {
+                  setOpen(false);
+                  openInstallPrompt();
+                }}
+              >
+                Get iPhone and Android app
               </Button>
-            </Link>
-            <Link href="/signup">
-              <Button className="w-full">Open wallet</Button>
-            </Link>
+            ) : null}
+            <div className="grid grid-cols-2 gap-2">
+              <Link href="/login">
+                <Button variant="secondary" className="w-full">
+                  Sign in
+                </Button>
+              </Link>
+              <Link href="/signup">
+                <Button className="w-full">Open wallet</Button>
+              </Link>
+            </div>
           </div>
         }
       >

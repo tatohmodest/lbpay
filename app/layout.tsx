@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { AppProviders } from "@/components/providers";
 import { SiteJsonLd } from "@/components/json-ld";
@@ -36,6 +36,14 @@ export const metadata: Metadata = {
   publisher: SITE_NAME,
   category: "finance",
   formatDetection: { telephone: false, email: false, address: false },
+  appleWebApp: {
+    capable: true,
+    title: SITE_NAME,
+    statusBarStyle: "default",
+  },
+  other: {
+    "apple-mobile-web-app-capable": "yes",
+  },
   robots: {
     index: true,
     follow: true,
@@ -70,10 +78,20 @@ export const metadata: Metadata = {
     images: ["/illustrations/hero-send-money.png"],
   },
   icons: {
-    icon: "/illustrations/lbpay-mark.png",
-    apple: "/illustrations/lbpay-mark.png",
+    icon: [
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
   },
   manifest: "/manifest.webmanifest",
+};
+
+export const viewport: Viewport = {
+  themeColor: "#00b369",
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

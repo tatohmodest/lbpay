@@ -69,6 +69,8 @@ function VerifyInner() {
           <Field label="Verification code">
             <Input
               inputMode="numeric"
+              autoComplete="one-time-code"
+              placeholder="000000"
               className="text-center font-mono text-2xl tracking-[0.4em]"
               value={otp}
               onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}

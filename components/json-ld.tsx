@@ -45,7 +45,7 @@ export function SiteJsonLd() {
         "@type": "SoftwareApplication",
         name: SITE_NAME,
         applicationCategory: "FinanceApplication",
-        operatingSystem: "Web",
+        operatingSystem: "iOS, Android, Web",
         offers: { "@type": "Offer", price: "0", priceCurrency: "XAF" },
         description: SITE_DESCRIPTION,
         url: SITE_URL,

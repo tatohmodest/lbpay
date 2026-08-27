@@ -3,13 +3,14 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, Code2, Menu, Shield, Store, Wallet, UserRound } from "lucide-react";
+import { Bell, Code2, Download, Menu, Shield, Store, Wallet, UserRound } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { RightDrawer } from "@/components/ui/right-drawer";
 import { useApp } from "@/lib/store";
 import { useMe } from "@/lib/hooks/wallet";
 import { cn } from "@/lib/cn";
 import { isAdmin } from "@/lib/roles";
+import { openInstallPrompt, useStandaloneDisplay } from "@/lib/pwa";
 import Image from "next/image";
 
 export function AppHeader({ onOpenMenu }: { onOpenMenu?: () => void }) {
@@ -19,6 +20,8 @@ export function AppHeader({ onOpenMenu }: { onOpenMenu?: () => void }) {
   const user = me.data?.user;
   const [open, setOpen] = useState(false);
   const [menuPath, setMenuPath] = useState(pathname);
+  const standalone = useStandaloneDisplay();
+  const showInstall = !standalone;
   if (pathname !== menuPath) {
     setMenuPath(pathname);
     setOpen(false);
@@ -59,6 +62,16 @@ export function AppHeader({ onOpenMenu }: { onOpenMenu?: () => void }) {
             <span className="rounded-full bg-red-50 px-2 py-1 text-[10px] font-bold uppercase text-danger">
               Frozen
             </span>
+          ) : null}
+          {showInstall ? (
+            <button
+              type="button"
+              className="rounded-full p-2 text-muted hover:bg-brand-soft hover:text-brand"
+              aria-label="Get the LBPay app"
+              onClick={() => openInstallPrompt()}
+            >
+              <Download className="h-5 w-5" />
+            </button>
           ) : null}
           <button className="hidden rounded-full p-2 text-muted hover:bg-brand-soft hover:text-brand sm:inline-flex">
             <Bell className="h-5 w-5" />

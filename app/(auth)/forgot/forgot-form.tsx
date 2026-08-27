@@ -116,6 +116,8 @@ export function ForgotForm({ initialEmail = "" }: { initialEmail?: string }) {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   autoComplete="email"
+                  inputMode="email"
+                  placeholder="you@email.com"
                   required
                 />
               </Field>
@@ -138,6 +140,7 @@ export function ForgotForm({ initialEmail = "" }: { initialEmail?: string }) {
                 <Input
                   inputMode="numeric"
                   autoComplete="one-time-code"
+                  placeholder="000000"
                   className="text-center font-mono text-2xl tracking-[0.4em]"
                   value={otp}
                   onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
@@ -170,6 +173,7 @@ export function ForgotForm({ initialEmail = "" }: { initialEmail?: string }) {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   autoComplete="new-password"
+                  placeholder="At least 6 characters"
                   minLength={6}
                   required
                 />
@@ -180,6 +184,7 @@ export function ForgotForm({ initialEmail = "" }: { initialEmail?: string }) {
                   value={confirm}
                   onChange={(e) => setConfirm(e.target.value)}
                   autoComplete="new-password"
+                  placeholder="Repeat your new password"
                   minLength={6}
                   required
                 />

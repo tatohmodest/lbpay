@@ -2,25 +2,55 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "LBPay. Payments for Cameroon",
+    id: "/",
+    name: "LBPay",
     short_name: "LBPay",
     description:
       "Send, receive, and collect XAF across MTN Mobile Money, Orange Money, cards, and the LBPay wallet.",
-    start_url: "/",
+    start_url: "/wallet",
+    scope: "/",
     display: "standalone",
-    background_color: "#f3faf6",
+    display_override: ["standalone", "browser"],
+    prefer_related_applications: false,
+    background_color: "#f6faf8",
     theme_color: "#00b369",
     lang: "en",
+    dir: "ltr",
+    categories: ["finance", "utilities"],
     icons: [
       {
-        src: "/illustrations/lbpay-mark.png",
+        src: "/icons/icon-192.png",
         sizes: "192x192",
         type: "image/png",
+        purpose: "any",
       },
       {
-        src: "/illustrations/lbpay-mark.png",
+        src: "/icons/icon-512.png",
         sizes: "512x512",
         type: "image/png",
+        purpose: "any",
+      },
+      {
+        src: "/icons/icon-512-maskable.png",
+        sizes: "512x512",
+        type: "image/png",
+        purpose: "maskable",
+      },
+    ],
+    shortcuts: [
+      {
+        name: "Wallet",
+        short_name: "Wallet",
+        url: "/wallet",
+        description: "Open your XAF wallet",
+        icons: [{ src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }],
+      },
+      {
+        name: "Send",
+        short_name: "Send",
+        url: "/wallet/send",
+        description: "Send money in Cameroon",
+        icons: [{ src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }],
       },
     ],
   };

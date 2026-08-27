@@ -73,3 +73,18 @@ body {
 .lb-notice {
   animation: lb-pop 0.24s ease-out;
 }
+
+@keyframes lb-sheet {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.lb-sheet {
+  animation: lb-sheet 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}

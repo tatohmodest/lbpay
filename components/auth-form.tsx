@@ -121,18 +121,51 @@ export function AuthForm({
                 {mode === "signup" ? (
                   <>
                     <Field label="Full name">
-                      <Input value={name} onChange={(e) => setName(e.target.value)} required />
+                      <Input
+                        name="name"
+                        autoComplete="name"
+                        placeholder="Amina Ngo"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        required
+                      />
                     </Field>
                     <Field label="Phone">
-                      <Input value={phone} onChange={(e) => setPhone(e.target.value)} required />
+                      <Input
+                        name="tel"
+                        type="tel"
+                        inputMode="tel"
+                        autoComplete="tel"
+                        placeholder="677 000 000"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        required
+                      />
                     </Field>
                   </>
                 ) : null}
                 <Field label="Email">
-                  <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                  <Input
+                    name="email"
+                    type="email"
+                    inputMode="email"
+                    autoComplete="email"
+                    placeholder="you@email.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
                 </Field>
                 <Field label="Password">
-                  <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+                  <Input
+                    name="password"
+                    type="password"
+                    autoComplete={mode === "login" ? "current-password" : "new-password"}
+                    placeholder={mode === "login" ? "Your password" : "At least 6 characters"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
                 </Field>
                 {mode === "login" ? (
                   <div className="-mt-1 text-right">
