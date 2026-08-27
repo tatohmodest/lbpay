@@ -8,7 +8,7 @@ export function catchRoute(scope: string, err: unknown) {
   console.error(`[lbpay] ${scope} failed`, err);
   const message = err instanceof Error ? err.message : "";
   if (
-    /not configured|SESSION_SECRET|EMAIL_FROM|SMTP_|PAYUNIT_|required/i.test(message)
+    /not configured|SESSION_SECRET|EMAIL_FROM|SMTP_|PAYUNIT_|CLOUDINARY_|required/i.test(message)
   ) {
     return NextResponse.json({ error: message }, { status: 500 });
   }

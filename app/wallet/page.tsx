@@ -31,6 +31,7 @@ export default function WalletPage() {
   const balance = me.data?.balance ?? state.balance;
   const transactions = (me.data?.transactions as Transaction[] | undefined) ?? state.transactions;
   const frozen = (me.data?.user?.status || state.user.status) === "frozen";
+  const personalKyc = me.data?.user?.kyc?.personal || "unverified";
 
   return (
     <div className="grid gap-6 lg:grid-cols-12">
@@ -38,6 +39,25 @@ export default function WalletPage() {
         <div className="rounded-2xl bg-red-50 p-4 text-sm font-semibold text-danger lg:col-span-12">
           This account is frozen. Deposits, sends, and withdrawals are blocked until an admin restores it.
         </div>
+      ) : null}
+      {personalKyc !== "verified" ? (
+        <Link href="/wallet/kyc" className="lg:col-span-12">
+          <Card className="border-brand/30 bg-brand-soft p-4">
+            <p className="text-xs font-bold uppercase tracking-wide text-brand">Personal verification</p>
+            <p className="mt-1 font-semibold text-ink">
+              {personalKyc === "pending"
+                ? "Your ID photos are with an admin."
+                : personalKyc === "rejected"
+                  ? "Personal verification was not approved. Send clearer photos."
+                  : "Verify your identity to unlock Business."}
+            </p>
+            <p className="mt-1 text-sm text-muted">
+              {personalKyc === "pending"
+                ? "You will be able to apply for Business after this is approved."
+                : "Send the front, back, and a photo of you holding your national ID or passport."}
+            </p>
+          </Card>
+        </Link>
       ) : null}
       <div className="flex flex-col gap-6 lg:col-span-8">
         <section className="relative overflow-hidden rounded-3xl bg-brand p-6 text-white shadow-lg">

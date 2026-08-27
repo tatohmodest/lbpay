@@ -1,13 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import Link from "next/link";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Field, Input } from "@/components/ui/input";
+import { KycApplyForm } from "@/components/kyc-apply-form";
 import { useMe } from "@/lib/hooks/wallet";
-import { hasKind } from "@/lib/roles";
-import { useNotify } from "@/lib/notify";
+import { hasKind, isAdmin } from "@/lib/roles";
 import type { AccountKind, KycTrack } from "@/lib/types";
 
 export function RoleGate({
@@ -22,9 +21,34 @@ export function RoleGate({
   if (!me.isFetched) {
     return <p className="p-8 text-sm text-muted">Checking access…</p>;
   }
-  if (hasKind(user, kind)) return <>{children}</>;
+
   const track: KycTrack = kind === "business" ? "business" : kind === "developer" ? "developer" : "personal";
   const state = user?.kyc?.[track];
+  const personal = user?.kyc?.personal;
+
+  if (isAdmin(user)) return <>{children}</>;
+
+  if (kind === "business" && personal !== "verified") {
+    return (
+      <Card className="mx-auto mt-10 max-w-lg p-8 text-center">
+        <p className="text-xs font-bold uppercase tracking-wide text-brand">Personal KYC required</p>
+        <h1 className="mt-2 text-2xl font-semibold tracking-tight">Verify yourself first</h1>
+        <p className="mt-2 text-sm leading-6 text-muted">
+          {personal === "pending"
+            ? "Your personal identity review is still in progress. Business verification unlocks after it is approved."
+            : "You cannot start Business verification until personal identity is approved. Send the front, back, and a photo of you holding your ID or passport."}
+        </p>
+        <Link href="/wallet/kyc" className="mt-6 inline-block">
+          <Button>{personal === "pending" ? "View personal KYC" : "Verify identity"}</Button>
+        </Link>
+      </Card>
+    );
+  }
+
+  if (hasKind(user, kind) && state !== "rejected") {
+    return <>{children}</>;
+  }
+
   if (state === "pending") {
     return (
       <Card className="mx-auto mt-10 max-w-lg p-8 text-center">
@@ -34,41 +58,11 @@ export function RoleGate({
         </h1>
         <p className="mt-2 text-sm text-muted">
           {kind === "developer"
-            ? "Sandbox is available as soon as you apply. Live keys wait for an admin to approve your KYC."
+            ? "Sandbox is available as soon as you apply. Live keys wait for an admin to check your ID photos."
             : "An admin will review this application. You will get the Business console after approval."}
         </p>
       </Card>
     );
-  }
-  return <ApplyAccess track={track} kind={kind} />;
-}
-
-function ApplyAccess({ track, kind }: { track: KycTrack; kind: AccountKind }) {
-  const notify = useNotify();
-  const client = useQueryClient();
-  const [legalName, setLegalName] = useState("");
-  const [idNumber, setIdNumber] = useState("");
-  const [businessName, setBusinessName] = useState("");
-  const [taxId, setTaxId] = useState("");
-  const [website, setWebsite] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    const res = await fetch("/api/kyc", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ track, legalName, idNumber, businessName, taxId, website }),
-    });
-    const data = await res.json().catch(() => ({}));
-    setLoading(false);
-    if (!res.ok) {
-      notify.error("Could not apply", data.error || "Try again");
-      return;
-    }
-    notify.success("Application sent", track === "developer" ? "Sandbox is unlocking now." : "Admin will review it.");
-    await client.invalidateQueries({ queryKey: ["me"] });
   }
 
   return (
@@ -79,36 +73,20 @@ function ApplyAccess({ track, kind }: { track: KycTrack; kind: AccountKind }) {
       </h1>
       <p className="mt-2 text-sm text-muted">
         {kind === "developer"
-          ? "Submit KYC to test in sandbox immediately. Live keys are issued after an admin approves you."
-          : "Business collections, payment links, and QR need a verified merchant profile."}
+          ? "Send the front and back of your national ID or passport, plus a photo of you holding it. Sandbox unlocks on submit. Live keys wait for an admin."
+          : "Your personal identity is verified. Add the merchant details so an admin can open Business."}
       </p>
-      <Card className="mt-6 p-6">
-        <form className="flex flex-col gap-3" onSubmit={submit}>
-          <Field label="Legal name">
-            <Input value={legalName} onChange={(e) => setLegalName(e.target.value)} required />
-          </Field>
-          <Field label="National ID / passport">
-            <Input value={idNumber} onChange={(e) => setIdNumber(e.target.value)} required />
-          </Field>
-          {kind === "business" ? (
-            <>
-              <Field label="Business name">
-                <Input value={businessName} onChange={(e) => setBusinessName(e.target.value)} required />
-              </Field>
-              <Field label="Tax ID">
-                <Input value={taxId} onChange={(e) => setTaxId(e.target.value)} />
-              </Field>
-            </>
-          ) : (
-            <Field label="Website / app">
-              <Input value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://" />
-            </Field>
-          )}
-          <Button type="submit" disabled={loading}>
-            {loading ? "Sending…" : "Submit KYC"}
-          </Button>
-        </form>
-      </Card>
+      <div className="mt-6">
+        <KycApplyForm
+          track={track}
+          title={kind === "business" ? "Business profile" : "Developer identity"}
+          subtitle={
+            kind === "developer"
+              ? "Photos are compressed on upload. Maximum 10MB each."
+              : "Business collections, payment links, and QR need a verified merchant profile."
+          }
+        />
+      </div>
     </div>
   );
 }

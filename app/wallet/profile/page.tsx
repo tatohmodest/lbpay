@@ -39,10 +39,24 @@ export default function ProfilePage() {
           {state.user.phone} · {user?.status || "active"}
         </p>
         <p className="mt-3 text-xs font-bold uppercase tracking-wide text-brand">{roles.join(" · ")}</p>
-        <div className="mt-4 space-y-1 text-sm text-muted">
-          <p>Personal KYC: {user?.kyc?.personal || "unverified"}</p>
-          <p>Business KYC: {user?.kyc?.business || "unverified"}</p>
-          <p>Developer KYC: {user?.kyc?.developer || "unverified"}</p>
+        <div className="mt-5 rounded-2xl bg-paper p-4 text-left">
+          <p className="text-sm font-semibold text-ink">Identity verification</p>
+          <div className="mt-2 space-y-1 text-sm text-muted">
+            <p>Personal: {user?.kyc?.personal || "unverified"}</p>
+            <p>Business: {user?.kyc?.business || "unverified"}</p>
+            <p>Developer: {user?.kyc?.developer || "unverified"}</p>
+          </div>
+          {user?.kyc?.personal === "verified" ? (
+            <p className="mt-3 text-sm text-brand">Your personal identity is verified.</p>
+          ) : (
+            <Link href="/wallet/kyc" className="mt-3 inline-block text-sm font-bold text-brand">
+              {user?.kyc?.personal === "pending"
+                ? "Personal KYC is in review"
+                : user?.kyc?.personal === "rejected"
+                  ? "Personal KYC was not approved. Try again"
+                  : "Verify your identity"}
+            </Link>
+          )}
         </div>
         {user?.status === "frozen" ? (
           <p className="mt-4 rounded-xl bg-red-50 p-3 text-sm font-semibold text-danger">
@@ -51,6 +65,9 @@ export default function ProfilePage() {
         ) : null}
         <div className="mt-6 flex flex-col gap-2">
           <PushSettings />
+          <Link href="/wallet/kyc" className="text-sm font-bold text-brand">
+            Personal verification
+          </Link>
           <Link href="/business" className="text-sm font-bold text-brand">
             Apply for Business
           </Link>

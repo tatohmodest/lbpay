@@ -14,6 +14,11 @@ export async function GET() {
     const user = await findUserById(app.userId);
     rows.push({ ...app, user: user ? publicUser(user) : null });
   }
+  rows.sort((a, b) => {
+    if (a.status === "pending" && b.status !== "pending") return -1;
+    if (a.status !== "pending" && b.status === "pending") return 1;
+    return +new Date(b.createdAt) - +new Date(a.createdAt);
+  });
   return NextResponse.json({ applications: rows });
 }
 

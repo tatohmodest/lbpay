@@ -25,6 +25,13 @@ const nextConfig: NextConfig = {
         pathname: "/icons/**",
       },
     ],
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "res.cloudinary.com",
+        pathname: "/**",
+      },
+    ],
   },
   async headers() {
     return [

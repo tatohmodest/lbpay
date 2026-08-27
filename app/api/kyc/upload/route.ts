@@ -1,0 +1,49 @@
+import { NextResponse } from "next/server";
+import { requireActiveUser } from "@/lib/server/guard";
+import { catchRoute } from "@/lib/server/api";
+import { isKycImageKind, MAX_KYC_UPLOAD_BYTES } from "@/lib/kyc";
+import { uploadKycImage } from "@/lib/server/cloudinary";
+
+export const runtime = "nodejs";
+
+const ALLOWED = new Set(["image/jpeg", "image/jpg", "image/png", "image/webp"]);
+
+export async function POST(request: Request) {
+  try {
+    const auth = await requireActiveUser();
+    if (auth.error || !auth.user) return auth.error!;
+
+    const form = await request.formData();
+    const kindRaw = String(form.get("kind") || "");
+    const file = form.get("file");
+    if (!isKycImageKind(kindRaw)) {
+      return NextResponse.json({ error: "Choose front, back, or the holding photo." }, { status: 400 });
+    }
+    if (!(file instanceof File)) {
+      return NextResponse.json({ error: "Choose a photo to upload." }, { status: 400 });
+    }
+    if (!ALLOWED.has(file.type) && !file.type.startsWith("image/")) {
+      return NextResponse.json({ error: "Upload a JPG, PNG, or WEBP photo." }, { status: 400 });
+    }
+    if (file.size > MAX_KYC_UPLOAD_BYTES) {
+      return NextResponse.json({ error: "Maximum upload is 10MB." }, { status: 400 });
+    }
+
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const stored = await uploadKycImage({
+      buffer,
+      userId: auth.user.id,
+      kind: kindRaw,
+      mime: file.type,
+    });
+    return NextResponse.json({
+      ok: true,
+      kind: kindRaw,
+      url: stored.url,
+      publicId: stored.publicId,
+      bytes: stored.bytes,
+    });
+  } catch (error) {
+    return catchRoute("kyc-upload", error);
+  }
+}

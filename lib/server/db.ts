@@ -66,6 +66,15 @@ export type KycApplication = {
   businessName?: string;
   taxId?: string;
   website?: string;
+  documentType?: "national_id" | "passport";
+  documents?: {
+    idFrontUrl: string;
+    idBackUrl: string;
+    selfieUrl: string;
+    idFrontId?: string;
+    idBackId?: string;
+    selfieId?: string;
+  };
   note?: string;
   reviewNote?: string;
   createdAt: string;
