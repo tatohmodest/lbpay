@@ -132,7 +132,7 @@ function SendInner() {
             }
           >
             <Input
-              placeholder={network === "wallet" ? "@kossi" : "6XXXXXXXX"}
+              placeholder={network === "wallet" ? "@handle" : "6XXXXXXXX"}
               value={to}
               onChange={(e) => setTo(e.target.value)}
               required

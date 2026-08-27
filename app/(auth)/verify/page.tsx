@@ -14,7 +14,7 @@ function VerifyInner() {
   const router = useRouter();
   const notify = useNotify();
   const email = params.get("email") || "";
-  const [otp, setOtp] = useState(params.get("dev") || "");
+  const [otp, setOtp] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -54,12 +54,7 @@ function VerifyInner() {
         notify.info("Could not resend", data.error || "Try again in a moment.");
         return;
       }
-      if (data.devOtp) {
-        setOtp(data.devOtp);
-        notify.info("Verification code", data.devOtp);
-      } else {
-        notify.success("Code sent", "Check your inbox.");
-      }
+      notify.success("Code sent", "Check your inbox.");
     } catch (err) {
       notify.info("Could not resend", err instanceof Error ? err.message : "Try again.");
     }

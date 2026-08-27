@@ -11,7 +11,11 @@ function smtpSecure() {
 }
 
 function fromAddress() {
-  return process.env.SMTP_FROM || process.env.EMAIL_FROM || "LBPay <noreply@lbpay.cm>";
+  const value = process.env.SMTP_FROM || process.env.EMAIL_FROM;
+  if (!value) {
+    throw new Error("Set EMAIL_FROM or SMTP_FROM.");
+  }
+  return value;
 }
 
 function transport() {
@@ -63,22 +67,15 @@ export async function sendOtpEmail(
 
   const mailer = transport();
   if (!mailer) {
-    console.info(`[lbpay] SMTP not configured. OTP for ${to}: ${otp}`);
-    return { delivered: false, otp };
+    throw new Error("Email is not configured. Set SMTP_HOST, SMTP_USER, SMTP_PASS, and EMAIL_FROM.");
   }
 
-  try {
-    await mailer.sendMail({
-      from: fromAddress(),
-      to,
-      subject: purpose === "admin" ? `${otp} is your LBPay admin code` : `${otp} is your LBPay verification code`,
-      html,
-      text: `Your LBPay ${purpose === "admin" ? "admin" : "verification"} code is ${otp}. It expires in 10 minutes.`,
-    });
-    return { delivered: true as const };
-  } catch (error) {
-    console.error("[lbpay] SMTP send failed", error);
-    console.info(`[lbpay] OTP for ${to}: ${otp}`);
-    return { delivered: false as const, otp };
-  }
+  await mailer.sendMail({
+    from: fromAddress(),
+    to,
+    subject: purpose === "admin" ? `${otp} is your LBPay admin code` : `${otp} is your LBPay verification code`,
+    html,
+    text: `Your LBPay ${purpose === "admin" ? "admin" : "verification"} code is ${otp}. It expires in 10 minutes.`,
+  });
+  return { delivered: true as const };
 }

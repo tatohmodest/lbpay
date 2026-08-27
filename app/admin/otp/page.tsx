@@ -24,12 +24,7 @@ export default function AdminOtpPage() {
       notify.error("Could not send code", data.error || "Try again");
       return;
     }
-    if (data.devOtp) {
-      setOtp(data.devOtp);
-      notify.info("Admin code", "SMTP is not set, so the code is shown here.");
-    } else {
-      notify.success("Code sent", "Check the admin email inbox.");
-    }
+    notify.success("Code sent", "Check the admin email inbox.");
   }
 
   async function verify(e: React.FormEvent) {

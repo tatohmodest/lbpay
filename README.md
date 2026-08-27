@@ -30,7 +30,7 @@ Public routes: `/`, `/products/wallet`, `/products/business`, `/products/develop
 3. Set a 4-digit PIN.
 4. Later logins: email + password, then PIN.
 
-There is no demo login. The first operator account is the email you put in `ADMIN_EMAILS`.
+There is no test login. The first operator account is the email you put in `ADMIN_EMAILS`.
 
 **Sessions**
 
@@ -51,7 +51,16 @@ There is no demo login. The first operator account is the email you put in `ADMI
 ```bash
 npm install
 cp .env.example .env.local
-# set ADMIN_EMAILS, SESSION_SECRET, EMAIL_FROM, and SMTP, then:
+```
+
+Fill every key in `.env.local`. Required before the app can sign people in or move money:
+
+- `SESSION_SECRET`
+- `ADMIN_EMAILS`
+- `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `EMAIL_FROM`
+- `PAYUNIT_API_KEY`, `PAYUNIT_API_USER`, `PAYUNIT_API_PASSWORD`, `PAYUNIT_MODE` (`live` or `test`)
+
+```bash
 npm run dev
 ```
 

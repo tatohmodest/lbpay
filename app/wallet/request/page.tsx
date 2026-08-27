@@ -2,41 +2,65 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Field, Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useApp } from "@/lib/store";
-import { StatusBadge } from "@/components/ui/badge";
+import { useNotify } from "@/lib/notify";
 import { formatXAF } from "@/lib/format";
 
 export default function RequestPage() {
-  const { state, createRequest } = useApp();
-  const [toName, setToName] = useState("");
+  const notify = useNotify();
+  const client = useQueryClient();
+  const [title, setTitle] = useState("");
   const [amount, setAmount] = useState("");
-  const [message, setMessage] = useState("");
   const [link, setLink] = useState<string | null>(null);
+  const data = useQuery({
+    queryKey: ["wallet-links"],
+    queryFn: async () => (await fetch("/api/wallet/links")).json(),
+  });
+  const create = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/wallet/links", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: title || "Money request", amount: amount ? Number(amount) : null }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Could not create request");
+      return json as { link: { slug: string; title: string; amount: number | null; id: string } };
+    },
+    onSuccess: (json) => {
+      const href = `${window.location.origin}/pay/${json.link.slug}`;
+      setLink(href);
+      setTitle("");
+      setAmount("");
+      client.invalidateQueries({ queryKey: ["wallet-links"] });
+      notify.success("Request ready", "Share the checkout link.");
+    },
+    onError: (err: Error) => notify.error("Failed", err.message),
+  });
 
   return (
     <div className="mx-auto grid max-w-4xl gap-6 lg:grid-cols-2">
       <div>
         <h1 className="text-2xl font-black">Request money</h1>
         <p className="mt-1 text-sm text-muted">
-          Share a request. They pay with MTN, Orange, wallet, or card.
+          Share a checkout link. They pay with MTN, Orange, wallet, or card.
         </p>
         <Card className="mt-6 p-6">
           <form
             className="flex flex-col gap-4"
             onSubmit={(e) => {
               e.preventDefault();
-              const { id } = createRequest(toName, Number(amount), message);
-              setLink(`${window.location.origin}/r/${id}`);
+              create.mutate();
             }}
           >
-            <Field label="From">
+            <Field label="What is this for">
               <Input
-                placeholder="Modest, a phone number, or @handle"
-                value={toName}
-                onChange={(e) => setToName(e.target.value)}
+                placeholder="Name, @handle, or reason"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
                 required
               />
             </Field>
@@ -49,10 +73,9 @@ export default function RequestPage() {
                 required
               />
             </Field>
-            <Field label="Message">
-              <Input value={message} onChange={(e) => setMessage(e.target.value)} />
-            </Field>
-            <Button type="submit">Create request</Button>
+            <Button type="submit" disabled={create.isPending}>
+              Create request
+            </Button>
           </form>
           {link ? (
             <p className="mt-4 break-all rounded-xl bg-brand-soft p-3 font-mono text-xs text-brand-dark">
@@ -70,18 +93,23 @@ export default function RequestPage() {
           className="mb-4 h-48 w-full rounded-3xl object-cover"
         />
         <Card className="divide-y divide-line">
-          {state.requests.map((req) => (
-            <div key={req.id} className="flex items-center justify-between p-4">
-              <div>
-                <p className="font-semibold">{req.toName}</p>
-                <p className="text-xs text-muted">{req.message}</p>
-              </div>
-              <div className="text-right">
-                <p className="font-mono text-sm font-bold">{formatXAF(req.amount)}</p>
-                <StatusBadge status={req.status === "paid" ? "success" : "pending"} />
-              </div>
-            </div>
-          ))}
+          {(data.data?.links || []).length === 0 ? (
+            <p className="p-6 text-sm text-muted">No requests yet.</p>
+          ) : (
+            (data.data?.links || []).map(
+              (item: { id: string; title: string; amount: number | null; slug: string }) => (
+                <div key={item.id} className="flex items-center justify-between p-4">
+                  <div>
+                    <p className="font-semibold">{item.title}</p>
+                    <p className="font-mono text-xs text-muted">/pay/{item.slug}</p>
+                  </div>
+                  <p className="font-mono text-sm font-bold">
+                    {item.amount ? formatXAF(item.amount) : "Open"}
+                  </p>
+                </div>
+              ),
+            )
+          )}
         </Card>
       </div>
     </div>

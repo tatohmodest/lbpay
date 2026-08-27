@@ -10,13 +10,20 @@ export function getPaymentRail(env: "sandbox" | "live" = "live"): PaymentRail {
     process.env.PAYUNIT_API_USER &&
     process.env.PAYUNIT_API_PASSWORD;
 
-  if (!ready) return new SandboxRail();
+  if (!ready) {
+    throw new Error("PayUnit is not configured. Set PAYUNIT_API_KEY, PAYUNIT_API_USER, and PAYUNIT_API_PASSWORD.");
+  }
+
+  const mode = process.env.PAYUNIT_MODE;
+  if (mode !== "live" && mode !== "test") {
+    throw new Error("Set PAYUNIT_MODE to live or test.");
+  }
 
   return new PayUnitRail({
     apiKey: process.env.PAYUNIT_API_KEY!,
     apiUser: process.env.PAYUNIT_API_USER!,
     apiPassword: process.env.PAYUNIT_API_PASSWORD!,
     baseUrl: process.env.PAYUNIT_BASE_URL || "https://gateway.payunit.net",
-    mode: process.env.PAYUNIT_MODE === "live" ? "live" : "test",
+    mode,
   });
 }

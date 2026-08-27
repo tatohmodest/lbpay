@@ -37,6 +37,6 @@ yarn-error.log*
 # vercel
 .vercel
 
-# local demo ledger / user store
+# local ledger
 /data/*.json
 next-env.d.ts

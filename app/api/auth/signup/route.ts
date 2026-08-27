@@ -62,15 +62,13 @@ export async function POST(request: Request) {
       exp: Date.now() + 10 * 60 * 1000,
       attempts: 0,
     });
-    const mail = await sendOtpEmail(email, otp, name);
+    await sendOtpEmail(email, otp, name);
     await setPreauth(user.id, "otp");
 
     return NextResponse.json({
       ok: true,
       step: "otp",
       email,
-      delivered: mail.delivered,
-      devOtp: mail.delivered ? undefined : otp,
     });
   } catch (error) {
     return catchRoute("signup", error);

@@ -18,11 +18,9 @@ export async function POST(request: Request) {
       exp: Date.now() + 10 * 60 * 1000,
       attempts: 0,
     });
-    const mail = await sendOtpEmail(email, otp, user.name);
+    await sendOtpEmail(email, otp, user.name);
     return NextResponse.json({
       ok: true,
-      delivered: mail.delivered,
-      devOtp: mail.delivered ? undefined : otp,
     });
   } catch (error) {
     return catchRoute("resend-otp", error);

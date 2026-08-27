@@ -26,14 +26,12 @@ export async function POST(request: Request) {
         exp: Date.now() + 10 * 60 * 1000,
         attempts: 0,
       });
-      const mail = await sendOtpEmail(user.email, otp, user.name);
+      await sendOtpEmail(user.email, otp, user.name);
       await setPreauth(user.id, "otp");
       return NextResponse.json({
         ok: true,
         step: "otp",
         email: user.email,
-        delivered: mail.delivered,
-        devOtp: mail.delivered ? undefined : otp,
       });
     }
     if (!user.pinHash) {

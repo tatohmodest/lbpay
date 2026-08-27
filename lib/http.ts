@@ -20,6 +20,4 @@ export type AuthApiResponse = {
   error?: string;
   step?: "otp" | "pin" | "pin-setup";
   email?: string;
-  delivered?: boolean;
-  devOtp?: string;
 };

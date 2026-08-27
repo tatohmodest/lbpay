@@ -49,10 +49,8 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
       const data = await readApiJson<AuthApiResponse>(res);
       if (!res.ok) throw new Error(data.error || "Could not continue");
       if (data.step === "otp") {
-        const q = new URLSearchParams({ email });
-        if (data.devOtp) q.set("dev", data.devOtp);
-        notify.info("Check your email", data.delivered ? "We sent a 6-digit code." : `Code: ${data.devOtp}`);
-        router.push(`/verify?${q.toString()}`);
+        notify.info("Check your email", "We sent a 6-digit code.");
+        router.push(`/verify?email=${encodeURIComponent(email)}`);
         return;
       }
       if (data.step === "pin-setup") {

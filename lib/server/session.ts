@@ -6,7 +6,11 @@ const PREAUTH = "lbpay_preauth";
 const ADMIN = "lbpay_admin";
 
 function secret() {
-  return process.env.SESSION_SECRET || "lbpay-session-secret-change-me";
+  const value = process.env.SESSION_SECRET;
+  if (!value) {
+    throw new Error("SESSION_SECRET is required.");
+  }
+  return value;
 }
 
 export type SessionPayload = {
