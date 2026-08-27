@@ -3,6 +3,7 @@ import { findKycById, findUserById, grantRole, listKyc, saveKyc, upsertUser, wri
 import { requireAdmin } from "@/lib/server/guard";
 import { issueLiveKey } from "@/lib/server/apikey";
 import { publicUser } from "@/lib/server/db";
+import { pushAccount } from "@/lib/server/push";
 
 export async function GET() {
   const auth = await requireAdmin();
@@ -55,5 +56,13 @@ export async function POST(request: Request) {
     targetId: app.id,
     note: `${app.track} · ${user.lbpayId}`,
   });
+  void pushAccount(
+    user.id,
+    decision === "approved" ? "KYC approved" : "KYC update",
+    decision === "approved"
+      ? `Your ${app.track} verification is approved.`
+      : `Your ${app.track} verification was not approved.`,
+    app.track === "business" ? "/business" : app.track === "developer" ? "/developers" : "/wallet/profile",
+  );
   return NextResponse.json({ ok: true, application: app });
 }

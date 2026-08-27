@@ -98,6 +98,14 @@ export type StoredWebhook = WebhookEndpoint & { userId: string };
 export type StoredLink = PaymentLink & { userId: string };
 export type StoredLog = ApiLog & { userId: string };
 
+export type StoredPushSubscription = {
+  userId: string;
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+  createdAt: string;
+};
+
 export type DbShape = {
   users: StoredUser[];
   otps: StoredOtp[];
@@ -109,6 +117,8 @@ export type DbShape = {
   webhooks: StoredWebhook[];
   links: StoredLink[];
   logs: StoredLog[];
+  pushSubscriptions: StoredPushSubscription[];
+  vapid?: { publicKey: string; privateKey: string };
 };
 
 const LOCAL_FILE = path.join(process.cwd(), "data", "lbpay.json");
@@ -154,6 +164,7 @@ async function empty(): Promise<DbShape> {
     webhooks: [],
     links: [],
     logs: [],
+    pushSubscriptions: [],
   };
 }
 
@@ -169,6 +180,8 @@ function withCollections(db: DbShape): DbShape {
     webhooks: db.webhooks || [],
     links: db.links || [],
     logs: db.logs || [],
+    pushSubscriptions: db.pushSubscriptions || [],
+    vapid: db.vapid,
   };
 }
 
@@ -372,6 +385,7 @@ export async function recordTransfer(params: {
   };
   db.transactions.unshift(outgoing, incoming);
   await saveDb(db);
+  await emitPush((mod) => mod.pushForTransaction(incoming));
   return { outgoing, incoming, sourceBalance: source.balance };
 }
 
@@ -415,6 +429,7 @@ export async function recordLedgerMove(params: {
   };
   db.transactions.unshift(tx);
   await saveDb(db);
+  if (status !== "pending") await emitPush((mod) => mod.pushForTransaction(tx));
   return { tx, balance: wallet.balance };
 }
 
@@ -467,6 +482,7 @@ export async function settleRailTx(railRef: string, status: TransactionStatus) {
     tx.status = status === "cancelled" ? "cancelled" : "failed";
   }
   await saveDb(db);
+  await emitPush((mod) => mod.pushForTransaction(tx));
   return { ok: true as const, tx, balance: wallet.balance };
 }
 
@@ -648,3 +664,63 @@ export function publicUser(user: StoredUser) {
     businessName: normalized.businessName || "",
   };
 }
+
+export async function getVapidKeys() {
+  const db = await getDb();
+  if (db.vapid?.publicKey && db.vapid?.privateKey) return db.vapid;
+  return null;
+}
+
+export async function saveVapidKeys(keys: { publicKey: string; privateKey: string }) {
+  const db = await getDb();
+  db.vapid = keys;
+  await saveDb(db);
+  return keys;
+}
+
+async function emitPush(run: (mod: typeof import("./push")) => Promise<unknown>) {
+  try {
+    const mod = await import("./push");
+    await run(mod);
+  } catch (error) {
+    console.error("[lbpay] push failed", error);
+  }
+}
+
+export async function savePushSubscription(row: StoredPushSubscription) {
+  const db = await getDb();
+  db.pushSubscriptions = (db.pushSubscriptions || []).filter((item) => item.endpoint !== row.endpoint);
+  const existing = db.pushSubscriptions.filter((item) => item.userId === row.userId);
+  if (existing.length >= 8) {
+    const drop = existing
+      .slice()
+      .sort((a, b) => +new Date(a.createdAt) - +new Date(b.createdAt))
+      .slice(0, existing.length - 7);
+    const dropEnds = new Set(drop.map((item) => item.endpoint));
+    db.pushSubscriptions = db.pushSubscriptions.filter((item) => !dropEnds.has(item.endpoint));
+  }
+  db.pushSubscriptions.push(row);
+  await saveDb(db);
+}
+
+export async function listPushSubscriptions(userId: string) {
+  const db = await getDb();
+  return (db.pushSubscriptions || []).filter((item) => item.userId === userId);
+}
+
+export async function deletePushSubscription(userId: string, endpoint?: string) {
+  const db = await getDb();
+  db.pushSubscriptions = (db.pushSubscriptions || []).filter((item) => {
+    if (item.userId !== userId) return true;
+    if (!endpoint) return false;
+    return item.endpoint !== endpoint;
+  });
+  await saveDb(db);
+}
+
+export async function removePushEndpoint(endpoint: string) {
+  const db = await getDb();
+  db.pushSubscriptions = (db.pushSubscriptions || []).filter((item) => item.endpoint !== endpoint);
+  await saveDb(db);
+}
+

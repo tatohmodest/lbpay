@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useSyncExternalStore } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -11,6 +12,7 @@ import { useApp } from "@/lib/store";
 import { useMe } from "@/lib/hooks/wallet";
 import { useNotify } from "@/lib/notify";
 import { isAdmin } from "@/lib/roles";
+import { disablePush, enablePush, openPushPrompt, pushPermission, pushSupported } from "@/lib/push-client";
 
 export default function ProfilePage() {
   const { state, logout } = useApp();
@@ -48,6 +50,7 @@ export default function ProfilePage() {
           </p>
         ) : null}
         <div className="mt-6 flex flex-col gap-2">
+          <PushSettings />
           <Link href="/business" className="text-sm font-bold text-brand">
             Apply for Business
           </Link>
@@ -75,6 +78,64 @@ export default function ProfilePage() {
         </Button>
       </Card>
       <p className="mt-4 text-xs text-muted">{LEGAL_NOTE}</p>
+    </div>
+  );
+}
+
+function PushSettings() {
+  const notify = useNotify();
+  const browserPermission = useSyncExternalStore(
+    () => () => undefined,
+    () => (typeof Notification === "undefined" ? "default" : Notification.permission),
+    () => "default",
+  );
+  const [localPermission, setLocalPermission] = useState<NotificationPermission | null>(null);
+  const [busy, setBusy] = useState(false);
+  const permission = localPermission ?? browserPermission;
+
+  async function toggle() {
+    setBusy(true);
+    if (permission === "granted") {
+      await disablePush();
+      setLocalPermission(pushPermission());
+      notify.info("Alerts off", "This phone will no longer receive LBPay popups.");
+      setBusy(false);
+      return;
+    }
+    const result = await enablePush();
+    setLocalPermission(pushPermission());
+    setBusy(false);
+    if (!result.ok) {
+      notify.error("Could not enable alerts", result.error);
+      openPushPrompt();
+      return;
+    }
+    notify.success("Alerts on", "This phone will ping for transactions and account changes.");
+  }
+
+  if (!pushSupported()) {
+    return (
+      <p className="rounded-2xl bg-paper px-4 py-3 text-sm text-muted">
+        This browser cannot show phone alerts. Install the LBPay app, then try again.
+      </p>
+    );
+  }
+
+  return (
+    <div className="rounded-2xl border border-line bg-paper px-4 py-3 text-left">
+      <p className="text-sm font-medium text-ink">Phone alerts</p>
+      <p className="mt-1 text-xs leading-5 text-muted">
+        Pop up on this phone for money in, money out, collections, KYC, and account changes.
+      </p>
+      <Button
+        type="button"
+        variant={permission === "granted" ? "secondary" : undefined}
+        className="mt-3 w-full"
+        disabled={busy}
+        onClick={() => void toggle()}
+      >
+        {busy ? "Please wait…" : permission === "granted" ? "Turn alerts off" : "Turn alerts on"}
+      </Button>
     </div>
   );
 }

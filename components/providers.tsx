@@ -6,6 +6,7 @@ import { NotifyProvider } from "@/lib/notify";
 import { AppProvider } from "@/lib/store";
 import { SessionGuard } from "@/components/auth/session-guard";
 import { InstallPrompt } from "@/components/pwa/install-prompt";
+import { PushPrompt } from "@/components/pwa/push-prompt";
 import { RegisterServiceWorker } from "@/components/pwa/register-sw";
 
 export function AppProviders({ children }: { children: ReactNode }) {
@@ -25,6 +26,7 @@ export function AppProviders({ children }: { children: ReactNode }) {
           <RegisterServiceWorker />
           <SessionGuard>{children}</SessionGuard>
           <InstallPrompt />
+          <PushPrompt />
         </AppProvider>
       </NotifyProvider>
     </QueryClientProvider>

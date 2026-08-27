@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getWallet, grantRole, listUsers, publicUser, revokeRole, upsertUser, writeAudit } from "@/lib/server/db";
 import { requireAdmin } from "@/lib/server/guard";
 import type { AccountKind } from "@/lib/types";
+import { pushAccount } from "@/lib/server/push";
 
 export async function GET() {
   const auth = await requireAdmin();
@@ -28,10 +29,22 @@ export async function POST(request: Request) {
     target.status = "frozen";
     await upsertUser(target);
     await writeAudit({ actorId: auth.user.id, action: "user.freeze", targetType: "user", targetId: target.id });
+    void pushAccount(
+      target.id,
+      "Account frozen",
+      "Your LBPay account is frozen. Money cannot move until an admin restores it.",
+      "/wallet/profile",
+    );
   } else if (body.action === "unfreeze") {
     target.status = "active";
     await upsertUser(target);
     await writeAudit({ actorId: auth.user.id, action: "user.unfreeze", targetType: "user", targetId: target.id });
+    void pushAccount(
+      target.id,
+      "Account restored",
+      "Your LBPay account is active again.",
+      "/wallet",
+    );
   } else if (body.action === "grant") {
     const role = String(body.role || "") as AccountKind;
     if (!["personal", "business", "developer", "admin"].includes(role)) {
