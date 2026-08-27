@@ -23,7 +23,7 @@ export function randomOtp() {
 }
 
 export function payunitReference(prefix = "LBPAY") {
-  return `${prefix}${Date.now().toString(36).toUpperCase()}${randomBytes(2).toString("hex").toUpperCase()}`;
+  return `${prefix}${Date.now().toString(36)}${randomBytes(3).toString("hex")}`.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
 }
 
 export function randomToken(bytes = 24) {

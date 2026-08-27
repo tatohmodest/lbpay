@@ -21,6 +21,7 @@ export type RailResult = {
   reference: string;
   providerRef?: string;
   status: "success" | "failed" | "pending";
+  message?: string;
   raw?: unknown;
   hostedUrl?: string;
 };

@@ -46,7 +46,10 @@ export async function POST(request: Request) {
     });
 
     if (result.status === "failed") {
-      return NextResponse.json({ error: "Disbursement failed on the payment rail.", result }, { status: 502 });
+      return NextResponse.json(
+        { error: result.message || "Disbursement failed on the payment rail." },
+        { status: 502 },
+      );
     }
 
     const moved = await recordLedgerMove({

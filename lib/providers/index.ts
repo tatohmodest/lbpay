@@ -1,3 +1,4 @@
+import { payunitGatewayUrl } from "@/lib/site";
 import { PayUnitRail } from "./payunit";
 import { SandboxRail } from "./sandbox";
 import type { PaymentRail } from "./types";
@@ -23,7 +24,7 @@ export function getPaymentRail(env: "sandbox" | "live" = "live"): PaymentRail {
     apiKey: process.env.PAYUNIT_API_KEY!,
     apiUser: process.env.PAYUNIT_API_USER!,
     apiPassword: process.env.PAYUNIT_API_PASSWORD!,
-    baseUrl: process.env.PAYUNIT_BASE_URL || "https://gateway.payunit.net",
+    baseUrl: payunitGatewayUrl(process.env.PAYUNIT_BASE_URL),
     mode,
   });
 }

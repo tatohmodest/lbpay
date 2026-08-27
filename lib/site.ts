@@ -30,6 +30,43 @@ function normalizeSiteUrl(raw: string | undefined): string {
 export const SITE_URL = normalizeSiteUrl(process.env.NEXT_PUBLIC_SITE_URL);
 export const SITE_ORIGIN = new URL(SITE_URL);
 
+function repairUrlProtocol(raw: string) {
+  let value = raw.trim().replace(/^['"]|['"]$/g, "");
+  value = value.replace(/^(https?);\/\//i, "$1://");
+  value = value.replace(/^(https?):;\/\//i, "$1://");
+  value = value.replace(/^(https?):\/(?!\/)/i, "$1://");
+  value = value.replace(/^(https?)\/\//i, "$1://");
+  if (!/^https?:\/\//i.test(value)) {
+    value = value.startsWith("/") ? `${SITE_URL}${value}` : `https://${value.replace(/^\/+/, "")}`;
+  }
+  return value;
+}
+
+export function httpsCallbackUrl(raw: string | undefined, fallbackPath: string) {
+  const fallback = `${SITE_URL}${fallbackPath.startsWith("/") ? fallbackPath : `/${fallbackPath}`}`;
+  const value = repairUrlProtocol(raw || "");
+  if (!value) return fallback;
+  try {
+    const url = new URL(value);
+    if (!url.hostname.includes(".")) return fallback;
+    url.protocol = "https:";
+    return url.toString().replace(/\/$/, url.pathname === "/" ? "" : "");
+  } catch {
+    return fallback;
+  }
+}
+
+export function payunitGatewayUrl(raw: string | undefined) {
+  const value = repairUrlProtocol(raw || "https://gateway.payunit.net");
+  try {
+    const url = new URL(value);
+    if (!url.hostname.endsWith("payunit.net")) return "https://gateway.payunit.net";
+    return url.origin;
+  } catch {
+    return "https://gateway.payunit.net";
+  }
+}
+
 export const SITE_TITLE = "LBPay | Send money in Cameroon, MTN, Orange Money, XAF wallet";
 
 export const SITE_DESCRIPTION =
