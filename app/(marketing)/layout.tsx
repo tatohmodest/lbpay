@@ -1,5 +1,12 @@
-import { MarketingShell } from "@/components/marketing/marketing-shell";
+import { SiteFooter } from "@/components/marketing/site-footer";
+import { SiteHeader } from "@/components/marketing/site-header";
 
 export default function MarketingLayout({ children }: { children: React.ReactNode }) {
-  return <MarketingShell>{children}</MarketingShell>;
+  return (
+    <div className="min-h-screen bg-white font-sans antialiased">
+      <SiteHeader />
+      <div className="pt-header">{children}</div>
+      <SiteFooter />
+    </div>
+  );
 }
