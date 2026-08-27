@@ -22,8 +22,8 @@
   --color-mtn: #ffcc00;
   --color-om: #ff6600;
   --color-navy: #07140f;
-  --font-sans: var(--font-inter);
-  --font-mono: var(--font-jetbrains);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
 }
 
 * {
@@ -42,7 +42,7 @@ body {
 }
 
 body {
-  font-family: var(--font-sans), Inter, sans-serif;
+  font-family: var(--font-sans), Geist, ui-sans-serif, system-ui, sans-serif;
   font-feature-settings: "ss01" on, "cv11" on;
 }
 

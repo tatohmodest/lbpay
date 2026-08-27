@@ -45,7 +45,7 @@ export async function sendOtpEmail(
       : "Use this code to confirm your LBPay account. It expires in 10 minutes.";
   const html = `<!doctype html>
 <html>
-<body style="margin:0;background:#f3faf6;font-family:Inter,Arial,sans-serif;color:#0f1f17;">
+<body style="margin:0;background:#f3faf6;font-family:ui-sans-serif,system-ui,-apple-system,sans-serif;color:#0f1f17;">
   <div style="max-width:480px;margin:32px auto;background:#fff;border-radius:20px;overflow:hidden;border:1px solid #d7e8de;">
     <div style="background:#00b369;color:#fff;padding:24px 28px;">
       <div style="font-weight:900;font-size:22px;">LBPay</div>

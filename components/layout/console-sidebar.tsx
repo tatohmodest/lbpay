@@ -5,69 +5,116 @@ import { usePathname } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { Logo } from "@/components/logo";
+import { RightDrawer } from "@/components/ui/right-drawer";
 
 export type NavItem = { href: string; label: string; icon: LucideIcon };
+
+function SidebarLinks({
+  items,
+  onNavigate,
+}: {
+  items: NavItem[];
+  onNavigate?: () => void;
+}) {
+  const pathname = usePathname();
+
+  return (
+    <nav className="flex flex-1 flex-col gap-1">
+      {items.map((item) => {
+        const active =
+          item.href === items[0]?.href
+            ? pathname === item.href
+            : pathname.startsWith(item.href);
+        const Icon = item.icon;
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            onClick={onNavigate}
+            className={cn(
+              "flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-medium transition",
+              active
+                ? "bg-brand text-white"
+                : "text-muted hover:bg-brand-soft hover:text-brand-deep",
+            )}
+          >
+            <Icon className="h-4 w-4" />
+            {item.label}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
 
 export function ConsoleSidebar({
   title,
   subtitle,
   items,
   cta,
+  mobileOpen = false,
+  onMobileClose,
 }: {
   title: string;
   subtitle: string;
   items: NavItem[];
   cta?: { href: string; label: string };
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
 }) {
-  const pathname = usePathname();
+  const close = () => onMobileClose?.();
 
   return (
-    <aside className="fixed bottom-0 left-0 top-0 z-40 hidden w-64 flex-col border-r border-line bg-white p-3 lg:flex">
-      <div className="mb-6 px-2 pt-3">
-        <Logo href="/" markClassName="h-8 w-8" />
-        <p className="mt-3 text-sm font-bold text-ink">{title}</p>
-        <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-muted">
-          {subtitle}
-        </p>
-      </div>
-      {cta ? (
+    <>
+      <aside className="fixed bottom-0 left-0 top-0 z-40 hidden w-64 flex-col border-r border-line bg-white p-3 lg:flex">
+        <div className="mb-6 px-2 pt-3">
+          <Logo href="/" markClassName="h-8 w-8" />
+          <p className="mt-3 text-sm font-semibold text-ink">{title}</p>
+          <p className="text-xs text-muted">{subtitle}</p>
+        </div>
+        {cta ? (
+          <Link
+            href={cta.href}
+            className="mb-4 flex items-center justify-center rounded-full bg-brand px-4 py-3 text-sm font-medium text-white hover:bg-brand-dark"
+          >
+            {cta.label}
+          </Link>
+        ) : null}
+        <SidebarLinks items={items} />
         <Link
-          href={cta.href}
-          className="mb-4 flex items-center justify-center rounded-xl bg-brand px-4 py-3 text-sm font-bold text-white hover:bg-brand-dark"
+          href="/docs"
+          className="mt-auto rounded-2xl px-3 py-2.5 text-sm font-medium text-muted hover:bg-brand-soft hover:text-brand-deep"
         >
-          {cta.label}
+          Documentation
         </Link>
-      ) : null}
-      <nav className="flex flex-1 flex-col gap-1">
-        {items.map((item) => {
-          const active =
-            item.href === items[0]?.href
-              ? pathname === item.href
-              : pathname.startsWith(item.href);
-          const Icon = item.icon;
-          return (
+      </aside>
+
+      <RightDrawer
+        open={mobileOpen}
+        onClose={close}
+        title={title}
+        subtitle={subtitle}
+        footer={
+          cta ? (
             <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition",
-                active
-                  ? "bg-brand text-white"
-                  : "text-muted hover:bg-brand-soft hover:text-brand-dark",
-              )}
+              href={cta.href}
+              onClick={close}
+              className="flex h-11 items-center justify-center rounded-full bg-brand text-sm font-medium text-white"
             >
-              <Icon className="h-4 w-4" />
-              {item.label}
+              {cta.label}
             </Link>
-          );
-        })}
-      </nav>
-      <Link
-        href="/developers/docs"
-        className="mt-auto rounded-xl px-3 py-2.5 text-sm font-semibold text-muted hover:bg-brand-soft hover:text-brand-dark"
+          ) : null
+        }
       >
-        Documentation
-      </Link>
-    </aside>
+        <SidebarLinks items={items} onNavigate={close} />
+        <Link
+          href="/docs"
+          onClick={close}
+          className="mt-4 block rounded-2xl px-3 py-2.5 text-sm font-medium text-muted hover:bg-paper"
+        >
+          Documentation
+        </Link>
+      </RightDrawer>
+    </>
   );
 }

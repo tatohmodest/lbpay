@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import { AppProviders } from "@/components/providers";
 import { SiteJsonLd } from "@/components/json-ld";
 import {
@@ -11,13 +11,13 @@ import {
 } from "@/lib/site";
 import "./globals.css";
 
-const inter = Inter({
-  variable: "--font-inter",
+const geist = Geist({
+  variable: "--font-geist-sans",
   subsets: ["latin"],
 });
 
-const jetbrains = JetBrains_Mono({
-  variable: "--font-jetbrains",
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
   subsets: ["latin"],
 });
 
@@ -81,7 +81,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${jetbrains.variable} h-full`}>
+    <html lang="en" className={`${geist.variable} ${geistMono.variable} h-full`}>
       <body className="min-h-full bg-paper font-sans text-ink antialiased">
         <SiteJsonLd />
         <AppProviders>{children}</AppProviders>

@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import { usePathname } from "next/navigation";
 import { useMe } from "@/lib/hooks/wallet";
 import { AppHeader, BottomNav } from "@/components/layout/app-header";
 import { ConsoleSidebar, type NavItem } from "@/components/layout/console-sidebar";
@@ -24,7 +26,9 @@ export function WalletShell({ children }: { children: React.ReactNode }) {
     <Guard>
       <div className="min-h-screen pb-24 md:pb-0">
         <AppHeader />
-        <main className="mx-auto max-w-7xl px-4 pb-6 pt-[calc(var(--header-h)+1.25rem)] md:px-8 md:pb-8">{children}</main>
+        <main className="mx-auto max-w-7xl px-4 pb-6 pt-[calc(var(--header-h)+1.25rem)] md:px-8 md:pb-8">
+          {children}
+        </main>
         <BottomNav />
       </div>
     </Guard>
@@ -44,14 +48,35 @@ export function ConsoleShell({
   cta?: { href: string; label: string };
   children: React.ReactNode;
 }) {
+  const pathname = usePathname();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuPath, setMenuPath] = useState(pathname);
+  if (pathname !== menuPath) {
+    setMenuPath(pathname);
+    setMenuOpen(false);
+  }
+
   return (
     <Guard>
       <div className="min-h-screen bg-paper">
         <div className="lg:hidden">
-          <AppHeader />
+          <AppHeader onOpenMenu={() => setMenuOpen(true)} />
         </div>
-        <ConsoleSidebar title={title} subtitle={subtitle} items={items} cta={cta} />
-        <main className={cn("px-4 pb-24 pt-[calc(var(--header-h)+1.25rem)] md:px-8 md:pb-8 lg:ml-64 lg:pt-8")}>{children}</main>
+        <ConsoleSidebar
+          title={title}
+          subtitle={subtitle}
+          items={items}
+          cta={cta}
+          mobileOpen={menuOpen}
+          onMobileClose={() => setMenuOpen(false)}
+        />
+        <main
+          className={cn(
+            "px-4 pb-24 pt-[calc(var(--header-h)+1.25rem)] md:px-8 md:pb-8 lg:ml-64 lg:pt-8",
+          )}
+        >
+          {children}
+        </main>
         <BottomNav />
       </div>
     </Guard>
