@@ -13,9 +13,11 @@ export function DocsContent({ publicHeader = false }: { publicHeader?: boolean }
           </Link>
         </div>
       ) : null}
-      <h1 className="text-3xl font-black">LBPay API</h1>
+      <h1 className="text-3xl font-black">LBPay payments API for Cameroon</h1>
       <p className="mt-2 text-muted">
-        PayUnit (or any other processor) is a rail. Developers integrate LBPay.
+        Collect and disburse XAF with one integration. MTN Mobile Money, Orange Money,
+        cards, and the LBPay wallet are rails. Developers integrate LBPay — not a single
+        processor.
       </p>
       <section className="mt-8 space-y-4 text-sm leading-7 text-ink">
         <h2 className="text-xl font-bold">Wallet transfer vs disbursement</h2>

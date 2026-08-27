@@ -1,4 +1,7 @@
+import { NOINDEX } from "@/lib/site";
 import { WalletShell } from "@/components/layout/shells";
+
+export const metadata = NOINDEX;
 
 export default function WalletLayout({
   children,
