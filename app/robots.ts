@@ -16,6 +16,7 @@ export default function robots(): MetadataRoute.Robots {
           "/pin",
           "/verify",
           "/pay/",
+          "/p/",
           "/r/",
         ],
       },

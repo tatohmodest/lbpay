@@ -71,6 +71,6 @@ export function openInstallPrompt() {
 
 export function shouldAutoOfferInstall(pathname: string) {
   if (isStandaloneDisplay() || wasInstallDismissed()) return false;
-  const blocked = ["/wallet", "/business", "/developers", "/admin", "/pin", "/pay", "/r"];
+  const blocked = ["/wallet", "/business", "/developers", "/admin", "/pin", "/pay", "/p", "/r"];
   return !blocked.some((path) => pathname === path || pathname.startsWith(`${path}/`));
 }

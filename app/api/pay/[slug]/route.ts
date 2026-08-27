@@ -8,6 +8,12 @@ export async function GET(_request: Request, context: { params: Promise<{ slug: 
   const owner = await findUserById(link.userId);
   return NextResponse.json({
     link,
-    merchant: owner ? { name: owner.businessName || owner.name, lbpayId: owner.lbpayId } : null,
+    merchant: owner
+      ? {
+          name: owner.businessName || owner.name,
+          lbpayId: owner.lbpayId,
+          avatar: owner.avatar,
+        }
+      : null,
   });
 }

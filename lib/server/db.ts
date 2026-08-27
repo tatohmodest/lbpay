@@ -60,6 +60,8 @@ export type StoredTx = Transaction & {
     toNetwork?: "mtn" | "orange";
     stage?: "collecting" | "paying" | "done";
     payoutRef?: string;
+    linkSlug?: string;
+    handle?: string;
   };
 };
 
@@ -501,6 +503,13 @@ export async function settleRailTx(railRef: string, status: TransactionStatus) {
   if (status === "success") {
     if (isCredit && tx.status === "pending") wallet.balance += tx.amount;
     tx.status = "success";
+    if (tx.kind === "collection" && tx.meta?.linkSlug) {
+      const link = db.links.find((item) => item.slug === tx.meta?.linkSlug);
+      if (link) {
+        link.collected += tx.amount;
+        link.payments += 1;
+      }
+    }
   } else {
     if (!isCredit && tx.status === "pending") wallet.balance += tx.amount + (tx.fee || 0);
     tx.status = status === "cancelled" ? "cancelled" : "failed";
@@ -637,6 +646,21 @@ export async function listLinks(userId: string) {
 export async function findLinkBySlug(slug: string) {
   const db = await getDb();
   return db.links.find((item) => item.slug === slug) ?? null;
+}
+
+export async function findLinkByIdOrSlug(value: string) {
+  const db = await getDb();
+  return db.links.find((item) => item.id === value || item.slug === value) ?? null;
+}
+
+export async function recordLinkPayment(slug: string | undefined, amount: number) {
+  if (!slug || !amount) return;
+  const db = await getDb();
+  const link = db.links.find((item) => item.slug === slug);
+  if (!link) return;
+  link.collected += amount;
+  link.payments += 1;
+  await saveDb(db);
 }
 
 export async function listWebhooks(userId: string) {

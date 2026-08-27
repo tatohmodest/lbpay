@@ -65,7 +65,15 @@ export function createPayunitClient() {
 export class PayUnitRail implements PaymentRail {
   private readonly client = createPayunitClient();
 
-  private returnUrl() {
+  private returnUrl(override?: string) {
+    if (override) {
+      try {
+        const url = new URL(override);
+        if (url.protocol === "http:" || url.protocol === "https:") return url.toString();
+      } catch {
+        /* fall through */
+      }
+    }
     return httpsCallbackUrl(process.env.LBPAY_RETURN_URL, "/wallet");
   }
 
@@ -74,7 +82,7 @@ export class PayUnitRail implements PaymentRail {
   }
 
   async collect(input: RailCollectInput): Promise<RailResult> {
-    const returnUrl = this.returnUrl();
+    const returnUrl = this.returnUrl(input.returnUrl);
     const notifyUrl = this.notifyUrl();
     const phone = collectionPhone(input.customer.phone);
     const provider = gateway(input.method);

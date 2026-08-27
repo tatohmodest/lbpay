@@ -2,12 +2,15 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Field, Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useNotify } from "@/lib/notify";
 import { formatXAF } from "@/lib/format";
+import { payLinkPath, payLinkUrl } from "@/lib/origin";
+import { useBrowserOrigin } from "@/lib/use-origin";
 
 export default function RequestPage() {
   const notify = useNotify();
@@ -15,6 +18,7 @@ export default function RequestPage() {
   const [title, setTitle] = useState("");
   const [amount, setAmount] = useState("");
   const [link, setLink] = useState<string | null>(null);
+  const origin = useBrowserOrigin();
   const data = useQuery({
     queryKey: ["wallet-links"],
     queryFn: async () => (await fetch("/api/wallet/links")).json(),
@@ -31,7 +35,7 @@ export default function RequestPage() {
       return json as { link: { slug: string; title: string; amount: number | null; id: string } };
     },
     onSuccess: (json) => {
-      const href = `${window.location.origin}/pay/${json.link.slug}`;
+      const href = payLinkUrl(json.link.slug);
       setLink(href);
       setTitle("");
       setAmount("");
@@ -101,7 +105,10 @@ export default function RequestPage() {
                 <div key={item.id} className="flex items-center justify-between p-4">
                   <div>
                     <p className="font-semibold">{item.title}</p>
-                    <p className="font-mono text-xs text-muted">/pay/{item.slug}</p>
+                    <p className="font-mono text-xs text-muted">{payLinkUrl(item.slug, origin)}</p>
+                    <Link href={payLinkPath(item.slug)} className="text-sm font-bold text-brand">
+                      Open checkout
+                    </Link>
                   </div>
                   <p className="font-mono text-sm font-bold">
                     {item.amount ? formatXAF(item.amount) : "Open"}

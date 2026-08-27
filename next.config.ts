@@ -12,6 +12,7 @@ const noIndexSources = [
   "/forgot",
   "/forgot/:path*",
   "/pay/:path*",
+  "/p/:path*",
   "/r/:path*",
 ];
 

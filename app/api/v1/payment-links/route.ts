@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { slugify, uid } from "@/lib/format";
 import { addLink } from "@/lib/server/db";
 import { authenticateApiKey, logApi } from "@/lib/server/apikey";
+import { payLinkUrl, requestOrigin } from "@/lib/origin";
 
 export async function POST(request: Request) {
   const auth = await authenticateApiKey(request);
@@ -32,7 +33,7 @@ export async function POST(request: Request) {
     title: link.title,
     amount: link.amount,
     currency: "XAF",
-    url: `/pay/${link.slug}`,
+    url: payLinkUrl(link.slug, requestOrigin(request)),
     status: "active",
     environment: auth.env,
   });

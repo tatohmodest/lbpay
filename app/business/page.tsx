@@ -1,7 +1,7 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Field, Input } from "@/components/ui/input";
@@ -9,10 +9,15 @@ import { MethodDot, StatusBadge } from "@/components/ui/badge";
 import { PayQR } from "@/components/qr";
 import { formatDate, formatXAF } from "@/lib/format";
 import { useNotify } from "@/lib/notify";
+import { useMe } from "@/lib/hooks/wallet";
+import { payHandleUrl } from "@/lib/origin";
+import { useBrowserOrigin } from "@/lib/use-origin";
 
 export default function BusinessPage() {
   const notify = useNotify();
   const client = useQueryClient();
+  const me = useMe();
+  const origin = useBrowserOrigin();
   const [title, setTitle] = useState("");
   const [amount, setAmount] = useState("");
   const data = useQuery({
@@ -58,6 +63,8 @@ export default function BusinessPage() {
 
   const links = data.data?.links || [];
   const collections = data.data?.collections || [];
+  const handle = me.data?.user?.lbpayId || "";
+  const payUrl = handle && origin ? payHandleUrl(handle, origin) : "";
 
   return (
     <div>
@@ -99,8 +106,13 @@ export default function BusinessPage() {
         <Card className="flex flex-col items-center bg-navy p-6 text-white">
           <h2 className="text-2xl font-bold">Scan to pay</h2>
           <div className="mt-4">
-            <PayQR value={`${typeof window !== "undefined" ? window.location.origin : ""}/pay/${links[0]?.slug ?? "store"}`} />
+            {payUrl ? (
+              <PayQR value={payUrl} />
+            ) : (
+              <div className="h-[180px] w-[180px] rounded-2xl bg-white/10" />
+            )}
           </div>
+          <p className="mt-3 break-all font-mono text-xs text-white/70">{payUrl}</p>
         </Card>
       </div>
       <Card className="overflow-hidden">

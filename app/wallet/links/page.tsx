@@ -8,12 +8,15 @@ import { Field, Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { formatXAF } from "@/lib/format";
 import { useNotify } from "@/lib/notify";
+import { payLinkPath, payLinkUrl } from "@/lib/origin";
+import { useBrowserOrigin } from "@/lib/use-origin";
 
 export default function WalletLinksPage() {
   const notify = useNotify();
   const client = useQueryClient();
   const [title, setTitle] = useState("");
   const [amount, setAmount] = useState("");
+  const origin = useBrowserOrigin();
   const data = useQuery({
     queryKey: ["wallet-links"],
     queryFn: async () => (await fetch("/api/wallet/links")).json(),
@@ -66,11 +69,11 @@ export default function WalletLinksPage() {
           <Card key={link.id} className="flex items-center justify-between p-4">
             <div>
               <p className="font-semibold">{link.title}</p>
-              <p className="font-mono text-xs text-muted">/pay/{link.slug}</p>
+              <p className="font-mono text-xs text-muted">{payLinkUrl(link.slug, origin)}</p>
             </div>
             <div className="text-right">
               <p className="font-mono text-sm">{link.amount ? formatXAF(link.amount) : "Open"}</p>
-              <Link href={`/pay/${link.slug}`} className="text-sm font-bold text-brand">
+              <Link href={payLinkPath(link.slug)} className="text-sm font-bold text-brand">
                 Open checkout
               </Link>
             </div>

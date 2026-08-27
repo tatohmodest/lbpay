@@ -4,6 +4,7 @@ export type RailCollectInput = {
   method: "mtn" | "orange" | "card";
   customer: { phone?: string; email?: string; name?: string };
   reference: string;
+  returnUrl?: string;
 };
 
 export type RailDisburseInput = {
