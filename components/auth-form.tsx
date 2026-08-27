@@ -14,7 +14,13 @@ import { useNotify } from "@/lib/notify";
 import { useApp } from "@/lib/store";
 import { useQueryClient } from "@tanstack/react-query";
 
-export function AuthForm({ mode }: { mode: "login" | "signup" }) {
+export function AuthForm({
+  mode,
+  notice,
+}: {
+  mode: "login" | "signup";
+  notice?: string;
+}) {
   const router = useRouter();
   const notify = useNotify();
   const queryClient = useQueryClient();
@@ -128,6 +134,16 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
                 <Field label="Password">
                   <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
                 </Field>
+                {mode === "login" ? (
+                  <div className="-mt-1 text-right">
+                    <Link href="/forgot" className="text-xs font-medium text-brand-deep">
+                      Forgot password?
+                    </Link>
+                  </div>
+                ) : null}
+                {notice ? (
+                  <p className="text-sm font-medium text-brand-deep">{notice}</p>
+                ) : null}
                 {error ? <p className="text-sm font-medium text-danger">{error}</p> : null}
                 <Button type="submit" disabled={loading}>
                   {loading ? "Please wait…" : mode === "login" ? "Continue" : "Create account"}

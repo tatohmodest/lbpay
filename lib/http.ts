@@ -18,6 +18,6 @@ export async function readApiJson<T = Record<string, unknown>>(res: Response): P
 export type AuthApiResponse = {
   ok?: boolean;
   error?: string;
-  step?: "otp" | "pin" | "pin-setup";
+  step?: "otp" | "pin" | "pin-setup" | "reset";
   email?: string;
 };

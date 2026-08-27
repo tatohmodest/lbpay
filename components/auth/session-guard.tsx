@@ -8,7 +8,7 @@ import { useMe } from "@/lib/hooks/wallet";
 import { useApp } from "@/lib/store";
 import type { Transaction, UserProfile } from "@/lib/types";
 
-const PUBLIC = ["/", "/login", "/signup", "/verify", "/pin/setup", "/docs", "/pay", "/r"];
+const PUBLIC = ["/", "/login", "/signup", "/verify", "/forgot", "/pin/setup", "/docs", "/pay", "/r"];
 const WEB_IDLE_MS = 15 * 60 * 1000;
 const HIDDEN_LOCK_MS = 2000;
 

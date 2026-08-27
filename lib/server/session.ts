@@ -33,7 +33,10 @@ export async function createSession(userId: string, maxAgeSec: number) {
   });
 }
 
-export async function setPreauth(userId: string, step: "otp" | "pin" | "pin-setup") {
+export async function setPreauth(
+  userId: string,
+  step: "otp" | "pin" | "pin-setup" | "reset",
+) {
   const exp = Date.now() + 10 * 60 * 1000;
   const token = signValue(JSON.stringify({ userId, step, exp }), secret());
   const jar = await cookies();

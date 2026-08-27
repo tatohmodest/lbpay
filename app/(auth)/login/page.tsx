@@ -9,6 +9,18 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 };
 
-export default function LoginPage() {
-  return <AuthForm mode="login" />;
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ reset?: string }>;
+}) {
+  const params = await searchParams;
+  return (
+    <AuthForm
+      mode="login"
+      notice={
+        params.reset === "1" ? "Password updated. Sign in with your new password." : undefined
+      }
+    />
+  );
 }

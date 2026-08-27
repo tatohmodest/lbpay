@@ -36,30 +36,50 @@ function transport() {
   });
 }
 
+const OTP_COPY = {
+  verify: {
+    title: "Verify your email",
+    body: "Use this code to confirm your LBPay account. It expires in 10 minutes.",
+    subject: (otp: string) => `${otp} is your LBPay verification code`,
+    kind: "verification",
+    footer: "If you did not create an LBPay account, ignore this email.",
+  },
+  admin: {
+    title: "Admin access code",
+    body: "Use this code to open the LBPay admin console. It expires in 10 minutes.",
+    subject: (otp: string) => `${otp} is your LBPay admin code`,
+    kind: "admin",
+    footer: "If you did not request admin access, ignore this email.",
+  },
+  reset: {
+    title: "Reset your password",
+    body: "Use this code to reset your LBPay password. It expires in 10 minutes.",
+    subject: (otp: string) => `${otp} is your LBPay password reset code`,
+    kind: "password reset",
+    footer: "If you did not ask to reset your password, ignore this email.",
+  },
+} as const;
+
 export async function sendOtpEmail(
   to: string,
   otp: string,
   name?: string,
-  purpose: "verify" | "admin" = "verify",
+  purpose: "verify" | "admin" | "reset" = "verify",
 ) {
-  const title = purpose === "admin" ? "Admin access code" : "Verify your email";
-  const body =
-    purpose === "admin"
-      ? "Use this code to open the LBPay admin console. It expires in 10 minutes."
-      : "Use this code to confirm your LBPay account. It expires in 10 minutes.";
+  const copy = OTP_COPY[purpose];
   const html = `<!doctype html>
 <html>
 <body style="margin:0;background:#f3faf6;font-family:ui-sans-serif,system-ui,-apple-system,sans-serif;color:#0f1f17;">
   <div style="max-width:480px;margin:32px auto;background:#fff;border-radius:20px;overflow:hidden;border:1px solid #d7e8de;">
     <div style="background:#00b369;color:#fff;padding:24px 28px;">
       <div style="font-weight:900;font-size:22px;">LBPay</div>
-      <div style="opacity:.9;font-size:13px;margin-top:4px;">${title}</div>
+      <div style="opacity:.9;font-size:13px;margin-top:4px;">${copy.title}</div>
     </div>
     <div style="padding:28px;">
       <p style="margin:0 0 12px;">Hi ${name || "there"},</p>
-      <p style="margin:0 0 20px;color:#5c6f66;">${body}</p>
+      <p style="margin:0 0 20px;color:#5c6f66;">${copy.body}</p>
       <div style="letter-spacing:10px;font-size:32px;font-weight:800;text-align:center;background:#e6f8ef;color:#007a47;padding:16px;border-radius:16px;">${otp}</div>
-      <p style="margin:20px 0 0;font-size:12px;color:#5c6f66;">If you did not create an LBPay account, ignore this email.</p>
+      <p style="margin:20px 0 0;font-size:12px;color:#5c6f66;">${copy.footer}</p>
     </div>
   </div>
 </body>
@@ -73,9 +93,9 @@ export async function sendOtpEmail(
   await mailer.sendMail({
     from: fromAddress(),
     to,
-    subject: purpose === "admin" ? `${otp} is your LBPay admin code` : `${otp} is your LBPay verification code`,
+    subject: copy.subject(otp),
     html,
-    text: `Your LBPay ${purpose === "admin" ? "admin" : "verification"} code is ${otp}. It expires in 10 minutes.`,
+    text: `Your LBPay ${copy.kind} code is ${otp}. It expires in 10 minutes.`,
   });
   return { delivered: true as const };
 }

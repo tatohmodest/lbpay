@@ -418,6 +418,10 @@ export async function recordLedgerMove(params: {
   return { tx, balance: wallet.balance };
 }
 
+export function resetOtpKey(email: string) {
+  return `reset:${email.trim().toLowerCase()}`;
+}
+
 export async function saveOtp(otp: StoredOtp) {
   const db = await getDb();
   db.otps = db.otps.filter((item) => item.email !== otp.email && item.exp > Date.now());

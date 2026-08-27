@@ -9,6 +9,8 @@ const noIndexSources = [
   "/pin/:path*",
   "/verify",
   "/verify/:path*",
+  "/forgot",
+  "/forgot/:path*",
   "/pay/:path*",
   "/r/:path*",
 ];
