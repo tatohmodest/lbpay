@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
-import { findUserByHandle, findUserById, recordTransfer } from "@/lib/server/db";
-import { readSession } from "@/lib/server/session";
+import { findUserByHandle, recordTransfer } from "@/lib/server/db";
 import { verifySecret } from "@/lib/server/crypto";
+import { requireActiveUser } from "@/lib/server/guard";
 
 export async function POST(request: Request) {
-  const session = await readSession();
-  if (!session) return NextResponse.json({ error: "Sign in required." }, { status: 401 });
+  const auth = await requireActiveUser();
+  if (auth.error || !auth.user) return auth.error!;
+  const sender = auth.user;
   const body = await request.json().catch(() => ({}));
   const amount = Number(body.amount);
   const to = String(body.to || "");
@@ -16,8 +17,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Minimum transfer is 100 XAF." }, { status: 400 });
   }
 
-  const sender = await findUserById(session.userId);
-  if (!sender?.pinHash) return NextResponse.json({ error: "PIN required." }, { status: 400 });
+  if (!sender.pinHash) return NextResponse.json({ error: "PIN required." }, { status: 400 });
   if (!(await verifySecret(pin, sender.pinHash))) {
     return NextResponse.json({ error: "Incorrect PIN." }, { status: 401 });
   }

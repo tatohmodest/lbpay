@@ -131,7 +131,7 @@ export default function LandingPage() {
             has to leave the platform.
           </p>
           <ul className="mt-6 space-y-2 text-sm text-ink">
-            <li>Send to @modest instead of a phone number</li>
+            <li>Send to an @handle instead of a phone number</li>
             <li>Internal LBPay → LBPay transfers stay on the ledger</li>
             <li>Request money, split bills, and share payment links</li>
           </ul>

@@ -1,72 +1,82 @@
 "use client";
 
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Download, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Field, Input } from "@/components/ui/input";
 import { MethodDot, StatusBadge } from "@/components/ui/badge";
 import { PayQR } from "@/components/qr";
 import { formatDate, formatXAF } from "@/lib/format";
-import { useApp } from "@/lib/store";
+import { useNotify } from "@/lib/notify";
 
 export default function BusinessPage() {
-  const { state, createLink } = useApp();
-  const [title, setTitle] = useState("Python Masterclass");
-  const [amount, setAmount] = useState("25000");
-  const collections = state.transactions.filter((tx) =>
-    ["collection", "receive"].includes(tx.kind),
-  );
+  const notify = useNotify();
+  const client = useQueryClient();
+  const [title, setTitle] = useState("");
+  const [amount, setAmount] = useState("");
+  const data = useQuery({
+    queryKey: ["business"],
+    queryFn: async () => {
+      const res = await fetch("/api/business");
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Failed");
+      return json as {
+        businessName: string;
+        revenue: number;
+        links: Array<{ id: string; slug: string; title: string; amount: number | null }>;
+        collections: Array<{
+          id: string;
+          createdAt: string;
+          counterparty: string;
+          method: "mtn" | "orange" | "card" | "wallet";
+          amount: number;
+          status: "success" | "failed" | "pending" | "cancelled" | "expired";
+        }>;
+      };
+    },
+  });
+  const create = useMutation({
+    mutationFn: () =>
+      fetch("/api/business", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, amount: amount ? Number(amount) : null }),
+      }).then(async (res) => {
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || "Failed");
+        return json;
+      }),
+    onSuccess: () => {
+      client.invalidateQueries({ queryKey: ["business"] });
+      notify.success("Link created", "Share the checkout URL.");
+      setTitle("");
+      setAmount("");
+    },
+    onError: (err: Error) => notify.error("Failed", err.message),
+  });
+
+  const links = data.data?.links || [];
+  const collections = data.data?.collections || [];
 
   return (
     <div>
-      <header className="mb-8 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-black">Business overview</h1>
-          <p className="text-muted">{state.business.name} · real-time tools</p>
-        </div>
-        <Button variant="secondary">
-          <Download className="h-4 w-4" /> Generate report
-        </Button>
+      <header className="mb-8">
+        <h1 className="text-3xl font-black">Business overview</h1>
+        <p className="text-muted">{data.data?.businessName || "Merchant"} · collections</p>
       </header>
-
-      <div className="mb-6 grid gap-4 md:grid-cols-3">
+      <div className="mb-6 grid gap-4 md:grid-cols-2">
         <Card className="p-5">
-          <div className="flex items-start justify-between">
-            <p className="text-xs font-bold uppercase tracking-wide text-muted">
-              Total revenue (XAF)
-            </p>
-            <TrendingUp className="h-4 w-4 text-brand" />
-          </div>
+          <p className="text-xs font-bold uppercase tracking-wide text-muted">Revenue (XAF)</p>
           <p className="mt-3 font-mono text-3xl font-bold">
-            {formatXAF(state.business.revenue, { withCurrency: false })}
+            {formatXAF(data.data?.revenue || 0, { withCurrency: false })}
           </p>
-          <p className="mt-2 text-sm font-semibold text-brand">+14.2% this month</p>
         </Card>
         <Card className="p-5">
-          <p className="text-xs font-bold uppercase tracking-wide text-muted">
-            Active payment links
-          </p>
-          <p className="mt-3 font-mono text-3xl font-bold">{state.business.activeLinks}</p>
-          <p className="mt-2 text-sm text-muted">{state.links.length} in this workspace</p>
-        </Card>
-        <Card className="p-5">
-          <p className="text-xs font-bold uppercase tracking-wide text-muted">
-            Settlement status
-          </p>
-          <div className="mt-3 flex items-center justify-between text-sm">
-            <span className="text-muted">Next payout</span>
-            <span className="font-mono font-bold">
-              {formatXAF(state.business.nextPayout, { withCurrency: false })}
-            </span>
-          </div>
-          <div className="mt-2 h-2 overflow-hidden rounded-full bg-brand-soft">
-            <div className="h-full w-3/4 rounded-full bg-brand" />
-          </div>
-          <p className="mt-2 text-right text-sm text-muted">{state.business.nextPayoutAt}</p>
+          <p className="text-xs font-bold uppercase tracking-wide text-muted">Active links</p>
+          <p className="mt-3 font-mono text-3xl font-bold">{links.length}</p>
         </Card>
       </div>
-
       <div className="mb-6 grid gap-4 lg:grid-cols-2">
         <Card className="p-5">
           <h2 className="mb-4 text-xs font-bold uppercase tracking-wide">Generate payment link</h2>
@@ -74,44 +84,32 @@ export default function BusinessPage() {
             className="flex flex-col gap-3"
             onSubmit={(e) => {
               e.preventDefault();
-              createLink(title, Number(amount) || null);
+              create.mutate();
             }}
           >
             <Field label="Product / service title">
-              <Input value={title} onChange={(e) => setTitle(e.target.value)} />
+              <Input value={title} onChange={(e) => setTitle(e.target.value)} required />
             </Field>
             <Field label="Amount (XAF)">
-              <Input
-                type="number"
-                className="font-mono"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-              />
+              <Input type="number" className="font-mono" value={amount} onChange={(e) => setAmount(e.target.value)} />
             </Field>
-            <div className="flex items-center justify-between rounded-xl bg-paper px-3 py-2 font-mono text-xs text-muted">
-              lbpay.me/pay/{title.toLowerCase().replace(/\s+/g, "-")}
-            </div>
-            <Button type="submit" variant="secondary">
-              Create link
-            </Button>
+            <Button type="submit">Create link</Button>
           </form>
         </Card>
         <Card className="flex flex-col items-center bg-navy p-6 text-white">
-          <p className="self-end rounded-full border border-white/20 px-3 py-1 text-[10px] font-bold uppercase">
-            Store: {state.business.name}
-          </p>
-          <h2 className="mt-4 text-2xl font-bold">Scan to pay</h2>
+          <h2 className="text-2xl font-bold">Scan to pay</h2>
           <div className="mt-4">
-            <PayQR value={`https://lbpay.me/pay/${state.links[0]?.slug ?? "store"}`} />
+            <PayQR value={`${typeof window !== "undefined" ? window.location.origin : ""}/pay/${links[0]?.slug ?? "store"}`} />
           </div>
         </Card>
       </div>
-
       <Card className="overflow-hidden">
-        <div className="flex items-center justify-between border-b border-line p-4">
-          <h2 className="text-xs font-bold uppercase tracking-wide">Recent transactions</h2>
+        <div className="border-b border-line p-4">
+          <h2 className="text-xs font-bold uppercase tracking-wide">Recent collections</h2>
         </div>
-        <div className="overflow-x-auto">
+        {collections.length === 0 ? (
+          <p className="p-6 text-sm text-muted">No collections yet.</p>
+        ) : (
           <table className="w-full text-left text-sm">
             <thead className="bg-paper text-xs uppercase tracking-wide text-muted">
               <tr>
@@ -142,7 +140,7 @@ export default function BusinessPage() {
               ))}
             </tbody>
           </table>
-        </div>
+        )}
       </Card>
     </div>
   );

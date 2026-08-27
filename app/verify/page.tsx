@@ -45,7 +45,7 @@ function VerifyInner() {
     const data = await res.json();
     if (data.devOtp) {
       setOtp(data.devOtp);
-      notify.info("Demo code", data.devOtp);
+      notify.info("Verification code", data.devOtp);
     } else {
       notify.success("Code sent", "Check your inbox.");
     }

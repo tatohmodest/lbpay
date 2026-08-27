@@ -19,7 +19,7 @@ import type {
   UserProfile,
 } from "@/lib/types";
 
-const STORAGE_KEY = "lbpay.demo.v1";
+const STORAGE_KEY = "lbpay.session.v2";
 
 type SendInput = {
   amount: number;

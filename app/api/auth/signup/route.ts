@@ -3,7 +3,9 @@ import { findUserByEmail, findUserByHandle, saveOtp, upsertUser } from "@/lib/se
 import { hashSecret, randomOtp } from "@/lib/server/crypto";
 import { sendOtpEmail } from "@/lib/server/mail";
 import { setPreauth } from "@/lib/server/session";
+import { defaultKyc, isBootstrapAdmin } from "@/lib/roles";
 import { slugify, uid } from "@/lib/format";
+import type { AccountKind } from "@/lib/types";
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => ({}));
@@ -38,6 +40,9 @@ export async function POST(request: Request) {
     pinHash: null,
     emailVerified: false,
     kycStatus: "unverified" as const,
+    roles: (isBootstrapAdmin(email) ? ["personal", "admin"] : ["personal"]) as AccountKind[],
+    status: "active" as const,
+    kyc: defaultKyc(),
     createdAt: new Date().toISOString(),
   };
   if (!existing) await upsertUser(user);

@@ -15,8 +15,15 @@ export type MeResponse = {
     kycStatus: string;
     emailVerified: boolean;
     pinSet: boolean;
+    roles: Array<"personal" | "business" | "developer" | "admin">;
+    status: "active" | "frozen";
+    kyc: { personal: string; business: string; developer: string };
+    businessName?: string;
   };
   balance?: number;
+  adminStep?: boolean;
+  keys?: Array<{ id: string; env: string; publicKey: string; secretMasked: string; createdAt: string }>;
+  links?: Array<{ id: string; slug: string; title: string; amount: number | null; status: string }>;
   transactions?: Array<{
     id: string;
     kind: string;

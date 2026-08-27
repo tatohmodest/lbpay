@@ -1,25 +1,31 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { LEGAL_NOTE } from "@/lib/flags";
 import { useApp } from "@/lib/store";
+import { useMe } from "@/lib/hooks/wallet";
 import { useNotify } from "@/lib/notify";
+import { isAdmin } from "@/lib/roles";
 
 export default function ProfilePage() {
   const { state, logout } = useApp();
+  const me = useMe();
   const router = useRouter();
   const notify = useNotify();
   const queryClient = useQueryClient();
+  const user = me.data?.user;
+  const roles = user?.roles || state.user.roles || ["personal"];
 
   return (
     <div className="mx-auto max-w-xl">
       <Card className="p-6 text-center">
         <Image
-          src={state.user.avatar}
+          src={state.user.avatar || "/illustrations/empty-wallet.png"}
           alt=""
           width={96}
           height={96}
@@ -27,7 +33,33 @@ export default function ProfilePage() {
         />
         <h1 className="mt-4 text-2xl font-black">{state.user.name}</h1>
         <p className="font-mono text-brand">@{state.user.lbpayId}</p>
-        <p className="mt-1 text-sm text-muted">{state.user.phone} · KYC {state.user.kycStatus}</p>
+        <p className="mt-1 text-sm text-muted">
+          {state.user.phone} · {user?.status || "active"}
+        </p>
+        <p className="mt-3 text-xs font-bold uppercase tracking-wide text-brand">{roles.join(" · ")}</p>
+        <div className="mt-4 space-y-1 text-sm text-muted">
+          <p>Personal KYC: {user?.kyc?.personal || "unverified"}</p>
+          <p>Business KYC: {user?.kyc?.business || "unverified"}</p>
+          <p>Developer KYC: {user?.kyc?.developer || "unverified"}</p>
+        </div>
+        {user?.status === "frozen" ? (
+          <p className="mt-4 rounded-xl bg-red-50 p-3 text-sm font-semibold text-danger">
+            This account is frozen. An admin must restore it before money can move.
+          </p>
+        ) : null}
+        <div className="mt-6 flex flex-col gap-2">
+          <Link href="/business" className="text-sm font-bold text-brand">
+            Apply for Business
+          </Link>
+          <Link href="/developers" className="text-sm font-bold text-brand">
+            Apply for Developers
+          </Link>
+          {isAdmin(user) ? (
+            <Link href="/admin" className="text-sm font-bold text-brand">
+              Open admin console
+            </Link>
+          ) : null}
+        </div>
         <Button
           className="mt-6"
           variant="secondary"

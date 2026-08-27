@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
-import { findUserById, getWallet, recordLedgerMove } from "@/lib/server/db";
-import { readSession } from "@/lib/server/session";
+import { getWallet, recordLedgerMove } from "@/lib/server/db";
 import { verifySecret } from "@/lib/server/crypto";
 import { payunitReference } from "@/lib/server/crypto";
 import { getPaymentRail } from "@/lib/providers";
+import { requireActiveUser } from "@/lib/server/guard";
 
 export async function POST(request: Request) {
-  const session = await readSession();
-  if (!session) return NextResponse.json({ error: "Sign in required." }, { status: 401 });
+  const auth = await requireActiveUser();
+  if (auth.error || !auth.user) return auth.error!;
+  const user = auth.user;
   const body = await request.json().catch(() => ({}));
   const amount = Number(body.amount);
   const phone = String(body.phone || "").replace(/\s+/g, "");
@@ -22,8 +23,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Enter a valid Cameroon mobile number." }, { status: 400 });
   }
 
-  const user = await findUserById(session.userId);
-  if (!user?.pinHash) return NextResponse.json({ error: "PIN required." }, { status: 400 });
+  if (!user.pinHash) return NextResponse.json({ error: "PIN required." }, { status: 400 });
   if (!(await verifySecret(pin, user.pinHash))) {
     return NextResponse.json({ error: "Incorrect PIN." }, { status: 401 });
   }

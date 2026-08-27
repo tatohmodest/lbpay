@@ -1,7 +1,21 @@
 import { mkdir, readFile, writeFile } from "fs/promises";
 import path from "path";
-import { hashSecret } from "./crypto";
-import type { PaymentMethod, Transaction, TransactionKind, TransactionStatus } from "@/lib/types";
+import { verifySecret } from "./crypto";
+import { isBootstrapAdmin } from "@/lib/roles";
+import { uid } from "@/lib/format";
+import type {
+  AccountKind,
+  AccountStatus,
+  ApiLog,
+  KycState,
+  KycTrack,
+  PaymentLink,
+  PaymentMethod,
+  Transaction,
+  TransactionKind,
+  TransactionStatus,
+  WebhookEndpoint,
+} from "@/lib/types";
 
 export type StoredUser = {
   id: string;
@@ -13,7 +27,11 @@ export type StoredUser = {
   passwordHash: string;
   pinHash: string | null;
   emailVerified: boolean;
-  kycStatus: "unverified" | "pending" | "verified";
+  kycStatus: KycState;
+  roles: AccountKind[];
+  status: AccountStatus;
+  kyc: Record<KycTrack, KycState>;
+  businessName?: string;
   createdAt: string;
 };
 
@@ -35,11 +53,61 @@ export type StoredTx = Transaction & {
   rail?: "internal" | "payunit" | "sandbox";
 };
 
-type DbShape = {
+export type KycApplication = {
+  id: string;
+  userId: string;
+  track: KycTrack;
+  status: "pending" | "approved" | "rejected";
+  legalName: string;
+  idNumber: string;
+  phone: string;
+  businessName?: string;
+  taxId?: string;
+  website?: string;
+  note?: string;
+  reviewNote?: string;
+  createdAt: string;
+  reviewedAt?: string;
+  reviewedBy?: string;
+};
+
+export type StoredApiKey = {
+  id: string;
+  userId: string;
+  env: "sandbox" | "live";
+  publicKey: string;
+  secretHash: string;
+  secretMasked: string;
+  createdAt: string;
+  revokedAt?: string;
+};
+
+export type AuditEntry = {
+  id: string;
+  actorId: string;
+  action: string;
+  targetType: string;
+  targetId: string;
+  note?: string;
+  createdAt: string;
+  meta?: Record<string, unknown>;
+};
+
+export type StoredWebhook = WebhookEndpoint & { userId: string };
+export type StoredLink = PaymentLink & { userId: string };
+export type StoredLog = ApiLog & { userId: string };
+
+export type DbShape = {
   users: StoredUser[];
   otps: StoredOtp[];
   wallets: StoredWallet[];
   transactions: StoredTx[];
+  kyc: KycApplication[];
+  keys: StoredApiKey[];
+  audit: AuditEntry[];
+  webhooks: StoredWebhook[];
+  links: StoredLink[];
+  logs: StoredLog[];
 };
 
 const FILE = path.join(process.cwd(), "data", "lbpay.json");
@@ -47,104 +115,61 @@ const FILE = path.join(process.cwd(), "data", "lbpay.json");
 let cache: DbShape | null = null;
 let seeding: Promise<void> | null = null;
 
-async function empty(): Promise<DbShape> {
-  return { users: [], otps: [], wallets: [], transactions: [] };
+function normalizeUser(user: StoredUser): StoredUser {
+  const kyc = user.kyc ?? {
+    personal: user.kycStatus ?? "unverified",
+    business: "unverified",
+    developer: "unverified",
+  };
+  const roles = user.roles?.length ? user.roles : (["personal"] as AccountKind[]);
+  if (isBootstrapAdmin(user.email) && !roles.includes("admin")) roles.push("admin");
+  return {
+    ...user,
+    roles,
+    status: user.status ?? "active",
+    kyc,
+    kycStatus: kyc.personal,
+  };
 }
 
-async function seedIfNeeded(db: DbShape) {
-  if (db.users.length) return db;
-  const passwordHash = await hashSecret("demo123");
-  const pinHash = await hashSecret("1234");
-  const users: StoredUser[] = [
-    {
-      id: "usr_modest",
-      name: "Modest Tatoh",
-      lbpayId: "modest",
-      email: "modest@lbpay.cm",
-      phone: "670112233",
-      avatar: "/illustrations/avatar-modest.png",
-      passwordHash,
-      pinHash,
-      emailVerified: true,
-      kycStatus: "verified",
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: "usr_kossi",
-      name: "Kossi Mensah",
-      lbpayId: "kossi",
-      email: "kossi@lbpay.cm",
-      phone: "650987654",
-      avatar: "/illustrations/empty-wallet.png",
-      passwordHash,
-      pinHash,
-      emailVerified: true,
-      kycStatus: "verified",
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: "usr_marie",
-      name: "Marie Kamga",
-      lbpayId: "marie",
-      email: "marie@lbpay.cm",
-      phone: "677445566",
-      avatar: "/illustrations/request-money.png",
-      passwordHash,
-      pinHash,
-      emailVerified: true,
-      kycStatus: "verified",
-      createdAt: new Date().toISOString(),
-    },
-  ];
-  db.users = users;
-  db.wallets = [
-    { userId: "usr_modest", balance: 125_500 },
-    { userId: "usr_kossi", balance: 18_000 },
-    { userId: "usr_marie", balance: 42_000 },
-  ];
-  const now = new Date().toISOString();
-  db.transactions = [
-    {
-      id: "TXN_SEED_RECV",
-      userId: "usr_modest",
-      kind: "receive",
-      amount: 45_000,
-      fee: 0,
-      status: "success",
-      method: "wallet",
-      counterparty: "@marie",
-      counterpartyId: "usr_marie",
-      note: "LBPay wallet transfer",
-      createdAt: now,
-      rail: "internal",
-    },
-    {
-      id: "TXN_SEED_RECV_IN",
-      userId: "usr_marie",
-      kind: "send",
-      amount: 45_000,
-      fee: 0,
-      status: "success",
-      method: "wallet",
-      counterparty: "@modest",
-      counterpartyId: "usr_modest",
-      note: "LBPay wallet transfer",
-      createdAt: now,
-      rail: "internal",
-    },
-  ];
-  return db;
+async function empty(): Promise<DbShape> {
+  return {
+    users: [],
+    otps: [],
+    wallets: [],
+    transactions: [],
+    kyc: [],
+    keys: [],
+    audit: [],
+    webhooks: [],
+    links: [],
+    logs: [],
+  };
+}
+
+function withCollections(db: DbShape): DbShape {
+  return {
+    users: (db.users || []).map(normalizeUser),
+    otps: db.otps || [],
+    wallets: db.wallets || [],
+    transactions: db.transactions || [],
+    kyc: db.kyc || [],
+    keys: db.keys || [],
+    audit: db.audit || [],
+    webhooks: db.webhooks || [],
+    links: db.links || [],
+    logs: db.logs || [],
+  };
 }
 
 async function readDb(): Promise<DbShape> {
   if (cache) return cache;
   try {
     const raw = await readFile(FILE, "utf8");
-    cache = JSON.parse(raw) as DbShape;
+    cache = withCollections(JSON.parse(raw) as DbShape);
   } catch {
     cache = await empty();
   }
-  cache = await seedIfNeeded(cache);
   await writeDb(cache);
   return cache;
 }
@@ -167,18 +192,26 @@ export async function saveDb(db: DbShape) {
 
 export async function findUserByEmail(email: string) {
   const db = await getDb();
-  return db.users.find((u) => u.email.toLowerCase() === email.toLowerCase()) ?? null;
+  const user = db.users.find((u) => u.email.toLowerCase() === email.toLowerCase()) ?? null;
+  return user ? normalizeUser(user) : null;
 }
 
 export async function findUserByHandle(handle: string) {
   const db = await getDb();
   const id = handle.replace(/^@/, "").toLowerCase();
-  return db.users.find((u) => u.lbpayId.toLowerCase() === id) ?? null;
+  const user = db.users.find((u) => u.lbpayId.toLowerCase() === id) ?? null;
+  return user ? normalizeUser(user) : null;
 }
 
 export async function findUserById(id: string) {
   const db = await getDb();
-  return db.users.find((u) => u.id === id) ?? null;
+  const user = db.users.find((u) => u.id === id) ?? null;
+  return user ? normalizeUser(user) : null;
+}
+
+export async function listUsers() {
+  const db = await getDb();
+  return db.users.map(normalizeUser);
 }
 
 export async function upsertUser(user: StoredUser) {
@@ -354,16 +387,181 @@ export async function settleRailTx(railRef: string, status: TransactionStatus) {
   return { ok: true as const, tx, balance: wallet.balance };
 }
 
+export async function listAllTx() {
+  const db = await getDb();
+  return [...db.transactions].sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt));
+}
+
+export async function findTxById(id: string) {
+  const db = await getDb();
+  return db.transactions.find((tx) => tx.id === id) ?? null;
+}
+
+export async function patchTx(id: string, patch: Partial<StoredTx>) {
+  const db = await getDb();
+  const tx = db.transactions.find((item) => item.id === id);
+  if (!tx) throw new Error("Transaction not found");
+  Object.assign(tx, patch);
+  await saveDb(db);
+  return tx;
+}
+
+export async function writeAudit(entry: Omit<AuditEntry, "id" | "createdAt"> & { id?: string }) {
+  const db = await getDb();
+  const row: AuditEntry = {
+    id: entry.id || uid("aud"),
+    actorId: entry.actorId,
+    action: entry.action,
+    targetType: entry.targetType,
+    targetId: entry.targetId,
+    note: entry.note,
+    meta: entry.meta,
+    createdAt: new Date().toISOString(),
+  };
+  db.audit.unshift(row);
+  await saveDb(db);
+  return row;
+}
+
+export async function listAudit() {
+  const db = await getDb();
+  return db.audit;
+}
+
+export async function listKyc(status?: KycApplication["status"]) {
+  const db = await getDb();
+  return status ? db.kyc.filter((item) => item.status === status) : db.kyc;
+}
+
+export async function listKycForUser(userId: string) {
+  const db = await getDb();
+  return db.kyc.filter((item) => item.userId === userId);
+}
+
+export async function createKyc(app: Omit<KycApplication, "id" | "createdAt" | "status"> & { status?: KycApplication["status"] }) {
+  const db = await getDb();
+  const row: KycApplication = {
+    ...app,
+    id: uid("kyc"),
+    status: app.status ?? "pending",
+    createdAt: new Date().toISOString(),
+  };
+  db.kyc.unshift(row);
+  await saveDb(db);
+  return row;
+}
+
+export async function saveKyc(app: KycApplication) {
+  const db = await getDb();
+  const idx = db.kyc.findIndex((item) => item.id === app.id);
+  if (idx >= 0) db.kyc[idx] = app;
+  else db.kyc.unshift(app);
+  await saveDb(db);
+  return app;
+}
+
+export async function findKycById(id: string) {
+  const db = await getDb();
+  return db.kyc.find((item) => item.id === id) ?? null;
+}
+
+export async function listKeys(userId: string) {
+  const db = await getDb();
+  return db.keys.filter((item) => item.userId === userId && !item.revokedAt);
+}
+
+export async function addApiKey(key: StoredApiKey) {
+  const db = await getDb();
+  db.keys.unshift(key);
+  await saveDb(db);
+  return key;
+}
+
+export async function revokeApiKey(id: string, userId: string) {
+  const db = await getDb();
+  const key = db.keys.find((item) => item.id === id && item.userId === userId);
+  if (key) key.revokedAt = new Date().toISOString();
+  await saveDb(db);
+  return key ?? null;
+}
+
+export async function findKeyBySecret(secret: string) {
+  const db = await getDb();
+  for (const key of db.keys) {
+    if (key.revokedAt) continue;
+    if (await verifySecret(secret, key.secretHash)) return key;
+  }
+  return null;
+}
+
+export async function addLink(link: StoredLink) {
+  const db = await getDb();
+  db.links.unshift(link);
+  await saveDb(db);
+  return link;
+}
+
+export async function listLinks(userId: string) {
+  const db = await getDb();
+  return db.links.filter((item) => item.userId === userId);
+}
+
+export async function findLinkBySlug(slug: string) {
+  const db = await getDb();
+  return db.links.find((item) => item.slug === slug) ?? null;
+}
+
+export async function listWebhooks(userId: string) {
+  const db = await getDb();
+  return db.webhooks.filter((item) => item.userId === userId);
+}
+
+export async function addWebhook(hook: StoredWebhook) {
+  const db = await getDb();
+  db.webhooks.unshift(hook);
+  await saveDb(db);
+  return hook;
+}
+
+export async function addLog(log: StoredLog) {
+  const db = await getDb();
+  db.logs.unshift(log);
+  db.logs = db.logs.slice(0, 400);
+  await saveDb(db);
+  return log;
+}
+
+export async function listLogs(userId: string) {
+  const db = await getDb();
+  return db.logs.filter((item) => item.userId === userId);
+}
+
+export async function grantRole(user: StoredUser, role: AccountKind) {
+  if (!user.roles.includes(role)) user.roles.push(role);
+  return upsertUser(user);
+}
+
+export async function revokeRole(user: StoredUser, role: AccountKind) {
+  if (role === "personal") return user;
+  user.roles = user.roles.filter((item) => item !== role);
+  return upsertUser(user);
+}
+
 export function publicUser(user: StoredUser) {
+  const normalized = normalizeUser(user);
   return {
-    id: user.id,
-    name: user.name,
-    lbpayId: user.lbpayId,
-    email: user.email,
-    phone: user.phone,
-    avatar: user.avatar,
-    kycStatus: user.kycStatus,
-    emailVerified: user.emailVerified,
-    pinSet: Boolean(user.pinHash),
+    id: normalized.id,
+    name: normalized.name,
+    lbpayId: normalized.lbpayId,
+    email: normalized.email,
+    phone: normalized.phone,
+    avatar: normalized.avatar,
+    kycStatus: normalized.kyc.personal,
+    emailVerified: normalized.emailVerified,
+    pinSet: Boolean(normalized.pinHash),
+    roles: normalized.roles,
+    status: normalized.status,
+    kyc: normalized.kyc,
+    businessName: normalized.businessName || "",
   };
 }

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { bumpOtpAttempt, clearOtp, findUserByEmail, takeOtp, upsertUser } from "@/lib/server/db";
 import { verifySecret } from "@/lib/server/crypto";
 import { setPreauth } from "@/lib/server/session";
+import { isBootstrapAdmin } from "@/lib/roles";
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => ({}));
@@ -28,6 +29,9 @@ export async function POST(request: Request) {
   }
 
   user.emailVerified = true;
+  if (isBootstrapAdmin(user.email) && !user.roles?.includes("admin")) {
+    user.roles = [...(user.roles || ["personal"]), "admin"];
+  }
   await upsertUser(user);
   await clearOtp(email);
   await setPreauth(user.id, user.pinHash ? "pin" : "pin-setup");

@@ -1,16 +1,17 @@
 import { NextResponse } from "next/server";
+import { authenticateApiKey, logApi, merchantBalance } from "@/lib/server/apikey";
 
 export async function GET(request: Request) {
-  const header = request.headers.get("authorization") || "";
-  const key = header.replace("Bearer ", "").trim();
-  if (!key.startsWith("sk_test_") && !key.startsWith("sk_live_") && key !== "sk_test_demo") {
-    return NextResponse.json({ error: "Invalid API key" }, { status: 401 });
-  }
-
+  const auth = await authenticateApiKey(request);
+  if (!auth.ok) return auth.error;
+  const { user, env } = auth;
+  const available = await merchantBalance(user.id);
+  await logApi(user.id, "GET", "/v1/balance", 200);
   return NextResponse.json({
     object: "balance",
     currency: "XAF",
-    available: 125500,
+    available,
     pending: 0,
+    environment: env,
   });
 }

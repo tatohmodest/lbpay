@@ -10,6 +10,7 @@ import {
   Webhook,
 } from "lucide-react";
 import { ConsoleShell } from "@/components/layout/shells";
+import { RoleGate } from "@/components/role-gate";
 
 const items = [
   { href: "/developers", label: "Dashboard", icon: LayoutDashboard },
@@ -25,11 +26,11 @@ export default function DevelopersLayout({ children }: { children: React.ReactNo
   return (
     <ConsoleShell
       title="Developer Console"
-      subtitle="Platform"
+      subtitle="Sandbox + live"
       items={items}
       cta={{ href: "/developers/docs", label: "API reference" }}
     >
-      {children}
+      <RoleGate kind="developer">{children}</RoleGate>
     </ConsoleShell>
   );
 }

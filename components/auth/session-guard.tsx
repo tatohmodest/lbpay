@@ -9,7 +9,7 @@ import { useMe } from "@/lib/hooks/wallet";
 import { useApp } from "@/lib/store";
 import { useNotify } from "@/lib/notify";
 import { isMobileClient } from "@/lib/device";
-import type { Transaction } from "@/lib/types";
+import type { Transaction, UserProfile } from "@/lib/types";
 
 const PUBLIC = ["/", "/login", "/signup", "/verify", "/pin/setup", "/docs", "/pay", "/r"];
 const WEB_IDLE_MS = 18 * 60 * 1000;
@@ -47,7 +47,15 @@ export function SessionGuard({ children }: { children: React.ReactNode }) {
         email: me.data.user.email,
         phone: me.data.user.phone,
         avatar: me.data.user.avatar,
-        kycStatus: (me.data.user.kycStatus as "unverified" | "pending" | "verified") || "verified",
+        kycStatus: me.data.user.kycStatus as UserProfile["kycStatus"],
+        roles: me.data.user.roles || ["personal"],
+        status: me.data.user.status === "frozen" ? "frozen" : "active",
+        kyc: (me.data.user.kyc as UserProfile["kyc"]) || {
+          personal: "unverified",
+          business: "unverified",
+          developer: "unverified",
+        },
+        businessName: me.data.user.businessName,
       },
       balance: me.data.balance ?? 0,
       transactions: (me.data.transactions as Transaction[]) || [],

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { findUserById, getWallet, listTx, publicUser } from "@/lib/server/db";
-import { readSession } from "@/lib/server/session";
+import { findUserById, getWallet, listKeys, listLinks, listTx, publicUser } from "@/lib/server/db";
+import { readAdminSession, readSession } from "@/lib/server/session";
+import { isAdmin } from "@/lib/roles";
 
 export async function GET() {
   const session = await readSession();
@@ -9,10 +10,22 @@ export async function GET() {
   if (!user) return NextResponse.json({ session: false }, { status: 401 });
   const wallet = await getWallet(user.id);
   const transactions = await listTx(user.id);
+  const keys = await listKeys(user.id);
+  const links = await listLinks(user.id);
+  const adminStep = isAdmin(user) ? Boolean((await readAdminSession())?.userId === user.id) : false;
   return NextResponse.json({
     session: true,
     user: publicUser(user),
     balance: wallet.balance,
     transactions,
+    keys: keys.map((key) => ({
+      id: key.id,
+      env: key.env,
+      publicKey: key.publicKey,
+      secretMasked: key.secretMasked,
+      createdAt: key.createdAt,
+    })),
+    links,
+    adminStep,
   });
 }

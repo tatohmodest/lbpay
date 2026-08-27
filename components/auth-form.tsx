@@ -21,9 +21,9 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const { login, unlockPin } = useApp();
   const [step, setStep] = useState<"form" | "pin">("form");
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("modest@lbpay.cm");
-  const [phone, setPhone] = useState("670112233");
-  const [password, setPassword] = useState("demo123");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -51,7 +51,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
       if (data.step === "otp") {
         const q = new URLSearchParams({ email });
         if (data.devOtp) q.set("dev", data.devOtp);
-        notify.info("Check your email", data.delivered ? "We sent a 6-digit code." : `Demo code: ${data.devOtp}`);
+        notify.info("Check your email", data.delivered ? "We sent a 6-digit code." : `Code: ${data.devOtp}`);
         router.push(`/verify?${q.toString()}`);
         return;
       }
@@ -142,9 +142,6 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
                 </>
               )}
             </p>
-            {mode === "login" ? (
-              <p className="mt-4 text-xs text-muted">Demo: modest@lbpay.cm / demo123 / PIN 1234</p>
-            ) : null}
           </>
         ) : (
           <div className="mt-10">

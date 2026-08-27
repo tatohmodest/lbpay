@@ -30,9 +30,15 @@ export default function WalletPage() {
   const me = useMe();
   const balance = me.data?.balance ?? state.balance;
   const transactions = (me.data?.transactions as Transaction[] | undefined) ?? state.transactions;
+  const frozen = (me.data?.user?.status || state.user.status) === "frozen";
 
   return (
     <div className="grid gap-6 lg:grid-cols-12">
+      {frozen ? (
+        <div className="rounded-2xl bg-red-50 p-4 text-sm font-semibold text-danger lg:col-span-12">
+          This account is frozen. Deposits, sends, and withdrawals are blocked until an admin restores it.
+        </div>
+      ) : null}
       <div className="flex flex-col gap-6 lg:col-span-8">
         <section className="relative overflow-hidden rounded-3xl bg-brand p-6 text-white shadow-lg">
           <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/10 blur-3xl" />

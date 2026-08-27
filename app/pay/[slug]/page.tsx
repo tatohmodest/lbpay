@@ -1,12 +1,11 @@
 "use client";
 
 import { use, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Lock, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { initialState } from "@/lib/demo/seed";
 import { formatXAF } from "@/lib/format";
-import { useApp } from "@/lib/store";
 
 export default function CheckoutPage({
   params,
@@ -14,20 +13,41 @@ export default function CheckoutPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = use(params);
-  const { state } = useApp();
-  const link = state.links.find((item) => item.slug === slug) ?? initialState.links[0];
+  const link = useQuery({
+    queryKey: ["pay", slug],
+    queryFn: async () => {
+      const res = await fetch(`/api/pay/${slug}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Not found");
+      return data as {
+        link: { title: string; amount: number | null };
+        merchant: { name: string } | null;
+      };
+    },
+  });
   const [method, setMethod] = useState("mtn");
   const [paid, setPaid] = useState(false);
-  const amount = link?.amount ?? 25_000;
+  const amount = link.data?.link.amount ?? 0;
+
+  if (link.isError) {
+    return (
+      <main className="grid min-h-screen place-items-center bg-paper p-4">
+        <Card className="max-w-sm p-8 text-center">
+          <h1 className="text-xl font-black">Link not found</h1>
+          <p className="mt-2 text-sm text-muted">This payment link is missing or inactive.</p>
+        </Card>
+      </main>
+    );
+  }
 
   if (paid) {
     return (
       <main className="grid min-h-screen place-items-center bg-paper p-4">
         <Card className="max-w-sm p-8 text-center">
-          <p className="text-brand text-sm font-bold uppercase">Paid</p>
+          <p className="text-sm font-bold uppercase text-brand">Paid</p>
           <h1 className="mt-2 text-2xl font-black">{formatXAF(amount)}</h1>
           <p className="mt-2 text-sm text-muted">
-            {link?.title} is confirmed. A receipt was posted to the merchant ledger.
+            {link.data?.link.title} is confirmed.
           </p>
         </Card>
       </main>
@@ -41,11 +61,11 @@ export default function CheckoutPage({
         <Card className="relative overflow-hidden p-6">
           <div className="absolute left-0 top-0 h-1 w-full bg-brand" />
           <p className="text-center text-[11px] font-bold uppercase tracking-wide text-muted">
-            Payment request
+            {link.data?.merchant?.name || "Payment request"}
           </p>
-          <h1 className="mt-2 text-center text-xl font-bold">{link?.title}</h1>
+          <h1 className="mt-2 text-center text-xl font-bold">{link.data?.link.title || "…"}</h1>
           <p className="mt-3 text-center font-mono text-4xl font-black text-brand">
-            {formatXAF(amount, { withCurrency: false })}
+            {amount ? formatXAF(amount, { withCurrency: false }) : "Open"}
             <span className="ml-1 align-super text-sm font-semibold text-muted">XAF</span>
           </p>
           <div className="mt-6 space-y-2">
@@ -76,8 +96,8 @@ export default function CheckoutPage({
               </label>
             ))}
           </div>
-          <Button className="mt-6 w-full" onClick={() => setPaid(true)}>
-            <Lock className="h-4 w-4" /> Pay {formatXAF(amount)}
+          <Button className="mt-6 w-full" onClick={() => setPaid(true)} disabled={!amount}>
+            <Lock className="h-4 w-4" /> Pay {amount ? formatXAF(amount) : ""}
           </Button>
           <p className="mt-3 flex items-center justify-center gap-1 text-xs text-muted">
             <ShieldCheck className="h-3.5 w-3.5" /> Secured by LBPay

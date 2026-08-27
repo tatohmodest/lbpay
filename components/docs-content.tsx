@@ -26,7 +26,7 @@ export function DocsContent({ publicHeader = false }: { publicHeader?: boolean }
         </p>
         <pre className="overflow-x-auto rounded-2xl bg-navy p-4 font-mono text-xs text-emerald-100">
 {`POST /api/wallet/transfer
-{ "to": "@kossi", "amount": 5000, "pin": "1234", "note": "Lunch" }`}
+{ "to": "@handle", "amount": 5000, "pin": "1234", "note": "Lunch" }`}
         </pre>
         <p>
           Withdrawals and “send to MTN / Orange” are disbursements. Cash leaves LBPay through
@@ -50,6 +50,13 @@ export function DocsContent({ publicHeader = false }: { publicHeader?: boolean }
           <li>Mobile: the session lasts; returning to the app after it was inactive asks for the PIN again.</li>
           <li>Web: no PIN lock overlay. Idle for ~18 minutes signs the user out.</li>
         </ul>
+        <h2 className="text-xl font-bold">Roles</h2>
+        <ul className="list-disc pl-5 text-muted">
+          <li>Personal — wallet. Everyone starts here after signup.</li>
+          <li>Business — merchant console. Apply with KYC; an admin approves it.</li>
+          <li>Developer — sandbox keys immediately on apply; live keys after KYC approval.</li>
+          <li>Admin — platform operators. Entering /admin always requires a fresh email OTP.</li>
+        </ul>
         <h2 className="text-xl font-bold">Authentication</h2>
         <p>Send your secret key as a Bearer token.</p>
         <pre className="overflow-x-auto rounded-2xl bg-navy p-4 font-mono text-xs text-emerald-100">
@@ -58,7 +65,7 @@ export function DocsContent({ publicHeader = false }: { publicHeader?: boolean }
         <h2 className="text-xl font-bold">Create a payment</h2>
         <pre className="overflow-x-auto rounded-2xl bg-navy p-4 font-mono text-xs text-emerald-100">
 {`curl https://your-lbpay-host/api/v1/payments \\
-  -H "Authorization: Bearer sk_test_demo" \\
+  -H "Authorization: Bearer sk_test_YOUR_SECRET" \\
   -H "Content-Type: application/json" \\
   -d '{
     "amount": 5000,

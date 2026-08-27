@@ -18,7 +18,14 @@ export type TransactionKind =
   | "payout"
   | "request"
   | "split"
-  | "subscription";
+  | "subscription"
+  | "adjustment"
+  | "reversal";
+
+export type AccountKind = "personal" | "business" | "developer" | "admin";
+export type AccountStatus = "active" | "frozen";
+export type KycTrack = "personal" | "business" | "developer";
+export type KycState = "unverified" | "pending" | "verified" | "rejected";
 
 export type UserProfile = {
   id: string;
@@ -27,7 +34,11 @@ export type UserProfile = {
   email: string;
   phone: string;
   avatar: string;
-  kycStatus: "unverified" | "pending" | "verified";
+  kycStatus: KycState;
+  roles: AccountKind[];
+  status: AccountStatus;
+  kyc: Record<KycTrack, KycState>;
+  businessName?: string;
 };
 
 export type Transaction = {

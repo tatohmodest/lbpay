@@ -1,24 +1,17 @@
 import { NextResponse } from "next/server";
-import { collectPayment } from "@/lib/engine/payments";
-
-function unauthorized() {
-  return NextResponse.json({ error: "Invalid API key" }, { status: 401 });
-}
-
-function getKey(request: Request) {
-  const header = request.headers.get("authorization") || "";
-  return header.replace("Bearer ", "").trim();
-}
+import { authenticateApiKey, logApi, railForEnv } from "@/lib/server/apikey";
+import { recordLedgerMove } from "@/lib/server/db";
+import { payunitReference } from "@/lib/server/crypto";
 
 export async function POST(request: Request) {
-  const key = getKey(request);
-  if (!key.startsWith("sk_test_") && !key.startsWith("sk_live_") && key !== "sk_test_demo") {
-    return unauthorized();
-  }
+  const auth = await authenticateApiKey(request);
+  if (!auth.ok) return auth.error;
+  const { user, env } = auth;
 
   const body = await request.json().catch(() => ({}));
   const amount = Number(body.amount);
   if (!amount || amount < 100) {
+    await logApi(user.id, "POST", "/v1/payments", 400);
     return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
   }
 
@@ -31,20 +24,41 @@ export async function POST(request: Request) {
           ? "wallet"
           : "mtn";
 
-  const payment = await collectPayment({
+  const reference = payunitReference("PAY");
+  const rail = railForEnv(env);
+  const result =
+    method === "wallet"
+      ? { status: "success" as const, provider: "internal" as const, reference }
+      : await rail.collect({
+          amount,
+          currency: "XAF",
+          method,
+          customer: body.customer ?? {},
+          reference,
+        });
+
+  const moved = await recordLedgerMove({
+    userId: user.id,
     amount,
+    direction: "credit",
+    kind: "collection",
     method,
-    customer: body.customer ?? {},
-    description: body.description,
+    counterparty: body.customer?.phone || body.customer?.name || "API customer",
+    note: body.description || "API collection",
+    status: result.status === "failed" ? "failed" : result.status,
+    rail: result.provider,
+    railRef: reference,
   });
 
+  await logApi(user.id, "POST", "/v1/payments", 200);
   return NextResponse.json({
-    id: payment.id,
+    id: moved.tx.id,
     object: "payment",
     amount,
     currency: "XAF",
-    status: payment.status,
-    rail: payment.rail,
+    status: moved.tx.status,
+    rail: result.provider,
+    environment: env,
     customer: body.customer ?? {},
   });
 }

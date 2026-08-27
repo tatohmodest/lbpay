@@ -26,6 +26,27 @@ export function payunitReference(prefix = "LBPAY") {
   return `${prefix}${Date.now().toString(36).toUpperCase()}${randomBytes(2).toString("hex").toUpperCase()}`;
 }
 
+export function randomToken(bytes = 24) {
+  return randomBytes(bytes).toString("hex");
+}
+
+export function maskSecret(secret: string) {
+  if (secret.length < 16) return "••••••••";
+  return `${secret.slice(0, 10)}••••••••${secret.slice(-4)}`;
+}
+
+export async function issueApiKey(env: "sandbox" | "live") {
+  const prefix = env === "live" ? "live" : "test";
+  const secret = `sk_${prefix}_${randomToken(24)}`;
+  const publicKey = `pk_${prefix}_${randomToken(12)}`;
+  return {
+    secret,
+    publicKey,
+    secretHash: await hashSecret(secret),
+    secretMasked: maskSecret(secret),
+  };
+}
+
 export function signValue(value: string, secret: string) {
   return `${value}.${createHmac("sha256", secret).update(value).digest("hex")}`;
 }

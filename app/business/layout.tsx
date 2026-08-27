@@ -8,6 +8,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { ConsoleShell } from "@/components/layout/shells";
+import { RoleGate } from "@/components/role-gate";
 
 const items = [
   { href: "/business", label: "Dashboard", icon: LayoutDashboard },
@@ -25,7 +26,7 @@ export default function BusinessLayout({ children }: { children: React.ReactNode
       items={items}
       cta={{ href: "/business/links", label: "New payment link" }}
     >
-      {children}
+      <RoleGate kind="business">{children}</RoleGate>
     </ConsoleShell>
   );
 }

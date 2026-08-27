@@ -2,7 +2,9 @@ import { PayUnitRail } from "./payunit";
 import { SandboxRail } from "./sandbox";
 import type { PaymentRail } from "./types";
 
-export function getPaymentRail(): PaymentRail {
+export function getPaymentRail(env: "sandbox" | "live" = "live"): PaymentRail {
+  if (env === "sandbox") return new SandboxRail();
+
   const ready =
     process.env.PAYUNIT_API_KEY &&
     process.env.PAYUNIT_API_USER &&
