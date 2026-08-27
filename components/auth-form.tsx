@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Field, Input } from "@/components/ui/input";
@@ -92,21 +91,26 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
   }
 
   return (
-    <div className="grid min-h-screen lg:grid-cols-2">
-      <div className="relative hidden overflow-hidden bg-brand-soft lg:block">
-        <Image src="/illustrations/hero-send-money.png" alt="" fill className="object-cover" priority />
+    <div className="grid min-h-[calc(100svh-var(--header-h))] lg:grid-cols-2">
+      <div className="relative order-1 h-52 overflow-hidden bg-paper sm:h-64 lg:order-2 lg:h-auto">
+        <Image
+          src="/illustrations/hero-send-money.png"
+          alt="Send money in Cameroon with LBPay"
+          fill
+          className="object-cover"
+          priority
+        />
       </div>
-      <div className="flex flex-col justify-center px-6 py-12 md:px-16">
-        <Logo />
+      <div className="order-2 flex flex-col justify-center px-6 py-10 md:px-16 lg:order-1">
         {step === "form" ? (
           <>
-            <h1 className="mt-10 text-3xl font-bold tracking-tight">
-              {mode === "login" ? "Sign in to LBPay" : "Create your LBPay wallet"}
+            <h1 className="text-3xl font-semibold tracking-tight">
+              {mode === "login" ? "Sign in" : "Create your wallet"}
             </h1>
-            <p className="mt-2 text-muted">
+            <p className="mt-2 text-sm leading-6 text-muted">
               {mode === "login"
                 ? "Email and password, then your PIN."
-                : "We'll email a one-time code, then you set a PIN."}
+                : "We will email a one-time code, then you set a PIN."}
             </p>
             <Card className="mt-8 p-6">
               <form className="flex flex-col gap-4" onSubmit={submitForm}>
@@ -126,7 +130,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
                 <Field label="Password">
                   <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
                 </Field>
-                {error ? <p className="text-sm font-semibold text-danger">{error}</p> : null}
+                {error ? <p className="text-sm font-medium text-danger">{error}</p> : null}
                 <Button type="submit" disabled={loading}>
                   {loading ? "Please wait…" : mode === "login" ? "Continue" : "Create account"}
                 </Button>
@@ -136,14 +140,14 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
               {mode === "login" ? (
                 <>
                   New here?{" "}
-                  <Link href="/signup" className="font-semibold text-brand">
+                  <Link href="/signup" className="font-medium text-brand-deep">
                     Create an account
                   </Link>
                 </>
               ) : (
                 <>
                   Already have an account?{" "}
-                  <Link href="/login" className="font-semibold text-brand">
+                  <Link href="/login" className="font-medium text-brand-deep">
                     Sign in
                   </Link>
                 </>
@@ -151,9 +155,9 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
             </p>
           </>
         ) : (
-          <div className="mt-10">
-            <h1 className="text-3xl font-bold">Enter your PIN</h1>
-            <p className="mt-2 mb-6 text-muted">This confirms it is you.</p>
+          <div>
+            <h1 className="text-3xl font-semibold tracking-tight">Enter your PIN</h1>
+            <p className="mt-2 mb-6 text-sm text-muted">This confirms it is you.</p>
             <PinPad
               value={pin}
               onChange={(next) => {

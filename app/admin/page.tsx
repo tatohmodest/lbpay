@@ -24,10 +24,10 @@ export default function AdminHome() {
       </p>
       <div className="mt-6 grid gap-4 md:grid-cols-4">
         {[
-          { label: "Users", value: data?.users ?? "—" },
-          { label: "Ledger (XAF)", value: data ? formatXAF(data.ledger, { withCurrency: false }) : "—" },
-          { label: "Volume", value: data ? formatXAF(data.volume, { withCurrency: false }) : "—" },
-          { label: "Pending KYC", value: data?.pendingKyc ?? "—" },
+          { label: "Users", value: data?.users ?? "n/a" },
+          { label: "Ledger (XAF)", value: data ? formatXAF(data.ledger, { withCurrency: false }) : "n/a" },
+          { label: "Volume", value: data ? formatXAF(data.volume, { withCurrency: false }) : "n/a" },
+          { label: "Pending KYC", value: data?.pendingKyc ?? "n/a" },
         ].map((item) => (
           <Card key={item.label} className="p-5">
             <p className="text-xs font-bold uppercase text-muted">{item.label}</p>

@@ -1,8 +1,9 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f3faf6;
-  --foreground: #0f1f17;
+  --background: #f6faf8;
+  --foreground: #0c1913;
+  --header-h: 4.25rem;
 }
 
 @theme inline {
@@ -11,22 +12,27 @@
   --color-brand: #00b369;
   --color-brand-dark: #009657;
   --color-brand-deep: #007a47;
-  --color-brand-soft: #e6f8ef;
-  --color-ink: #0f1f17;
-  --color-muted: #5c6f66;
-  --color-line: #d7e8de;
-  --color-paper: #f3faf6;
+  --color-brand-soft: #e7f7ef;
+  --color-ink: #0c1913;
+  --color-muted: #5a6b63;
+  --color-line: #dce8e1;
+  --color-paper: #f6faf8;
   --color-card: #ffffff;
-  --color-danger: #ba1a1a;
+  --color-danger: #b42318;
   --color-mtn: #ffcc00;
   --color-om: #ff6600;
-  --color-navy: #0f172a;
+  --color-navy: #07140f;
   --font-sans: var(--font-inter);
   --font-mono: var(--font-jetbrains);
 }
 
 * {
   border-color: var(--color-line);
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: calc(var(--header-h) + 0.75rem);
 }
 
 html,
@@ -37,6 +43,7 @@ body {
 
 body {
   font-family: var(--font-sans), Inter, sans-serif;
+  font-feature-settings: "ss01" on, "cv11" on;
 }
 
 ::selection {
@@ -48,10 +55,14 @@ body {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
+.pt-header {
+  padding-top: var(--header-h);
+}
+
 @keyframes lb-pop {
   from {
     opacity: 0;
-    transform: translateY(-10px) scale(0.98);
+    transform: translateY(-8px);
   }
   to {
     opacity: 1;
@@ -60,5 +71,5 @@ body {
 }
 
 .lb-notice {
-  animation: lb-pop 0.28s ease-out;
+  animation: lb-pop 0.24s ease-out;
 }

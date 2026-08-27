@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { DocsContent } from "@/components/docs-content";
+import { Container } from "@/components/marketing/container";
 
 export const metadata: Metadata = {
-  title: "Payments API for Cameroon — sandbox, webhooks, XAF",
+  title: "Payments API for Cameroon: sandbox, webhooks, XAF",
   description:
     "LBPay developer docs: create XAF payments, payouts, and payment links. Sandbox keys on apply, live keys after KYC. MTN Mobile Money, Orange Money, and wallet rails.",
   alternates: { canonical: "/docs" },
@@ -16,8 +17,8 @@ export const metadata: Metadata = {
 
 export default function DocsPage() {
   return (
-    <div className="min-h-screen bg-white px-4 py-10 md:px-8">
-      <DocsContent publicHeader />
-    </div>
+    <Container className="py-12 md:py-16">
+      <DocsContent />
+    </Container>
   );
 }

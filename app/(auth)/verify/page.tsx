@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
-import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Field, Input } from "@/components/ui/input";
@@ -67,10 +66,9 @@ function VerifyInner() {
   }
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6">
-      <Logo />
-      <h1 className="mt-10 text-3xl font-black">Check your email</h1>
-      <p className="mt-2 text-muted">We sent a 6-digit code to {email || "your inbox"}.</p>
+    <div className="mx-auto flex min-h-[calc(100svh-var(--header-h))] max-w-md flex-col justify-center px-6 py-12">
+      <h1 className="text-3xl font-semibold tracking-tight">Check your email</h1>
+      <p className="mt-2 text-sm text-muted">We sent a 6-digit code to {email || "your inbox"}.</p>
       <Card className="mt-8 p-6">
         <form className="flex flex-col gap-4" onSubmit={verify}>
           <Field label="Verification code">

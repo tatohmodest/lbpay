@@ -12,15 +12,15 @@ export function Logo({
   markClassName?: string;
 }) {
   return (
-    <Link href={href} className={cn("flex items-center gap-2", className)}>
+    <Link href={href} className={cn("flex items-center gap-2.5", className)}>
       <Image
         src="/illustrations/lbpay-mark.png"
         alt="LBPay"
-        width={36}
-        height={36}
-        className={cn("h-9 w-9 rounded-xl object-cover", markClassName)}
+        width={32}
+        height={32}
+        className={cn("h-8 w-8 rounded-lg object-cover", markClassName)}
       />
-      <span className="text-xl font-black tracking-tight text-brand">LBPay</span>
+      <span className="text-[17px] font-semibold tracking-tight text-ink">LBPay</span>
     </Link>
   );
 }

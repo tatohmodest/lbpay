@@ -24,7 +24,7 @@ export function WalletShell({ children }: { children: React.ReactNode }) {
     <Guard>
       <div className="min-h-screen pb-24 md:pb-0">
         <AppHeader />
-        <main className="mx-auto max-w-7xl px-4 py-6 md:px-8 md:py-8">{children}</main>
+        <main className="mx-auto max-w-7xl px-4 pb-6 pt-[calc(var(--header-h)+1.25rem)] md:px-8 md:pb-8">{children}</main>
         <BottomNav />
       </div>
     </Guard>
@@ -51,7 +51,7 @@ export function ConsoleShell({
           <AppHeader />
         </div>
         <ConsoleSidebar title={title} subtitle={subtitle} items={items} cta={cta} />
-        <main className={cn("px-4 py-6 pb-24 md:px-8 md:pb-8 lg:ml-64")}>{children}</main>
+        <main className={cn("px-4 pb-24 pt-[calc(var(--header-h)+1.25rem)] md:px-8 md:pb-8 lg:ml-64 lg:pt-8")}>{children}</main>
         <BottomNav />
       </div>
     </Guard>

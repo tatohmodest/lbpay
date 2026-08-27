@@ -1,6 +1,6 @@
 # lbpay
 
-LBPay is a payment and financial infrastructure platform for Cameroon — wallets for people, checkout for businesses, and APIs for developers. PayUnit (or another processor) is a rail underneath LBPay, not the product users see.
+LBPay is a payment and financial infrastructure platform for Cameroon: wallets for people, checkout for businesses, and APIs for developers. PayUnit (or another processor) is a rail underneath LBPay, not the product users see.
 
 ## Products and roles
 
@@ -12,6 +12,8 @@ LBPay is a payment and financial infrastructure platform for Cameroon — wallet
 | **Admin** | Listed in `ADMIN_EMAILS` | Users, freeze, KYC, transaction fixes, wallet adjustments, audit. `/admin` always asks for a fresh email OTP |
 
 Brand color: `#00b369`. Amounts are XAF.
+
+Public routes: `/`, `/products/wallet`, `/products/business`, `/products/developers`, `/docs`, `/login`, `/signup`.
 
 ## Stack
 
@@ -33,23 +35,23 @@ There is no demo login. The first operator account is the email you put in `ADMI
 **Sessions**
 
 - **Mobile:** cookie lasts a long time. If the app is backgrounded, coming back asks for the PIN.
-- **Web:** idle for ~18 minutes signs the user out.
+- **Web:** idle for about 18 minutes signs the user out.
 - **Admin:** a separate 20-minute OTP step-up on `/admin`.
 
 ## Money movement
 
-- **Wallet transfer** — LBPay → LBPay. Ledger only.
-- **Disbursement / withdraw** — LBPay → MTN or Orange via PayUnit. Review + PIN.
-- **Deposit** — MTN, Orange, or card → LBPay wallet.
-- **API sandbox** — test keys (`sk_test_…`) use the sandbox rail.
-- **API live** — `sk_live_…` after developer KYC, uses PayUnit when configured.
+- **Wallet transfer:** LBPay to LBPay. Ledger only.
+- **Disbursement / withdraw:** LBPay to MTN or Orange via PayUnit. Review + PIN.
+- **Deposit:** MTN, Orange, or card to LBPay wallet.
+- **API sandbox:** test keys (`sk_test_…`) use the sandbox rail.
+- **API live:** `sk_live_…` after developer KYC, uses PayUnit when configured.
 
 ## Run locally
 
 ```bash
 npm install
 cp .env.example .env.local
-# set ADMIN_EMAILS and SMTP, then:
+# set ADMIN_EMAILS, SESSION_SECRET, EMAIL_FROM, and SMTP, then:
 npm run dev
 ```
 

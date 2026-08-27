@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Logo } from "@/components/logo";
 import { PinPad } from "@/components/auth/pin-pad";
 import { isMobileClient } from "@/lib/device";
 import { readApiJson } from "@/lib/http";
@@ -49,9 +48,8 @@ export default function PinSetupPage() {
   }
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-6">
-      <Logo />
-      <h1 className="mt-10 text-center text-3xl font-black">
+    <div className="mx-auto flex min-h-[calc(100svh-var(--header-h))] max-w-sm flex-col justify-center px-6 py-12">
+      <h1 className="text-center text-3xl font-semibold tracking-tight">
         {stage === "create" ? "Create your PIN" : "Confirm your PIN"}
       </h1>
       <p className="mt-2 mb-8 text-center text-sm text-muted">

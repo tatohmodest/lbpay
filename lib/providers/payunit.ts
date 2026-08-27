@@ -9,7 +9,7 @@ type PayUnitConfig = {
 };
 
 /**
- * PayUnit REST rail — collections and disbursements.
+ * PayUnit REST rail: collections and disbursements.
  * Docs: https://developer.payunit.net
  * Host: https://gateway.payunit.net
  */

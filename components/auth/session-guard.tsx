@@ -150,7 +150,7 @@ export function SessionGuard({ children }: { children: React.ReactNode }) {
         <div className="fixed inset-0 z-[95] grid place-items-center bg-paper px-6">
           <div className="w-full max-w-sm">
             <Logo href="/wallet" />
-            <h1 className="mt-8 text-center text-2xl font-black">Welcome back</h1>
+            <h1 className="mt-8 text-center text-2xl font-semibold tracking-tight">Welcome back</h1>
             <p className="mb-6 mt-1 text-center text-sm text-muted">
               Enter your PIN to open @{state.user.lbpayId}
             </p>

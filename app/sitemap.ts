@@ -5,6 +5,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const lastModified = new Date();
   const publicRoutes = [
     { path: "/", changeFrequency: "weekly" as const, priority: 1 },
+    { path: "/products/wallet", changeFrequency: "weekly" as const, priority: 0.9 },
+    { path: "/products/business", changeFrequency: "weekly" as const, priority: 0.9 },
+    { path: "/products/developers", changeFrequency: "weekly" as const, priority: 0.9 },
     { path: "/docs", changeFrequency: "weekly" as const, priority: 0.9 },
     { path: "/signup", changeFrequency: "monthly" as const, priority: 0.8 },
     { path: "/login", changeFrequency: "monthly" as const, priority: 0.6 },

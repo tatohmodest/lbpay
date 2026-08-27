@@ -29,7 +29,7 @@ export function RoleGate({
     return (
       <Card className="mx-auto mt-10 max-w-lg p-8 text-center">
         <p className="text-xs font-bold uppercase tracking-wide text-brand">KYC in review</p>
-        <h1 className="mt-2 text-2xl font-black">
+        <h1 className="mt-2 text-2xl font-semibold tracking-tight">
           {kind === "business" ? "Business access pending" : "Live developer access pending"}
         </h1>
         <p className="mt-2 text-sm text-muted">
@@ -74,7 +74,7 @@ function ApplyAccess({ track, kind }: { track: KycTrack; kind: AccountKind }) {
   return (
     <div className="mx-auto max-w-lg py-8">
       <p className="text-xs font-bold uppercase tracking-wide text-brand">Role access</p>
-      <h1 className="mt-2 text-3xl font-black">
+      <h1 className="mt-2 text-3xl font-semibold tracking-tight">
         {kind === "business" ? "Apply for Business" : "Apply for Developers"}
       </h1>
       <p className="mt-2 text-sm text-muted">

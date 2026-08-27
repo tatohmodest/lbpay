@@ -4,8 +4,7 @@ export const SITE_NAME = "LBPay";
 export const SITE_TAGLINE = "Financial infrastructure for Cameroon";
 export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://lbpay.cm").replace(/\/$/, "");
 
-export const SITE_TITLE =
-  "LBPay — Send money in Cameroon | MTN, Orange Money, XAF wallet";
+export const SITE_TITLE = "LBPay | Send money in Cameroon, MTN, Orange Money, XAF wallet";
 
 export const SITE_DESCRIPTION =
   "LBPay is Cameroon's payment and wallet platform. Send and receive XAF, transfer between MTN Mobile Money and Orange Money, collect with QR and payment links, and integrate a sandbox-to-live payments API.";

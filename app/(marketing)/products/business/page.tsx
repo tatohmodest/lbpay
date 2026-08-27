@@ -1,0 +1,26 @@
+import { ProductPage, productMetadata } from "@/components/marketing/product-page";
+
+export const metadata = productMetadata(
+  "Business checkout for Cameroon",
+  "Collect MTN Mobile Money, Orange Money, cards, and wallet through one QR and payment-link checkout.",
+  "/products/business",
+);
+
+export default function BusinessProductPage() {
+  return (
+    <ProductPage
+      eyebrow="Business"
+      title="One counter for every way Cameroon pays."
+      description="After KYC and admin approval, a merchant gets QR codes, payment links, and a single checkout. Customers pay with the method they already have. You do not stitch networks together."
+      image="/illustrations/merchant-qr.png"
+      alt="LBPay merchant QR checkout in Cameroon"
+      points={[
+        "MTN, Orange, cards, and LBPay wallet",
+        "Payment links you can share anywhere",
+        "Settlements on the same XAF ledger",
+      ]}
+      cta={{ href: "/signup", label: "Apply as a business" }}
+      secondary={{ href: "/docs", label: "Read the docs" }}
+    />
+  );
+}

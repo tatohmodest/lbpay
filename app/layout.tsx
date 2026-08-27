@@ -25,7 +25,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
     default: SITE_TITLE,
-    template: "%s · LBPay",
+    template: "%s | LBPay",
   },
   description: SITE_DESCRIPTION,
   keywords: SITE_KEYWORDS,

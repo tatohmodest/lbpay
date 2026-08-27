@@ -1,28 +1,21 @@
 import Link from "next/link";
-import { Logo } from "@/components/logo";
 import { LEGAL_NOTE } from "@/lib/flags";
 
-export function DocsContent({ publicHeader = false }: { publicHeader?: boolean }) {
+export function DocsContent() {
   return (
     <div className="mx-auto max-w-3xl">
-      {publicHeader ? (
-        <div className="mb-8 flex items-center justify-between">
-          <Logo />
-          <Link href="/signup" className="text-sm font-bold text-brand">
-            Get API keys
-          </Link>
-        </div>
-      ) : null}
-      <h1 className="text-3xl font-black">LBPay payments API for Cameroon</h1>
-      <p className="mt-2 text-muted">
-        Collect and disburse XAF with one integration. MTN Mobile Money, Orange Money,
-        cards, and the LBPay wallet are rails. Developers integrate LBPay — not a single
-        processor.
+      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-deep">Developers</p>
+      <h1 className="mt-3 text-3xl font-semibold tracking-tight md:text-4xl">
+        Payments API for Cameroon
+      </h1>
+      <p className="mt-3 text-[15px] leading-7 text-muted">
+        Collect and disburse XAF with one integration. MTN Mobile Money, Orange Money, cards,
+        and the LBPay wallet are rails. Developers integrate LBPay, not a single processor.
       </p>
-      <section className="mt-8 space-y-4 text-sm leading-7 text-ink">
-        <h2 className="text-xl font-bold">Wallet transfer vs disbursement</h2>
+      <section className="mt-10 space-y-4 text-sm leading-7 text-ink">
+        <h2 className="text-xl font-semibold">Wallet transfer vs disbursement</h2>
         <p>
-          LBPay → LBPay is an internal ledger move. The sender’s wallet balance drops and the
+          LBPay to LBPay is an internal ledger move. The sender’s wallet balance drops and the
           recipient’s wallet balance rises. No Mobile Money rail is involved. The recipient can
           withdraw later.
         </p>
@@ -43,28 +36,28 @@ export function DocsContent({ publicHeader = false }: { publicHeader?: boolean }
           Deposits collect from MTN, Orange, or card via PayUnit initialize + makepayment, then
           credit the wallet when the rail reports success.
         </p>
-        <h2 className="text-xl font-bold">Account security</h2>
+        <h2 className="text-xl font-semibold">Account security</h2>
         <ul className="list-disc pl-5 text-muted">
           <li>Signup sends a 6-digit email OTP (Nodemailer / SMTP).</li>
           <li>After OTP, the user sets a 4-digit PIN.</li>
           <li>Login is email + password, then PIN.</li>
           <li>Sends, withdrawals, and deposits require the PIN on a confirmation sheet.</li>
           <li>Mobile: the session lasts; returning to the app after it was inactive asks for the PIN again.</li>
-          <li>Web: no PIN lock overlay. Idle for ~18 minutes signs the user out.</li>
+          <li>Web: no PIN lock overlay. Idle for about 18 minutes signs the user out.</li>
         </ul>
-        <h2 className="text-xl font-bold">Roles</h2>
+        <h2 className="text-xl font-semibold">Roles</h2>
         <ul className="list-disc pl-5 text-muted">
-          <li>Personal — wallet. Everyone starts here after signup.</li>
-          <li>Business — merchant console. Apply with KYC; an admin approves it.</li>
-          <li>Developer — sandbox keys immediately on apply; live keys after KYC approval.</li>
-          <li>Admin — platform operators. Entering /admin always requires a fresh email OTP.</li>
+          <li>Personal: wallet. Everyone starts here after signup.</li>
+          <li>Business: merchant console. Apply with KYC; an admin approves it.</li>
+          <li>Developer: sandbox keys immediately on apply; live keys after KYC approval.</li>
+          <li>Admin: platform operators. Entering /admin always requires a fresh email OTP.</li>
         </ul>
-        <h2 className="text-xl font-bold">Authentication</h2>
+        <h2 className="text-xl font-semibold">Authentication</h2>
         <p>Send your secret key as a Bearer token.</p>
         <pre className="overflow-x-auto rounded-2xl bg-navy p-4 font-mono text-xs text-emerald-100">
           Authorization: Bearer sk_test_...
         </pre>
-        <h2 className="text-xl font-bold">Create a payment</h2>
+        <h2 className="text-xl font-semibold">Create a payment</h2>
         <pre className="overflow-x-auto rounded-2xl bg-navy p-4 font-mono text-xs text-emerald-100">
 {`curl https://your-lbpay-host/api/v1/payments \\
   -H "Authorization: Bearer sk_test_YOUR_SECRET" \\
@@ -76,15 +69,20 @@ export function DocsContent({ publicHeader = false }: { publicHeader?: boolean }
     "method": "mobile_money"
   }'`}
         </pre>
-        <h2 className="text-xl font-bold">Sandbox amounts</h2>
+        <h2 className="text-xl font-semibold">Sandbox amounts</h2>
         <ul className="list-disc pl-5 text-muted">
-          <li>Amount ending in 00 → SUCCESS</li>
-          <li>Amount ending in 13 → FAILED</li>
-          <li>Amount ending in 77 → PENDING</li>
+          <li>Amount ending in 00: SUCCESS</li>
+          <li>Amount ending in 13: FAILED</li>
+          <li>Amount ending in 77: PENDING</li>
         </ul>
-        <h2 className="text-xl font-bold">SDKs (planned)</h2>
+        <h2 className="text-xl font-semibold">SDKs (planned)</h2>
         <p className="font-mono text-xs">npm i @lbpay/node · pip install lbpay · Flutter / React Native</p>
         <p className="text-xs text-muted">{LEGAL_NOTE}</p>
+        <p className="pt-4">
+          <Link href="/signup" className="text-sm font-medium text-brand-deep">
+            Get API keys
+          </Link>
+        </p>
       </section>
     </div>
   );

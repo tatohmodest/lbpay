@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "LBPay — Payments for Cameroon",
+    name: "LBPay. Payments for Cameroon",
     short_name: "LBPay",
     description:
       "Send, receive, and collect XAF across MTN Mobile Money, Orange Money, cards, and the LBPay wallet.",

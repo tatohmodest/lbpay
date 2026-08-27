@@ -17,7 +17,7 @@ export const initialState: AppState = {
     revenue: 0,
     activeLinks: 0,
     nextPayout: 0,
-    nextPayoutAt: "—",
+    nextPayoutAt: "n/a",
     settlementStatus: "pending",
   },
   apiKeys: [],

@@ -45,7 +45,7 @@ export default function WalletPage() {
           <div className="relative z-10 flex items-start justify-between">
             <div>
               <p className="text-sm text-white/80">Wallet Balance</p>
-              <h1 className="mt-1 text-4xl font-black tracking-tight md:text-5xl">
+              <h1 className="mt-1 text-4xl font-semibold tracking-tight md:text-5xl">
                 {formatXAF(balance, { withCurrency: false })}{" "}
                 <span className="text-2xl font-semibold opacity-80">XAF</span>
               </h1>

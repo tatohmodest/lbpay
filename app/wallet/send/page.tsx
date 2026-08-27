@@ -48,7 +48,7 @@ function SendInner() {
       return [
         { label: "Type", value: "LBPay wallet transfer" },
         { label: "To", value: `@${lookup.data?.user?.lbpayId || to.replace(/^@/, "")}` },
-        { label: "Name", value: lookup.data?.user?.name || "—" },
+        { label: "Name", value: lookup.data?.user?.name || "n/a" },
         { label: "Rail", value: "Internal ledger" },
         { label: "Fee", value: "0 XAF" },
       ];
