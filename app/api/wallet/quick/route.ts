@@ -3,16 +3,11 @@ import { recordLedgerMove } from "@/lib/server/db";
 import { payunitReference, verifySecret } from "@/lib/server/crypto";
 import { getPaymentRail } from "@/lib/providers";
 import { requireActiveUser } from "@/lib/server/guard";
-import { cameroonMsisdn, detectMobileNetwork, isCameroonMsisdn } from "@/lib/phone";
+import { cameroonMsisdn, isCameroonMsisdn } from "@/lib/phone";
 import { directTransferFee } from "@/lib/fees";
 import { assertAmount, assertDailyOutbound } from "@/lib/server/limits";
 import { publicPaymentError } from "@/lib/public-error";
 import { progressQuickTransfer } from "@/lib/server/quick";
-
-function momoNetwork(phone: string) {
-  const network = detectMobileNetwork(phone);
-  return network === "mtn" || network === "orange" ? network : null;
-}
 
 export async function POST(request: Request) {
   try {
@@ -24,8 +19,8 @@ export async function POST(request: Request) {
     const from = cameroonMsisdn(body.from || user.phone);
     const to = cameroonMsisdn(body.to);
     const pin = String(body.pin || "");
-    const fromNetwork = momoNetwork(from);
-    const toNetwork = momoNetwork(to);
+    const fromNetwork = body.fromNetwork === "orange" ? "orange" : body.fromNetwork === "mtn" ? "mtn" : null;
+    const toNetwork = body.toNetwork === "orange" ? "orange" : body.toNetwork === "mtn" ? "mtn" : null;
     const fee = directTransferFee(amount);
 
     if (!amount) {
@@ -40,17 +35,14 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
-    if (!isCameroonMsisdn(from) || !fromNetwork) {
-      return NextResponse.json(
-        { error: "Enter a valid MTN or Orange number to pay from." },
-        { status: 400 },
-      );
+    if (!fromNetwork || !toNetwork) {
+      return NextResponse.json({ error: "Choose MTN or Orange for both numbers." }, { status: 400 });
     }
-    if (!isCameroonMsisdn(to) || !toNetwork) {
-      return NextResponse.json(
-        { error: "Enter a valid MTN or Orange number to send to." },
-        { status: 400 },
-      );
+    if (!isCameroonMsisdn(from)) {
+      return NextResponse.json({ error: "Enter a valid number to pay from." }, { status: 400 });
+    }
+    if (!isCameroonMsisdn(to)) {
+      return NextResponse.json({ error: "Enter a valid number to send to." }, { status: 400 });
     }
     if (from === to) {
       return NextResponse.json({ error: "Use two different numbers." }, { status: 400 });

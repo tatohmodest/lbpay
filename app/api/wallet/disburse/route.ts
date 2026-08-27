@@ -24,7 +24,7 @@ export async function POST(request: Request) {
           : "mtn";
     const pin = String(body.pin || "");
     const note = String(body.note || "Wallet withdrawal");
-    const fee = momoOutFee(amount, user.phone, network);
+    const fee = momoOutFee(amount);
 
     if (!amount) {
       return NextResponse.json({ error: "Enter an amount." }, { status: 400 });

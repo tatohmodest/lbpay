@@ -14,7 +14,7 @@ export async function POST(request: Request) {
   const amount = Number(body.amount);
   const phone = cameroonMsisdn(body.phone);
   const network = body.network === "orange" ? "orange" : "mtn";
-  const fee = momoOutFee(amount, user.phone, network);
+  const fee = momoOutFee(amount);
   if (!amount || !isCameroonMsisdn(phone)) {
     await logApi(user.id, "POST", "/v1/payouts", 400);
     return NextResponse.json({ error: "amount and a valid Cameroon phone are required" }, { status: 400 });

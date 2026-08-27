@@ -14,7 +14,7 @@ import { formatXAF } from "@/lib/format";
 import { useDisburse, useHandleLookup, useMe, useTransfer } from "@/lib/hooks/wallet";
 import { useNotify } from "@/lib/notify";
 import { cameroonMsisdn, isCameroonMsisdn } from "@/lib/phone";
-import { feeLabel, momoOutFee, momoOutRate } from "@/lib/fees";
+import { momoOutFee } from "@/lib/fees";
 import { AmountField } from "@/components/amount-field";
 import { amountIssue, cameroonDay, dailyOutboundCap, outboundKinds } from "@/lib/limits";
 
@@ -46,8 +46,7 @@ function SendInner() {
   const balance = me.data?.balance ?? state.balance;
   const value = Number(amount) || 0;
   const phone = network === "wallet" ? "" : cameroonMsisdn(to);
-  const rate = network === "wallet" ? 0 : momoOutRate(state.user.phone, network);
-  const fee = network === "wallet" ? 0 : momoOutFee(value, state.user.phone, network);
+  const fee = network === "wallet" ? 0 : momoOutFee(value);
   const debit = value + fee;
   const amountKind = network === "wallet" ? "wallet" : "momo";
   const cap = network === "wallet" ? null : dailyOutboundCap(me.data?.user?.kyc?.personal);
@@ -71,19 +70,14 @@ function SendInner() {
   const details =
     network === "wallet"
       ? [
-          { label: "Type", value: "LBPay wallet transfer" },
           { label: "To", value: `@${lookup.data?.user?.lbpayId || to.replace(/^@/, "")}` },
-          { label: "Name", value: lookup.data?.user?.name || "n/a" },
-          { label: "Rail", value: "Internal ledger" },
-          { label: "Fee", value: "Free" },
+          { label: "They receive", value: formatXAF(value) },
         ]
       : [
-          { label: "Type", value: "Disbursement" },
-          { label: "Network", value: network === "orange" ? "Orange Money" : "MTN Mobile Money" },
+          { label: "Network", value: network === "orange" ? "Orange" : "MTN" },
           { label: "Phone", value: phone },
           { label: "They receive", value: formatXAF(value) },
-          { label: `Fee ${feeLabel(rate)}`, value: formatXAF(fee) },
-          { label: "Debited from wallet", value: formatXAF(debit) },
+          { label: "You pay", value: formatXAF(debit) },
         ];
 
   async function confirm(pin: string) {
@@ -107,9 +101,6 @@ function SendInner() {
   return (
     <div className="mx-auto max-w-xl">
       <h1 className="text-2xl font-black">Send money</h1>
-      <p className="mt-1 text-sm text-muted">
-        Wallet to wallet is free. Same-network Mobile Money is 3%. Orange to MTN or MTN to Orange is 6%.
-      </p>
       <Card className="mt-6 p-6">
         <p className="mb-4 text-sm text-muted">Available {formatXAF(balance)}</p>
         <form
@@ -151,14 +142,7 @@ function SendInner() {
               ))}
             </div>
           </Field>
-          <Field
-            label={network === "wallet" ? "LBPay ID" : "Mobile number"}
-            hint={
-              network === "wallet"
-                ? "Moves wallet balance only. The recipient can withdraw later."
-                : "9-digit number, no +237. Cash leaves LBPay to this Mobile Money number."
-            }
-          >
+          <Field label={network === "wallet" ? "LBPay ID" : "Number"}>
             <Input
               inputMode={network === "wallet" ? "text" : "numeric"}
               placeholder={network === "wallet" ? "@handle" : "677000000"}
@@ -179,24 +163,12 @@ function SendInner() {
             value={amount}
             onChange={setAmount}
             kind={amountKind}
-            label="Amount (XAF)"
-            extra={
-              network === "wallet"
-                ? undefined
-                : cap
-                  ? `KYC Level 1 daily limit: ${formatXAF(cap)}. Remaining today ${formatXAF(Math.max(0, cap - usedToday))}.`
-                  : "KYC Level 2: no daily sending cap."
-            }
+            receive={value}
+            pay={network === "wallet" ? undefined : debit}
           />
           <Field label="Note">
             <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Optional" />
           </Field>
-          {value > 0 && network !== "wallet" && !amountIssue(value, "momo") ? (
-            <p className="text-sm text-muted">
-              Fee {feeLabel(rate)} {formatXAF(fee)}. They receive {formatXAF(value)}. Wallet is charged{" "}
-              {formatXAF(debit)}.
-            </p>
-          ) : null}
           {overDaily ? (
             <p className="text-sm font-semibold text-danger">
               Daily limit remaining is {formatXAF(Math.max(0, (cap || 0) - usedToday))}.
@@ -230,19 +202,10 @@ function SendInner() {
       </div>
       <ConfirmSheet
         open={open}
-        title={network === "wallet" ? "Transfer wallet balance" : "Send to Mobile Money"}
-        subtitle={
-          network === "wallet"
-            ? "This is an LBPay → LBPay ledger move. No Mobile Money rail."
-            : "This disbursement sends cash out of your wallet via PayUnit."
-        }
+        title={network === "wallet" ? "Confirm send" : "Confirm send"}
+        subtitle={network === "wallet" ? `@${lookup.data?.user?.lbpayId || to.replace(/^@/, "")}` : phone}
         amount={network === "wallet" ? value : debit}
         details={details}
-        warning={
-          network === "wallet"
-            ? "The recipient’s wallet balance increases immediately. They can withdraw it themselves."
-            : "Check the number carefully. Mobile Money payouts cannot be reversed from LBPay."
-        }
         loading={transfer.isPending || disburse.isPending}
         error={pinError}
         confirmLabel="Enter PIN to send"

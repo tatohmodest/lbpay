@@ -139,16 +139,7 @@ export default function WalletPage() {
           <p className="inline-flex items-center gap-1 text-xs font-bold uppercase tracking-wide text-brand">
             <Zap className="h-3.5 w-3.5" /> Fast transfer
           </p>
-          <h2 className="mt-2 text-lg font-bold">MTN or Orange to any number</h2>
-          <p className="mt-1 text-sm text-muted">
-            Enter the number you pay from and the number receiving the money. Direct transfers are 6%.
-            Minimum 1,000 XAF.
-          </p>
-          <div className="mt-4 flex items-center gap-2">
-            <span className="rounded-full bg-mtn px-2 py-1 text-[10px] font-black text-black">MTN</span>
-            <span className="text-muted">↔</span>
-            <span className="rounded-full bg-om px-2 py-1 text-[10px] font-black text-white">OM</span>
-          </div>
+          <h2 className="mt-2 text-lg font-bold">Quick Transfer</h2>
           <Link href="/wallet/quick" className="mt-4 block">
             <Button className="w-full">Open Quick Transfer</Button>
           </Link>

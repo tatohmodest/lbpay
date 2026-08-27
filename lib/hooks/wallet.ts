@@ -123,7 +123,14 @@ export function useHandleLookup(query: string) {
 export function useQuickTransfer() {
   const client = useQueryClient();
   return useMutation({
-    mutationFn: (input: { amount: number; from: string; to: string; pin: string }) =>
+    mutationFn: (input: {
+      amount: number;
+      from: string;
+      to: string;
+      fromNetwork: "mtn" | "orange";
+      toNetwork: "mtn" | "orange";
+      pin: string;
+    }) =>
       fetch("/api/wallet/quick", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

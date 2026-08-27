@@ -12,7 +12,7 @@ import { useDisburse, useMe } from "@/lib/hooks/wallet";
 import { useNotify } from "@/lib/notify";
 import { NetworkMark } from "@/components/network-mark";
 import { cameroonMsisdn, isCameroonMsisdn } from "@/lib/phone";
-import { feeLabel, momoOutFee, momoOutRate } from "@/lib/fees";
+import { momoOutFee } from "@/lib/fees";
 import { AmountField } from "@/components/amount-field";
 import { amountIssue, cameroonDay, dailyOutboundCap, outboundKinds } from "@/lib/limits";
 
@@ -31,8 +31,7 @@ export default function WithdrawPage() {
   const balance = me.data?.balance ?? state.balance;
   const value = Number(amount) || 0;
   const clean = cameroonMsisdn(phone);
-  const rate = momoOutRate(state.user.phone, network);
-  const fee = momoOutFee(value, state.user.phone, network);
+  const fee = momoOutFee(value);
   const debit = value + fee;
   const cap = dailyOutboundCap(me.data?.user?.kyc?.personal);
   const usedToday = (me.data?.transactions || [])
@@ -52,12 +51,9 @@ export default function WithdrawPage() {
     isCameroonMsisdn(clean);
 
   const details = [
-    { label: "Type", value: "Wallet withdrawal" },
-    { label: "Network", value: network === "orange" ? "Orange Money" : "MTN Mobile Money" },
-    { label: "Phone", value: clean },
+    { label: "To", value: `${network === "orange" ? "Orange" : "MTN"} ${clean}` },
     { label: "They receive", value: formatXAF(value) },
-    { label: `Fee ${feeLabel(rate)}`, value: formatXAF(fee) },
-    { label: "Debited from wallet", value: formatXAF(debit) },
+    { label: "You pay", value: formatXAF(debit) },
   ];
 
   async function confirm(pin: string) {
@@ -76,10 +72,6 @@ export default function WithdrawPage() {
   return (
     <div className="mx-auto max-w-xl">
       <h1 className="text-2xl font-black">Withdraw</h1>
-      <p className="mt-1 text-sm text-muted">
-        Disburse wallet balance to your Mobile Money number. Same-network fee is 3%. Orange to MTN or
-        MTN to Orange is 6%. Available {formatXAF(balance)}.
-      </p>
       <Card className="mt-6 p-6">
         <form
           className="flex flex-col gap-4"
@@ -105,7 +97,7 @@ export default function WithdrawPage() {
               </button>
             ))}
           </div>
-          <Field label="Mobile Money number" hint="9-digit number, no +237">
+          <Field label="Number">
             <Input
               inputMode="numeric"
               placeholder="677000000"
@@ -118,19 +110,10 @@ export default function WithdrawPage() {
             value={amount}
             onChange={setAmount}
             kind="withdraw"
-            label="Amount they receive (XAF)"
-            extra={
-              cap
-                ? `KYC Level 1 daily limit: ${formatXAF(cap)}. Remaining today ${formatXAF(Math.max(0, cap - usedToday))}.`
-                : "KYC Level 2: no daily withdrawal cap."
-            }
+            receive={value}
+            pay={debit}
+            payLabel="Wallet pays"
           />
-          {value > 0 && !amountIssue(value, "withdraw") ? (
-            <p className="text-sm text-muted">
-              Fee {feeLabel(rate)} {formatXAF(fee)}. They receive {formatXAF(value)}. Wallet is charged{" "}
-              {formatXAF(debit)}.
-            </p>
-          ) : null}
           {overDaily ? (
             <p className="text-sm font-semibold text-danger">Daily limit remaining is {formatXAF(Math.max(0, (cap || 0) - usedToday))}.</p>
           ) : null}
@@ -144,11 +127,10 @@ export default function WithdrawPage() {
       </Card>
       <ConfirmSheet
         open={open}
-        title="Confirm disbursement"
-        subtitle="Cash leaves LBPay and lands on Mobile Money. Confirm the number."
+        title="Confirm withdrawal"
+        subtitle={`${network === "orange" ? "Orange" : "MTN"} ${clean}`}
         amount={debit}
         details={details}
-        warning="This cannot be reversed from LBPay once the rail accepts it."
         loading={disburse.isPending}
         error={pinError}
         confirmLabel="Enter PIN to withdraw"

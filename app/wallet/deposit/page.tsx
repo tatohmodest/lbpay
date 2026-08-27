@@ -17,10 +17,10 @@ import { AmountField } from "@/components/amount-field";
 import { amountIssue } from "@/lib/limits";
 import type { PaymentMethod } from "@/lib/types";
 
-const methods: { id: PaymentMethod; label: string; hint: string }[] = [
-  { id: "mtn", label: "MTN Mobile Money", hint: "MTN → LBPay wallet" },
-  { id: "orange", label: "Orange Money", hint: "Orange → LBPay wallet" },
-  { id: "card", label: "Visa / Mastercard", hint: "Card → LBPay wallet" },
+const methods: { id: PaymentMethod; label: string }[] = [
+  { id: "mtn", label: "MTN" },
+  { id: "orange", label: "Orange" },
+  { id: "card", label: "Card" },
 ];
 
 export default function DepositPage() {
@@ -46,14 +46,9 @@ export default function DepositPage() {
   const ussdCode = method === "orange" ? "#150#" : "*126#";
 
   const details = [
-    { label: "Type", value: "Wallet deposit" },
-    {
-      label: "From",
-      value: method === "mtn" ? "MTN Mobile Money" : method === "orange" ? "Orange Money" : "Card",
-    },
-    { label: "Number", value: method === "card" ? "Hosted checkout" : clean },
-    { label: "To wallet", value: formatXAF(value) },
-    { label: "Fee 3%", value: formatXAF(fee) },
+    { label: "From", value: method === "mtn" ? "MTN" : method === "orange" ? "Orange" : "Card" },
+    { label: "Number", value: method === "card" ? "Card" : clean },
+    { label: "Wallet receives", value: formatXAF(value) },
     { label: "You pay", value: formatXAF(payAmount) },
   ];
 
@@ -149,9 +144,6 @@ export default function DepositPage() {
   return (
     <div className="mx-auto max-w-xl">
       <h1 className="text-2xl font-black">Add money</h1>
-      <p className="mt-1 text-sm text-muted">
-        Fund your LBPay wallet. Current balance {formatXAF(balance)}. Deposit fee is 3%.
-      </p>
       {waiting ? (
         <Card className="mt-6 p-6 text-center">
           <p className="text-sm font-bold uppercase tracking-wide text-brand">Waiting for payment</p>
@@ -176,6 +168,7 @@ export default function DepositPage() {
         </Card>
       ) : (
         <Card className="mt-6 p-6">
+          <p className="mb-4 text-sm text-muted">Available {formatXAF(balance)}</p>
           <form
             className="flex flex-col gap-4"
             onSubmit={(e) => {
@@ -196,15 +189,12 @@ export default function DepositPage() {
                   }`}
                 >
                   <NetworkMark network={item.id} />
-                  <span>
-                    <p className="font-semibold">{item.label}</p>
-                    <p className="text-xs text-muted">{item.hint}</p>
-                  </span>
+                  <span className="font-semibold">{item.label}</span>
                 </button>
               ))}
             </div>
             {method !== "card" ? (
-              <Field label="Paying from" hint="9-digit number, no +237">
+              <Field label="Number">
                 <Input
                   inputMode="numeric"
                   placeholder="677000000"
@@ -214,12 +204,14 @@ export default function DepositPage() {
                 />
               </Field>
             ) : null}
-            <AmountField value={amount} onChange={setAmount} kind="deposit" />
-            {value > 0 && !amountIssue(value, "deposit") ? (
-              <p className="text-sm text-muted">
-                Fee 3% {formatXAF(fee)}. You pay {formatXAF(payAmount)}. Wallet receives {formatXAF(value)}.
-              </p>
-            ) : null}
+            <AmountField
+              value={amount}
+              onChange={setAmount}
+              kind="deposit"
+              receive={value}
+              pay={payAmount}
+              receiveLabel="Wallet receives"
+            />
             <Button type="submit" disabled={!ready}>
               Review deposit
             </Button>
@@ -229,13 +221,13 @@ export default function DepositPage() {
       <ConfirmSheet
         open={open}
         title="Confirm deposit"
-        subtitle="You are funding your LBPay wallet from an external rail."
+        subtitle={method === "card" ? "Card" : `${method === "orange" ? "Orange" : "MTN"} ${clean}`}
         amount={payAmount}
         details={details}
         warning={
           method === "card"
-            ? "You will finish payment on the hosted checkout page."
-            : `Approve the collection prompt on your phone. If it does not appear, dial ${ussdCode} and confirm pay.`
+            ? undefined
+            : `If the popup does not appear, dial ${ussdCode} and confirm pay.`
         }
         loading={collect.isPending}
         error={pinError}

@@ -11,7 +11,7 @@ import { useDisburse, useMe } from "@/lib/hooks/wallet";
 import { useNotify } from "@/lib/notify";
 import { NetworkMark } from "@/components/network-mark";
 import { cameroonMsisdn, isCameroonMsisdn } from "@/lib/phone";
-import { feeLabel, momoOutFee, momoOutRate } from "@/lib/fees";
+import { momoOutFee } from "@/lib/fees";
 import { AmountField } from "@/components/amount-field";
 import { amountIssue } from "@/lib/limits";
 
@@ -27,9 +27,7 @@ export default function PayoutsPage() {
 
   const value = Number(amount) || 0;
   const clean = cameroonMsisdn(phone);
-  const sourcePhone = me.data?.user?.phone;
-  const rate = momoOutRate(sourcePhone, network);
-  const fee = momoOutFee(value, sourcePhone, network);
+  const fee = momoOutFee(value);
   const debit = value + fee;
   const balance = me.data?.balance ?? 0;
   const ready = !amountIssue(value, "withdraw") && value > 0 && debit <= balance && isCameroonMsisdn(clean);
@@ -38,12 +36,9 @@ export default function PayoutsPage() {
   );
 
   const details = [
-    { label: "Type", value: "API disbursement" },
-    { label: "Network", value: network.toUpperCase() },
-    { label: "Phone", value: clean },
+    { label: "To", value: `${network === "orange" ? "Orange" : "MTN"} ${clean}` },
     { label: "They receive", value: formatXAF(value) },
-    { label: `Fee ${feeLabel(rate)}`, value: formatXAF(fee) },
-    { label: "Debited from wallet", value: formatXAF(debit) },
+    { label: "You pay", value: formatXAF(debit) },
   ];
 
   async function confirm(pin: string) {
@@ -64,10 +59,6 @@ export default function PayoutsPage() {
     <div className="grid gap-6 lg:grid-cols-2">
       <div>
         <h1 className="text-2xl font-black">Payouts</h1>
-        <p className="text-sm text-muted">
-          Disburse wallet funds to MTN or Orange. Same-network fee is 3%. Cross-network is 6%. Confirm with
-          your PIN.
-        </p>
         <Card className="mt-6 p-6">
           <form
             className="flex flex-col gap-3"
@@ -78,8 +69,8 @@ export default function PayoutsPage() {
               setOpen(true);
             }}
           >
-            <AmountField value={amount} onChange={setAmount} kind="withdraw" />
-            <Field label="Phone" hint="9-digit number, no +237">
+            <AmountField value={amount} onChange={setAmount} kind="withdraw" receive={value} pay={debit} />
+            <Field label="Number">
               <Input
                 inputMode="numeric"
                 value={phone}
@@ -102,12 +93,6 @@ export default function PayoutsPage() {
                 </button>
               ))}
             </div>
-            {value > 0 && !amountIssue(value, "withdraw") ? (
-              <p className="text-sm text-muted">
-                Fee {feeLabel(rate)} {formatXAF(fee)}. They receive {formatXAF(value)}. Wallet is charged{" "}
-                {formatXAF(debit)}.
-              </p>
-            ) : null}
             <Button type="submit" disabled={!ready}>
               Review payout
             </Button>
@@ -135,8 +120,8 @@ export default function PayoutsPage() {
       </Card>
       <ConfirmSheet
         open={open}
-        title="Confirm disbursement"
-        subtitle="This sends cash out of the LBPay wallet through PayUnit."
+        title="Confirm payout"
+        subtitle={`${network === "orange" ? "Orange" : "MTN"} ${clean}`}
         amount={debit}
         details={details}
         loading={disburse.isPending}
