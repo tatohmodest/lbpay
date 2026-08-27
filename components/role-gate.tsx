@@ -37,8 +37,8 @@ export function RoleGate({
           <h1 className="text-2xl font-semibold tracking-tight">Verify your account first</h1>
           <p className="mt-2 text-sm leading-6 text-muted">
             {personal === "pending"
-              ? "We are still reviewing your account. Business benefits unlock after that."
-              : "Verify your account to unlock business benefits."}
+              ? "We are still looking this over. Business tools open after that."
+              : "A verified account is all you need to start collecting as a business."}
           </p>
           <Link href="/wallet/kyc" className="mt-6 inline-block">
             <Button>{personal === "pending" ? "See status" : "Verify account"}</Button>
@@ -54,9 +54,7 @@ export function RoleGate({
             {kind === "business" ? "Business application received" : "Developer application received"}
           </h1>
           <p className="mt-2 text-sm text-muted">
-            {kind === "developer"
-              ? "The developer portal unlocks after approval."
-              : "The business console unlocks after approval."}
+            Thanks. We are reviewing your application and will be in touch shortly.
           </p>
           <Link href="/wallet" className="mt-6 inline-block">
             <Button variant="secondary">Back to wallet</Button>
@@ -68,12 +66,12 @@ export function RoleGate({
     return (
       <div className="mx-auto max-w-lg py-8">
         <h1 className="text-3xl font-semibold tracking-tight">
-          {kind === "business" ? "Open a business account" : "Become a developer"}
+          {kind === "business" ? "Start collecting as a business" : "Add payments to your product"}
         </h1>
         <p className="mt-2 text-sm text-muted">
           {kind === "developer"
-            ? "Apply to use the payments API. Developer tools unlock on this page after approval."
-            : "Add your business details so we can open merchant tools."}
+            ? "Accept payments in your app or website with MTN, Orange, cards, and wallet."
+            : "Get paid by your customers with MTN, Orange, cards, and wallet."}
         </p>
         {kind === "developer" ? (
           <Link href="/docs" className="mt-3 inline-block text-sm font-bold text-brand">
@@ -84,7 +82,11 @@ export function RoleGate({
           <KycApplyForm
             track={track}
             title={kind === "business" ? "Business profile" : "Developer application"}
-            subtitle={kind === "developer" ? "Photos are compressed. 10MB max." : "Collections, payment links, and QR for your shop."}
+            subtitle={
+              kind === "developer"
+                ? "Tell us about your product so we can open developer tools."
+                : "A few details so customers can pay you with confidence."
+            }
           />
         </div>
       </div>

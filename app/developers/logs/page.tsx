@@ -14,6 +14,7 @@ export default function LogsPage() {
   return (
     <div>
       <h1 className="text-2xl font-black">Logs</h1>
+      <p className="mt-1 text-sm text-muted">Recent calls from your app.</p>
       <Card className="mt-6 divide-y divide-line">
         {logs.length === 0 ? (
           <p className="p-6 text-sm text-muted">No requests yet.</p>

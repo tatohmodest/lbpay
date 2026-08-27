@@ -63,7 +63,7 @@ export default function BusinessPage() {
     <div>
       <header className="mb-8">
         <h1 className="text-3xl font-black">Business overview</h1>
-        <p className="text-muted">{data.data?.businessName || "Merchant"} · collections</p>
+        <p className="text-muted">See how your shop is doing today.</p>
       </header>
       <div className="mb-6 grid gap-4 md:grid-cols-2">
         <Card className="p-5">

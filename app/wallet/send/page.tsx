@@ -101,7 +101,7 @@ function SendInner() {
   return (
     <div className="mx-auto max-w-xl">
       <h1 className="text-2xl font-black">Send money</h1>
-      <p className="mt-1 text-sm text-muted">Reach a wallet, MTN, or Orange from one place.</p>
+      <p className="mt-1 text-sm text-muted">Send to a friend, a shop, or any Mobile Money number.</p>
       <Card className="mt-6 p-6">
         <p className="mb-4 text-sm text-muted">Available {formatXAF(balance)}</p>
         <form
@@ -113,7 +113,7 @@ function SendInner() {
             setOpen(true);
           }}
         >
-          <Field label="How should it move?">
+          <Field label="Send to">
             <div className="grid grid-cols-3 gap-2">
               {(
                 [

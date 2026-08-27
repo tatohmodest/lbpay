@@ -74,7 +74,7 @@ export default function ProfilePage() {
             </Link>
           ) : (
             <Link href="/business" className="text-sm font-bold text-brand">
-              {user?.kyc?.business === "pending" ? "Business application pending" : "Open a business account"}
+              {user?.kyc?.business === "pending" ? "Business application pending" : "Start collecting as a business"}
             </Link>
           )}
           {productUnlocked(user, "developer") ? (
@@ -83,7 +83,7 @@ export default function ProfilePage() {
             </Link>
           ) : (
             <Link href="/developers" className="text-sm font-bold text-brand">
-              {user?.kyc?.developer === "pending" ? "Developer application pending" : "Become a developer"}
+              {user?.kyc?.developer === "pending" ? "Developer application pending" : "Add payments to your product"}
             </Link>
           )}
           {isAdmin(user) ? (

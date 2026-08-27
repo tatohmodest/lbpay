@@ -2,7 +2,7 @@ import { ProductPage, productMetadata } from "@/components/marketing/product-pag
 
 export const metadata = productMetadata(
   "Payments API for Cameroon",
-  "Apply from Profile. After approval, sandbox and live keys unlock in the Developer Portal. Create XAF payments, payouts, payment links, and webhooks.",
+  "A payments API for Cameroon. Collect, pay out, and get webhooks in your own product.",
   "/products/developers",
 );
 
@@ -11,7 +11,7 @@ export default function DevelopersProductPage() {
     <ProductPage
       eyebrow="Developers"
       title="A payments API. Not a wrapper."
-      description="Apply from your account. After approval, the Developer Portal unlocks with sandbox and live keys. Integrate collections, disbursements, payment links, webhooks, and balance against LBPay, with MTN and Orange as rails."
+      description="Collect, pay out, and get events in your own product. Sandbox for tests. Live when you are ready. MTN and Orange stay underneath."
       image="/illustrations/developer-platform.png"
       alt="LBPay developer platform for XAF payments and payouts"
       points={[

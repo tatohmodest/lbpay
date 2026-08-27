@@ -43,7 +43,7 @@ export default function DevelopersPage() {
       <header className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-black">Developer overview</h1>
-          <p className="text-muted">Sandbox is for testing. Live keys move real money.</p>
+          <p className="text-muted">Keys, events, and payouts for your product.</p>
         </div>
         <span className={`rounded-full px-3 py-1 text-xs font-bold uppercase ${liveReady ? "bg-brand text-white" : "bg-paper text-muted"}`}>
           {liveReady ? "Live enabled" : "Sandbox only"}
@@ -51,7 +51,7 @@ export default function DevelopersPage() {
       </header>
       {!liveReady ? (
         <Card className="mb-4 border-brand/30 bg-brand-soft p-4 text-sm">
-          Live keys wait until your developer account is approved.
+          You are on sandbox for now. Live keys come next.
         </Card>
       ) : null}
       <div className="grid gap-4 md:grid-cols-2">

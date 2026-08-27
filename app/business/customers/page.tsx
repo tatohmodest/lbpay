@@ -29,7 +29,7 @@ export default function BusinessCustomersPage() {
   return (
     <div>
       <h1 className="text-2xl font-black">Customers</h1>
-      <p className="text-sm text-muted">People who have paid your checkout.</p>
+      <p className="text-sm text-muted">Everyone who has paid you.</p>
       <Card className="mt-6 divide-y divide-line">
         {customers.length === 0 ? (
           <p className="p-6 text-sm text-muted">No customers yet.</p>

@@ -68,7 +68,7 @@ export function KycApplyForm({
     notify.success(
       "Application sent",
       track === "developer"
-        ? "We'll review your application. The developer portal unlocks after approval."
+        ? "We will review your application and be in touch shortly."
         : "We'll review your account shortly.",
     );
     await client.invalidateQueries({ queryKey: ["me"] });

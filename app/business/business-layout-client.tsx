@@ -51,7 +51,7 @@ export function BusinessLayoutClient({ children }: { children: React.ReactNode }
   return (
     <ConsoleShell
       title="Business"
-      subtitle="Merchant tools"
+      subtitle="Get paid by your customers"
       items={items}
       cta={{ href: "/business/links", label: "New payment link" }}
     >

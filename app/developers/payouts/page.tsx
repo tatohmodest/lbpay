@@ -59,7 +59,7 @@ export default function PayoutsPage() {
     <div className="grid gap-6 lg:grid-cols-2">
       <div>
         <h1 className="text-2xl font-black">Payouts</h1>
-        <p className="mt-1 text-sm text-muted">Pay a Mobile Money number from this wallet.</p>
+        <p className="mt-1 text-sm text-muted">Send money to any Mobile Money number.</p>
         <Card className="mt-6 p-6">
           <form
             className="flex flex-col gap-3"

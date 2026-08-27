@@ -16,7 +16,7 @@ export default function BusinessAnalyticsPage() {
   return (
     <div>
       <h1 className="text-2xl font-black">Analytics</h1>
-      <p className="text-sm text-muted">A simple view of collections on this account.</p>
+      <p className="text-sm text-muted">A simple view of how your business is growing.</p>
       <div className="mt-6 grid gap-4 md:grid-cols-3">
         <Card className="p-5">
           <p className="text-xs font-semibold uppercase tracking-wide text-muted">Revenue</p>

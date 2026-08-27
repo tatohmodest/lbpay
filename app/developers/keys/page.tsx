@@ -50,11 +50,9 @@ export default function KeysPage() {
   return (
     <div className="max-w-2xl">
       <h1 className="text-2xl font-black">Applications</h1>
-      <p className="text-sm text-muted">
-        Sandbox keys never move live money. Live keys appear only after developer KYC is approved.
-      </p>
+      <p className="text-sm text-muted">Public and secret keys for your app.</p>
       {!data.data?.liveReady ? (
-        <p className="mt-3 rounded-xl bg-brand-soft p-3 text-sm">Live environment is locked pending KYC.</p>
+        <p className="mt-3 rounded-xl bg-brand-soft p-3 text-sm">You are on sandbox for now. Live keys come next.</p>
       ) : null}
       <div className="mt-6 space-y-4">
         {(data.data?.keys || []).map((key: { id: string; env: string; publicKey: string; secretMasked: string }) => (

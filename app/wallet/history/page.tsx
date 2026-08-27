@@ -15,7 +15,7 @@ export default function HistoryPage() {
   return (
     <div>
       <h1 className="text-2xl font-black">Transaction history</h1>
-      <p className="mt-1 text-sm text-muted">Every move in and out of your account.</p>
+      <p className="mt-1 text-sm text-muted">A clear record of every payment.</p>
       <Card className="mt-6 overflow-hidden">
         <div className="divide-y divide-line">
           {transactions.length === 0 ? (

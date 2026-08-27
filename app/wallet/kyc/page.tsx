@@ -19,7 +19,7 @@ export default function PersonalKycPage() {
       <Card className="mx-auto mt-6 max-w-lg p-8 text-center">
         <h1 className="text-2xl font-black">We are reviewing your account</h1>
         <p className="mt-2 text-sm leading-6 text-muted">
-          You will get business benefits once this is done.
+          Thanks. We will be in touch as soon as this is done.
         </p>
         <Link href="/wallet" className="mt-6 inline-block">
           <Button variant="secondary">Back to wallet</Button>
@@ -32,7 +32,9 @@ export default function PersonalKycPage() {
     return (
       <Card className="mx-auto mt-6 max-w-lg p-8 text-center">
         <h1 className="text-2xl font-black">You are verified</h1>
-        <p className="mt-2 text-sm leading-6 text-muted">Business benefits are ready when you are.</p>
+        <p className="mt-2 text-sm leading-6 text-muted">
+          Your account is verified. Business tools are one step away.
+        </p>
         <div className="mt-6 grid gap-2">
           <Link href="/business">
             <Button className="w-full">Open Business</Button>
@@ -53,13 +55,13 @@ export default function PersonalKycPage() {
       <p className="mt-2 text-sm leading-6 text-muted">
         {personal === "rejected"
           ? "We could not verify last time. You can try again whenever you are ready."
-          : "A few details to unlock business benefits."}
+          : "A few details so we can keep your account safe."}
       </p>
       <div className="mt-6">
         <KycApplyForm
           track="personal"
           title="Your details"
-          subtitle="Photos are compressed. 10MB max."
+          subtitle="We will use this to confirm it is really you."
         />
       </div>
     </div>

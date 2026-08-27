@@ -23,10 +23,36 @@ import { VerifyPrompt } from "@/components/verify-prompt";
 import type { Transaction } from "@/lib/types";
 
 const actions = [
-  { href: "/wallet/quick", label: "Quick Transfer", icon: Zap },
-  { href: "/wallet/send", label: "Send Money", icon: Send },
-  { href: "/wallet/request", label: "Receive Money", icon: WalletCards },
-  { href: "/wallet/qr", label: "QR Code", icon: QrCode },
+  {
+    href: "/wallet/quick",
+    label: "Quick Transfer",
+    copy: "Send money to any Mobile Money network",
+    icon: Zap,
+  },
+  {
+    href: "/wallet/send",
+    label: "Send",
+    copy: "Pay a friend, a shop, or any number",
+    icon: Send,
+  },
+  {
+    href: "/wallet/request",
+    label: "Receive",
+    copy: "Share a link and get paid",
+    icon: WalletCards,
+  },
+  {
+    href: "/wallet/qr",
+    label: "My QR",
+    copy: "Let anyone scan and pay you",
+    icon: QrCode,
+  },
+];
+
+const extras = [
+  { href: "/wallet/history", label: "Transactions", copy: "Every payment in one place", icon: History },
+  { href: "/wallet/airtime", label: "Airtime", copy: "Top up any MTN or Orange line", icon: Phone },
+  { href: "/wallet/bills", label: "Bills", copy: "Electricity, water, and TV", icon: Receipt },
 ];
 
 export default function WalletPage() {
@@ -74,28 +100,37 @@ export default function WalletPage() {
           </div>
         </section>
 
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3">
           {actions.map((action) => (
             <Link key={action.href} href={action.href}>
-              <Card className="flex h-full flex-col items-center gap-3 p-5 transition hover:border-brand/40 hover:shadow-[0_10px_30px_rgba(0,179,105,0.12)]">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-soft text-brand">
+              <Card className="flex h-full flex-col gap-3 p-4 transition hover:border-brand/40 hover:shadow-[0_10px_30px_rgba(0,179,105,0.12)]">
+                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-brand-soft text-brand">
                   <action.icon className="h-5 w-5" />
                 </div>
-                <span className="text-sm font-semibold">{action.label}</span>
+                <span>
+                  <span className="block text-sm font-semibold">{action.label}</span>
+                  <span className="mt-1 block text-xs leading-5 text-muted">{action.copy}</span>
+                </span>
               </Card>
             </Link>
           ))}
         </div>
-        <div className="flex flex-wrap gap-4 text-sm font-semibold">
-          <Link href="/wallet/history" className="inline-flex items-center gap-1 text-brand">
-            <History className="h-4 w-4" /> Transactions
-          </Link>
-          <Link href="/wallet/airtime" className="inline-flex items-center gap-1 text-brand">
-            <Phone className="h-4 w-4" /> Buy Airtime
-          </Link>
-          <Link href="/wallet/bills" className="inline-flex items-center gap-1 text-brand">
-            <Receipt className="h-4 w-4" /> Pay Bills
-          </Link>
+        <div className="grid gap-2">
+          {extras.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="flex items-center gap-3 rounded-2xl border border-line bg-white px-4 py-3 transition hover:border-brand/40"
+            >
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-paper text-brand">
+                <item.icon className="h-4 w-4" />
+              </span>
+              <span>
+                <span className="block text-sm font-semibold text-ink">{item.label}</span>
+                <span className="block text-xs text-muted">{item.copy}</span>
+              </span>
+            </Link>
+          ))}
         </div>
 
         <Card className="p-5">
@@ -141,7 +176,7 @@ export default function WalletPage() {
           </p>
           <h2 className="mt-2 text-lg font-bold">Quick Transfer</h2>
           <p className="mt-1 text-sm text-muted">
-            Move money between MTN and Orange without leaving the app.
+            Send money to any Mobile Money network. MTN to Orange, easily.
           </p>
           <Link href="/wallet/quick" className="mt-4 block">
             <Button className="w-full">Open Quick Transfer</Button>
@@ -160,7 +195,7 @@ export default function WalletPage() {
             className="h-40 w-full object-cover"
           />
           <div className="p-4">
-            <p className="text-sm font-semibold">Receive with QR or @handle</p>
+            <p className="text-sm font-semibold">Get paid with your QR or @handle</p>
             <Link href="/wallet/qr" className="mt-2 inline-block text-sm font-bold text-brand">
               Show my QR
             </Link>

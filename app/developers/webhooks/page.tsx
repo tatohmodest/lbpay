@@ -37,6 +37,7 @@ export default function WebhooksPage() {
   return (
     <div className="max-w-2xl">
       <h1 className="text-2xl font-black">Webhooks</h1>
+      <p className="mt-1 text-sm text-muted">Get paid events as they happen.</p>
       <Card className="mt-6 p-5">
         <form
           className="flex flex-col gap-3"

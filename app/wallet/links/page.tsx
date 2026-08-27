@@ -41,6 +41,7 @@ export default function WalletLinksPage() {
   return (
     <div className="mx-auto max-w-2xl">
       <h1 className="text-2xl font-black">Payment links</h1>
+      <p className="mt-1 text-sm text-muted">A checkout anyone can open and pay.</p>
       <Card className="mt-6 p-6">
         <form
           className="grid gap-3 md:grid-cols-[1fr_140px_auto]"

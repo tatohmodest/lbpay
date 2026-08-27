@@ -7,17 +7,34 @@ import { Code2, Store, Wallet } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { Logo } from "@/components/logo";
 import { RightDrawer } from "@/components/ui/right-drawer";
+import { useMe } from "@/lib/hooks/wallet";
+import { productUnlocked } from "@/lib/roles";
 
 export type NavItem = { href: string; label: string; icon: LucideIcon };
 
-const products = [
-  { href: "/wallet", label: "Wallet", icon: Wallet },
-  { href: "/business", label: "Business", icon: Store },
-  { href: "/developers", label: "Developers", icon: Code2 },
-];
-
 function ProductSwitch({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
+  const me = useMe();
+  const user = me.data?.user;
+  const products = [
+    { href: "/wallet", label: "Wallet", icon: Wallet, copy: "Send, receive, and pay" },
+    {
+      href: "/business",
+      label: "Business",
+      icon: Store,
+      copy: productUnlocked(user, "business")
+        ? "Get paid by your customers"
+        : "Accept payments from your customers",
+    },
+    {
+      href: "/developers",
+      label: "Developers",
+      icon: Code2,
+      copy: productUnlocked(user, "developer")
+        ? "Payments for your product"
+        : "Add payments to your app",
+    },
+  ];
   return (
     <div className="mt-auto border-t border-line pt-3">
       <p className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-wide text-muted">Products</p>
@@ -31,12 +48,15 @@ function ProductSwitch({ onNavigate }: { onNavigate?: () => void }) {
               href={item.href}
               onClick={onNavigate}
               className={cn(
-                "flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-medium transition",
+                "flex items-center gap-3 rounded-2xl px-3 py-2.5 transition",
                 active ? "bg-brand-soft text-brand-deep" : "text-muted hover:bg-paper hover:text-ink",
               )}
             >
-              <Icon className="h-4 w-4" />
-              {item.label}
+              <Icon className="h-4 w-4 shrink-0" />
+              <span>
+                <span className="block text-sm font-medium">{item.label}</span>
+                <span className="block text-[11px] leading-4 text-muted">{item.copy}</span>
+              </span>
             </Link>
           );
         })}

@@ -9,8 +9,7 @@ export default function SplitPage() {
       <h1 className="text-2xl font-black">Split bills</h1>
       <Card className="mt-6 p-6">
         <p className="text-sm text-muted">
-          Split requests are modeled as multiple payment requests against one ledger
-          intent. Enable this live once KYC and request-money flows are production-ready.
+          Share a bill with friends in a few taps. This is coming soon.
         </p>
         <p className="mt-4 text-xs text-muted">{LEGAL_NOTE}</p>
       </Card>

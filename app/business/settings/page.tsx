@@ -12,7 +12,7 @@ export default function BusinessSettingsPage() {
   return (
     <div className="max-w-lg">
       <h1 className="text-2xl font-black">Settings</h1>
-      <p className="text-sm text-muted">Merchant profile for this account.</p>
+      <p className="text-sm text-muted">How your business appears to customers.</p>
       <Card className="mt-6 space-y-3 p-6">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-muted">Business name</p>

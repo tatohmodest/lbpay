@@ -14,7 +14,7 @@ export default function BusinessInvoicesPage() {
   return (
     <div>
       <h1 className="text-2xl font-black">Invoices</h1>
-      <p className="text-sm text-muted">Payment links you can send as invoices.</p>
+      <p className="text-sm text-muted">Send a bill your customer can pay online.</p>
       <Card className="mt-6 divide-y divide-line">
         {links.length === 0 ? (
           <p className="p-6 text-sm text-muted">No invoices yet. Create a payment link to get started.</p>

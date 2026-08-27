@@ -7,7 +7,8 @@ export default function BeneficiariesPage() {
   const { state } = useApp();
   return (
     <div className="mx-auto max-w-xl">
-      <h1 className="text-2xl font-black">Beneficiaries</h1>
+      <h1 className="text-2xl font-black">Saved people</h1>
+      <p className="mt-1 text-sm text-muted">People you pay often, ready for next time.</p>
       <div className="mt-6 space-y-3">
         {state.beneficiaries.length === 0 ? (
           <Card className="p-6 text-sm text-muted">Saved people will appear here after you send to them.</Card>

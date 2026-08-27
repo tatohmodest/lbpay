@@ -65,7 +65,7 @@ export default function AirtimePage() {
   return (
     <div className="mx-auto max-w-xl">
       <h1 className="text-2xl font-black">Buy airtime & data</h1>
-      <p className="mt-1 text-sm text-muted">Top up any MTN or Orange number from your wallet.</p>
+      <p className="mt-1 text-sm text-muted">Top up any MTN or Orange number in seconds.</p>
       <Card className="mt-6 p-6">
         <form
           className="flex flex-col gap-4"

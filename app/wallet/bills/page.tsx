@@ -55,7 +55,7 @@ export default function BillsPage() {
   return (
     <div className="mx-auto max-w-xl">
       <h1 className="text-2xl font-black">Pay bills</h1>
-      <p className="mt-1 text-sm text-muted">Settle electricity, water, and TV without leaving LBPay.</p>
+      <p className="mt-1 text-sm text-muted">Pay electricity, water, and TV from your wallet.</p>
       <Card className="mt-6 p-6">
         <form
           className="flex flex-col gap-4"

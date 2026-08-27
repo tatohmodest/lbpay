@@ -12,6 +12,7 @@ export default function SettlementsPage() {
   return (
     <div className="max-w-2xl">
       <h1 className="text-2xl font-black">Settlements</h1>
+      <p className="mt-1 text-sm text-muted">Money ready to move when you need it.</p>
       <Card className="mt-6 p-6">
         <p className="text-sm text-muted">Available to settle</p>
         <p className="mt-2 font-mono text-3xl font-bold">{formatXAF(balance)}</p>

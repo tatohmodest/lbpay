@@ -2,7 +2,7 @@ import { ProductPage, productMetadata } from "@/components/marketing/product-pag
 
 export const metadata = productMetadata(
   "Business checkout for Cameroon",
-  "Collect MTN Mobile Money, Orange Money, cards, and wallet through one QR and payment-link checkout.",
+  "Collect MTN, Orange, cards, and wallet through one QR and payment-link checkout.",
   "/products/business",
 );
 
@@ -11,7 +11,7 @@ export default function BusinessProductPage() {
     <ProductPage
       eyebrow="Business"
       title="One counter for every way Cameroon pays."
-      description="After KYC and admin approval, a merchant gets QR codes, payment links, and a single checkout. Customers pay with the method they already have. You do not stitch networks together."
+      description="QR codes, payment links, and one checkout. Customers pay with MTN, Orange, card, or wallet. You get paid in one place."
       image="/illustrations/merchant-qr.png"
       alt="LBPay merchant QR checkout in Cameroon"
       points={[

@@ -45,7 +45,7 @@ export function DevelopersLayoutClient({ children }: { children: React.ReactNode
   return (
     <ConsoleShell
       title="Developer Portal"
-      subtitle="Sandbox and live"
+      subtitle="Payments for your product"
       items={items}
       cta={{ href: "/developers/docs", label: "API reference" }}
     >

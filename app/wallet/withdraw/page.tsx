@@ -72,7 +72,7 @@ export default function WithdrawPage() {
   return (
     <div className="mx-auto max-w-xl">
       <h1 className="text-2xl font-black">Withdraw</h1>
-      <p className="mt-1 text-sm text-muted">Move your balance onto MTN or Orange when you need cash out.</p>
+      <p className="mt-1 text-sm text-muted">Cash out to MTN or Orange whenever you need it.</p>
       <Card className="mt-6 p-6">
         <form
           className="flex flex-col gap-4"

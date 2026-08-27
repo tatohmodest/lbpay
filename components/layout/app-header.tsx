@@ -28,22 +28,26 @@ export function AppHeader({ onOpenMenu }: { onOpenMenu?: () => void }) {
     setOpen(false);
   }
   const products = [
-    { href: "/wallet", label: "Wallet", icon: Wallet, copy: "Your money, ready to move", show: true },
+    { href: "/wallet", label: "Wallet", icon: Wallet, copy: "Send, receive, and pay from one place", show: true },
     {
       href: "/business",
       label: "Business",
       icon: Store,
-      copy: productUnlocked(user, "business") ? "Get paid by your customers" : "Start collecting as a business",
+      copy: productUnlocked(user, "business")
+        ? "Get paid by your customers"
+        : "Accept payments from your customers",
       show: true,
     },
     {
       href: "/developers",
       label: "Developers",
       icon: Code2,
-      copy: productUnlocked(user, "developer") ? "Payments for your product" : "Join the developer platform",
+      copy: productUnlocked(user, "developer")
+        ? "Payments for your product"
+        : "Add payments to your app or website",
       show: true,
     },
-    { href: "/admin", label: "Admin", icon: Shield, copy: "Platform control", show: isAdmin(user) },
+    { href: "/admin", label: "Admin", icon: Shield, copy: "Keep the platform running", show: isAdmin(user) },
   ].filter((item) => item.show);
 
   return (

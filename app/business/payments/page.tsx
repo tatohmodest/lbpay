@@ -15,7 +15,7 @@ export default function BusinessPaymentsPage() {
   return (
     <div>
       <h1 className="text-2xl font-black">Payments</h1>
-      <p className="text-sm text-muted">All collections across MTN, Orange, card, and wallet.</p>
+      <p className="text-sm text-muted">Every payment from MTN, Orange, cards, and wallet.</p>
       <Card className="mt-6 divide-y divide-line">
         {payments.length === 0 ? (
           <p className="p-6 text-sm text-muted">No collections yet.</p>

@@ -45,7 +45,7 @@ export function VerifyPrompt({
     status === "pending"
       ? {
           title: "We are reviewing your account",
-          body: "You will get business benefits once this is done.",
+          body: "Thanks. We will be in touch shortly.",
         }
       : status === "rejected"
         ? {
@@ -54,7 +54,7 @@ export function VerifyPrompt({
           }
         : {
             title: "Verify your account",
-            body: "Unlock business benefits on LBPay.",
+            body: "A few details so we can keep your account safe.",
           };
 
   return (
