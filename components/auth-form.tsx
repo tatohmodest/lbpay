@@ -13,6 +13,7 @@ import { readApiJson, type AuthApiResponse } from "@/lib/http";
 import { useNotify } from "@/lib/notify";
 import { useApp } from "@/lib/store";
 import { useQueryClient } from "@tanstack/react-query";
+import { cameroonMsisdn } from "@/lib/phone";
 
 export function AuthForm({
   mode,
@@ -130,15 +131,15 @@ export function AuthForm({
                         required
                       />
                     </Field>
-                    <Field label="Phone">
+                    <Field label="Phone" hint="9-digit number, no +237">
                       <Input
                         name="tel"
                         type="tel"
-                        inputMode="tel"
+                        inputMode="numeric"
                         autoComplete="tel"
-                        placeholder="677 000 000"
+                        placeholder="677000000"
                         value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
+                        onChange={(e) => setPhone(cameroonMsisdn(e.target.value))}
                         required
                       />
                     </Field>

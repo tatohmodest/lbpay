@@ -26,6 +26,7 @@ export default function HistoryPage() {
                   <p className="font-semibold">{tx.counterparty}</p>
                   <p className="text-xs text-muted">
                     {tx.id} · {tx.kind} · {formatDate(tx.createdAt)}
+                    {tx.fee > 0 ? ` · fee ${formatXAF(tx.fee)}` : ""}
                   </p>
                   <div className="mt-1">
                     <MethodDot method={tx.method} />

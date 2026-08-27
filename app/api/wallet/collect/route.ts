@@ -3,6 +3,8 @@ import { recordLedgerMove } from "@/lib/server/db";
 import { payunitReference, verifySecret } from "@/lib/server/crypto";
 import { getPaymentRail } from "@/lib/providers";
 import { requireActiveUser } from "@/lib/server/guard";
+import { cameroonMsisdn, isCameroonMsisdn } from "@/lib/phone";
+import { depositFee } from "@/lib/fees";
 
 export async function POST(request: Request) {
   try {
@@ -12,13 +14,14 @@ export async function POST(request: Request) {
     const body = await request.json().catch(() => ({}));
     const amount = Number(body.amount);
     const method = body.method === "orange" ? "orange" : body.method === "card" ? "card" : "mtn";
-    const phone = String(body.phone || "").replace(/\s+/g, "");
+    const phone = cameroonMsisdn(body.phone || user.phone);
     const pin = String(body.pin || "");
+    const fee = depositFee(amount);
 
     if (!amount || amount < 100) {
       return NextResponse.json({ error: "Minimum deposit is 100 XAF." }, { status: 400 });
     }
-    if (method !== "card" && !/^6\d{8}$/.test(phone) && !/^2376\d{8}$/.test(phone)) {
+    if (method !== "card" && !isCameroonMsisdn(phone)) {
       return NextResponse.json({ error: "Enter the Mobile Money number that will pay." }, { status: 400 });
     }
 
@@ -30,7 +33,7 @@ export async function POST(request: Request) {
     const rail = getPaymentRail();
     const reference = payunitReference(method === "orange" ? "OM" : method === "card" ? "CD" : "MT");
     const result = await rail.collect({
-      amount,
+      amount: amount + fee,
       currency: "XAF",
       method,
       customer: { phone: phone || user.phone, name: user.name, email: user.email },
@@ -47,11 +50,12 @@ export async function POST(request: Request) {
     const moved = await recordLedgerMove({
       userId: user.id,
       amount,
+      fee,
       direction: "credit",
       kind: "deposit",
       method,
       counterparty: method === "mtn" ? "MTN Mobile Money" : method === "orange" ? "Orange Money" : "Card",
-      note: "Wallet deposit",
+      note: fee ? `Wallet deposit · ${fee} XAF fee` : "Wallet deposit",
       status: result.status === "success" ? "success" : "pending",
       rail: result.provider,
       railRef: result.reference,
@@ -64,6 +68,8 @@ export async function POST(request: Request) {
       hostedUrl: result.hostedUrl,
       transactionId: result.reference,
       balance: moved.balance,
+      fee,
+      payAmount: amount + fee,
       transaction: moved.tx,
     });
   } catch (error) {

@@ -11,6 +11,7 @@ import { formatXAF } from "@/lib/format";
 import { useMe, useSpend } from "@/lib/hooks/wallet";
 import { useNotify } from "@/lib/notify";
 import { NetworkMark } from "@/components/network-mark";
+import { cameroonMsisdn, isCameroonMsisdn } from "@/lib/phone";
 
 export default function AirtimePage() {
   const { state } = useApp();
@@ -18,7 +19,7 @@ export default function AirtimePage() {
   const router = useRouter();
   const notify = useNotify();
   const spend = useSpend();
-  const [phone, setPhone] = useState(state.user.phone);
+  const [phone, setPhone] = useState(cameroonMsisdn(state.user.phone));
   const [network, setNetwork] = useState<"mtn" | "orange">("mtn");
   const [amount, setAmount] = useState("");
   const [open, setOpen] = useState(false);
@@ -26,16 +27,18 @@ export default function AirtimePage() {
 
   const balance = me.data?.balance ?? state.balance;
   const value = Number(amount) || 0;
-  const ready = value >= 100 && value <= balance && phone.length >= 9;
+  const clean = cameroonMsisdn(phone);
+  const ready = value >= 100 && value <= balance && isCameroonMsisdn(clean);
 
   const details = useMemo(
     () => [
       { label: "Type", value: "Airtime" },
       { label: "Network", value: network.toUpperCase() },
-      { label: "Phone", value: phone },
+      { label: "Phone", value: clean },
+      { label: "Fee", value: "Free" },
       { label: "Paid from", value: "LBPay wallet" },
     ],
-    [network, phone],
+    [network, clean],
   );
 
   const confirm = useCallback(
@@ -46,9 +49,9 @@ export default function AirtimePage() {
           amount: value,
           pin,
           kind: "airtime",
-          counterparty: `${network.toUpperCase()} ${phone}`,
+          counterparty: `${network.toUpperCase()} ${clean}`,
         });
-        notify.moneyOut(value, `Airtime sent to ${phone}`);
+        notify.moneyOut(value, `Airtime sent to ${clean}`);
         setOpen(false);
         router.push("/wallet");
       } catch (err) {
@@ -56,13 +59,15 @@ export default function AirtimePage() {
         notify.error("Airtime failed", err instanceof Error ? err.message : "Could not buy airtime");
       }
     },
-    [spend, value, network, phone, notify, router],
+    [spend, value, network, clean, notify, router],
   );
 
   return (
     <div className="mx-auto max-w-xl">
       <h1 className="text-2xl font-black">Buy airtime & data</h1>
-      <p className="mt-1 text-sm text-muted">Paid from your wallet. Available {formatXAF(balance)}.</p>
+      <p className="mt-1 text-sm text-muted">
+        Paid from your wallet. Airtime is free. Available {formatXAF(balance)}.
+      </p>
       <Card className="mt-6 p-6">
         <form
           className="flex flex-col gap-4"
@@ -88,8 +93,14 @@ export default function AirtimePage() {
               </button>
             ))}
           </div>
-          <Field label="Phone">
-            <Input value={phone} onChange={(e) => setPhone(e.target.value)} required />
+          <Field label="Phone" hint="9-digit number, no +237">
+            <Input
+              inputMode="numeric"
+              placeholder="677000000"
+              value={phone}
+              onChange={(e) => setPhone(cameroonMsisdn(e.target.value))}
+              required
+            />
           </Field>
           <Field label="Amount (XAF)">
             <Input
@@ -101,6 +112,8 @@ export default function AirtimePage() {
               required
             />
           </Field>
+          {value >= 100 ? <p className="text-sm text-muted">Fee: Free. Wallet is charged {formatXAF(value)}.</p> : null}
+          {value > balance ? <p className="text-sm font-semibold text-danger">Not enough wallet balance.</p> : null}
           <Button type="submit" disabled={!ready}>
             Review airtime
           </Button>
@@ -109,7 +122,7 @@ export default function AirtimePage() {
       <ConfirmSheet
         open={open}
         title="Confirm airtime"
-        subtitle="This debit uses your LBPay wallet balance."
+        subtitle="This debit uses your LBPay wallet balance. There is no extra fee."
         amount={value}
         details={details}
         loading={spend.isPending}

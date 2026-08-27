@@ -11,6 +11,8 @@ import { formatXAF } from "@/lib/format";
 import { useCollect, useMe } from "@/lib/hooks/wallet";
 import { useNotify } from "@/lib/notify";
 import { NetworkMark } from "@/components/network-mark";
+import { cameroonMsisdn, isCameroonMsisdn } from "@/lib/phone";
+import { depositFee } from "@/lib/fees";
 import type { PaymentMethod } from "@/lib/types";
 
 const methods: { id: PaymentMethod; label: string; hint: string }[] = [
@@ -26,7 +28,7 @@ export default function DepositPage() {
   const notify = useNotify();
   const collect = useCollect();
   const [method, setMethod] = useState<PaymentMethod>("mtn");
-  const [phone, setPhone] = useState(state.user.phone);
+  const [phone, setPhone] = useState(cameroonMsisdn(state.user.phone));
   const [amount, setAmount] = useState("");
   const [open, setOpen] = useState(false);
   const [pinError, setPinError] = useState("");
@@ -35,8 +37,11 @@ export default function DepositPage() {
 
   const balance = me.data?.balance ?? state.balance;
   const value = Number(amount) || 0;
-  const clean = phone.replace(/\s+/g, "").replace(/^237/, "");
-  const ready = value >= 100 && (method === "card" || /^6\d{8}$/.test(clean));
+  const clean = cameroonMsisdn(phone);
+  const fee = depositFee(value);
+  const payAmount = value + fee;
+  const ready = value >= 100 && (method === "card" || isCameroonMsisdn(clean));
+  const ussdCode = method === "orange" ? "#150#" : "*126#";
 
   const details = useMemo(
     () => [
@@ -46,10 +51,11 @@ export default function DepositPage() {
         value: method === "mtn" ? "MTN Mobile Money" : method === "orange" ? "Orange Money" : "Card",
       },
       { label: "Number", value: method === "card" ? "Hosted checkout" : clean },
-      { label: "Rail", value: "PayUnit collection" },
-      { label: "To", value: `@${state.user.lbpayId}` },
+      { label: "To wallet", value: formatXAF(value) },
+      { label: "Fee 3%", value: formatXAF(fee) },
+      { label: "You pay", value: formatXAF(payAmount) },
     ],
-    [method, clean, state.user.lbpayId],
+    [method, clean, value, fee, payAmount],
   );
 
   const pollPayment = useCallback(
@@ -77,7 +83,7 @@ export default function DepositPage() {
         await new Promise((resolve) => setTimeout(resolve, 4000));
       }
       setWaiting(null);
-      notify.info("Still waiting", "Enter your PIN on the phone, then tap verify, or check history in a moment.");
+      notify.info("Still waiting", "If the popup never came, dial the USSD code, confirm, then check history.");
     },
     [notify, router, value],
   );
@@ -99,11 +105,11 @@ export default function DepositPage() {
         notify.error("Deposit failed", data.error || "The collection was not approved.");
         return;
       }
-      notify.info("Not confirmed yet", "Approve the USSD prompt on your phone, then tap verify again.");
+      notify.info("Not confirmed yet", `If you have not seen a popup, dial ${ussdCode} and confirm pay.`);
     } finally {
       setChecking(false);
     }
-  }, [waiting, notify, router, value]);
+  }, [waiting, notify, router, value, ussdCode]);
 
   const confirm = useCallback(
     async (pin: string) => {
@@ -121,7 +127,7 @@ export default function DepositPage() {
           return;
         }
         if (result.status === "pending" && result.transactionId) {
-          notify.pending("Approve on your phone", `Confirm ${formatXAF(value)} on ${method.toUpperCase()}.`);
+          notify.pending("Approve on your phone", `Confirm ${formatXAF(payAmount)} on ${method.toUpperCase()}.`);
           setOpen(false);
           setWaiting({ tx: result.transactionId, seconds: 120 });
           void pollPayment(result.transactionId);
@@ -135,26 +141,31 @@ export default function DepositPage() {
         notify.error("Deposit failed", err instanceof Error ? err.message : "Could not collect");
       }
     },
-    [collect, value, method, clean, notify, router, pollPayment],
+    [collect, value, method, clean, payAmount, notify, router, pollPayment],
   );
 
   return (
     <div className="mx-auto max-w-xl">
       <h1 className="text-2xl font-black">Add money</h1>
       <p className="mt-1 text-sm text-muted">
-        Fund your LBPay wallet. Current balance {formatXAF(balance)}.
+        Fund your LBPay wallet. Current balance {formatXAF(balance)}. Deposit fee is 3%.
       </p>
       {waiting ? (
         <Card className="mt-6 p-6 text-center">
-          <p className="text-sm font-bold uppercase tracking-wide text-brand">USSD sent</p>
+          <p className="text-sm font-bold uppercase tracking-wide text-brand">Waiting for payment</p>
           <h2 className="mt-2 text-2xl font-black">Approve on your phone</h2>
-          <p className="mt-2 text-sm text-muted">
-            Enter your {method === "orange" ? "Orange Money" : "MTN"} PIN. This page checks the payment automatically.
+          <p className="mt-2 text-sm leading-6 text-muted">
+            Enter your {method === "orange" ? "Orange Money" : "MTN"} PIN on the popup. This page checks the
+            payment automatically.
+          </p>
+          <p className="mt-4 rounded-2xl bg-paper px-4 py-3 text-sm leading-6 text-ink">
+            If you have not seen a popup, dial <span className="font-mono font-semibold">{ussdCode}</span> and
+            confirm pay. Then tap I&apos;ve paid.
           </p>
           <p className="mt-6 font-mono text-4xl font-black">{waiting.seconds}s</p>
           <div className="mt-6 grid gap-2">
             <Button onClick={() => void verifyNow()} disabled={checking}>
-              {checking ? "Checking…" : "I entered my PIN, verify"}
+              {checking ? "Checking…" : "I've paid"}
             </Button>
             <Button variant="ghost" onClick={() => setWaiting(null)}>
               Cancel wait
@@ -191,8 +202,14 @@ export default function DepositPage() {
               ))}
             </div>
             {method !== "card" ? (
-              <Field label="Paying from">
-                <Input value={phone} onChange={(e) => setPhone(e.target.value)} required />
+              <Field label="Paying from" hint="9-digit number, no +237">
+                <Input
+                  inputMode="numeric"
+                  placeholder="677000000"
+                  value={phone}
+                  onChange={(e) => setPhone(cameroonMsisdn(e.target.value))}
+                  required
+                />
               </Field>
             ) : null}
             <Field label="Amount (XAF)">
@@ -205,6 +222,11 @@ export default function DepositPage() {
                 required
               />
             </Field>
+            {value >= 100 ? (
+              <p className="text-sm text-muted">
+                Fee 3% {formatXAF(fee)}. You pay {formatXAF(payAmount)}. Wallet receives {formatXAF(value)}.
+              </p>
+            ) : null}
             <Button type="submit" disabled={!ready}>
               Review deposit
             </Button>
@@ -215,12 +237,12 @@ export default function DepositPage() {
         open={open}
         title="Confirm deposit"
         subtitle="You are funding your LBPay wallet from an external rail."
-        amount={value}
+        amount={payAmount}
         details={details}
         warning={
           method === "card"
             ? "You will finish payment on the hosted checkout page."
-            : "Approve the collection prompt on your phone to credit the wallet."
+            : `Approve the collection prompt on your phone. If it does not appear, dial ${ussdCode} and confirm pay.`
         }
         loading={collect.isPending}
         error={pinError}

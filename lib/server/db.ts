@@ -3,6 +3,7 @@ import path from "path";
 import { verifySecret } from "./crypto";
 import { isBootstrapAdmin } from "@/lib/roles";
 import { uid } from "@/lib/format";
+import { cameroonMsisdn } from "@/lib/phone";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import type {
   AccountKind,
@@ -145,6 +146,7 @@ function normalizeUser(user: StoredUser): StoredUser {
   if (isBootstrapAdmin(user.email) && !roles.includes("admin")) roles.push("admin");
   return {
     ...user,
+    phone: cameroonMsisdn(user.phone) || user.phone,
     roles,
     status: user.status ?? "active",
     kyc,
@@ -400,25 +402,28 @@ export async function recordLedgerMove(params: {
   status?: TransactionStatus;
   rail?: StoredTx["rail"];
   railRef?: string;
+  fee?: number;
 }) {
   const db = await getDb();
   const wallet = db.wallets.find((w) => w.userId === params.userId);
   if (!wallet) throw new Error("Wallet missing");
   const status = params.status ?? "success";
+  const fee = Math.max(0, Math.round(params.fee || 0));
+  const debitTotal = params.amount + (params.direction === "debit" ? fee : 0);
   const applyNow =
     params.direction === "debit" || (params.direction === "credit" && status === "success");
-  if (params.direction === "debit" && wallet.balance < params.amount) {
+  if (params.direction === "debit" && wallet.balance < debitTotal) {
     throw new Error("Insufficient wallet balance");
   }
   if (applyNow) {
-    wallet.balance += params.direction === "credit" ? params.amount : -params.amount;
+    wallet.balance += params.direction === "credit" ? params.amount : -debitTotal;
   }
   const tx: StoredTx = {
     id: `TXN_${Date.now().toString(36).toUpperCase()}`,
     userId: params.userId,
     kind: params.kind,
     amount: params.amount,
-    fee: 0,
+    fee,
     status,
     method: params.method,
     counterparty: params.counterparty,
@@ -478,7 +483,7 @@ export async function settleRailTx(railRef: string, status: TransactionStatus) {
     if (isCredit && tx.status === "pending") wallet.balance += tx.amount;
     tx.status = "success";
   } else {
-    if (!isCredit && tx.status === "pending") wallet.balance += tx.amount;
+    if (!isCredit && tx.status === "pending") wallet.balance += tx.amount + (tx.fee || 0);
     tx.status = status === "cancelled" ? "cancelled" : "failed";
   }
   await saveDb(db);

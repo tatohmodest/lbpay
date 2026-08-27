@@ -6,6 +6,7 @@ import { sendOtpEmail } from "@/lib/server/mail";
 import { setPreauth } from "@/lib/server/session";
 import { defaultKyc, isBootstrapAdmin } from "@/lib/roles";
 import { slugify, uid } from "@/lib/format";
+import { cameroonMsisdn } from "@/lib/phone";
 import type { AccountKind } from "@/lib/types";
 
 export async function POST(request: Request) {
@@ -13,7 +14,7 @@ export async function POST(request: Request) {
     const body = await request.json().catch(() => ({}));
     const name = String(body.name || "").trim();
     const email = String(body.email || "").trim().toLowerCase();
-    const phone = String(body.phone || "").replace(/\s+/g, "");
+    const phone = cameroonMsisdn(body.phone);
     const password = String(body.password || "");
     let handle = slugify(String(body.lbpayId || name || email.split("@")[0]));
 

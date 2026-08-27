@@ -36,6 +36,7 @@ export async function POST(request: Request) {
     const moved = await recordLedgerMove({
       userId: user.id,
       amount,
+      fee: 0,
       direction: "debit",
       kind,
       method: "wallet",

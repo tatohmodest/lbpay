@@ -100,6 +100,7 @@ export default function WalletPage() {
                     <p className="font-semibold">{tx.counterparty}</p>
                     <p className="text-xs text-muted">
                       {tx.kind.replace("_", " ")} · {formatDate(tx.createdAt)}
+                      {tx.fee > 0 ? ` · fee ${formatXAF(tx.fee, { withCurrency: false })}` : ""}
                     </p>
                   </div>
                   <div className="text-right">
@@ -120,7 +121,8 @@ export default function WalletPage() {
         <Card className="p-5">
           <h2 className="text-lg font-bold">Send out of LBPay</h2>
           <p className="mt-1 text-sm text-muted">
-            Disburse wallet cash to MTN or Orange. Wallet-to-wallet stays inside LBPay.
+            Disburse wallet cash to MTN or Orange. Same network 3%, Orange to MTN or MTN to Orange 6%.
+            Wallet-to-wallet stays inside LBPay and is free.
           </p>
           <div className="mt-4 flex items-center gap-2">
             <span className="rounded-full bg-mtn px-2 py-1 text-[10px] font-black text-black">MTN</span>

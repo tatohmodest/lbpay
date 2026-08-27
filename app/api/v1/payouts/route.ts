@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { authenticateApiKey, logApi, railForEnv } from "@/lib/server/apikey";
-import { recordLedgerMove } from "@/lib/server/db";
+import { recordLedgerMove, getWallet } from "@/lib/server/db";
 import { payunitReference } from "@/lib/server/crypto";
+import { cameroonMsisdn, isCameroonMsisdn } from "@/lib/phone";
+import { momoOutFee } from "@/lib/fees";
 
 export async function POST(request: Request) {
   const auth = await authenticateApiKey(request);
@@ -9,11 +11,17 @@ export async function POST(request: Request) {
   const { user, env } = auth;
   const body = await request.json().catch(() => ({}));
   const amount = Number(body.amount);
-  const phone = String(body.phone || "").replace(/\s+/g, "");
+  const phone = cameroonMsisdn(body.phone);
   const network = body.network === "orange" ? "orange" : "mtn";
-  if (!amount || !phone) {
+  const fee = momoOutFee(amount, user.phone, network);
+  if (!amount || amount < 100 || !isCameroonMsisdn(phone)) {
     await logApi(user.id, "POST", "/v1/payouts", 400);
-    return NextResponse.json({ error: "amount and phone are required" }, { status: 400 });
+    return NextResponse.json({ error: "amount and a valid Cameroon phone are required" }, { status: 400 });
+  }
+  const wallet = await getWallet(user.id);
+  if (wallet.balance < amount + fee) {
+    await logApi(user.id, "POST", "/v1/payouts", 400);
+    return NextResponse.json({ error: "Insufficient wallet balance." }, { status: 400 });
   }
   if (env === "live" && user.kyc.developer !== "verified") {
     return NextResponse.json({ error: "Live payouts need approved developer KYC." }, { status: 403 });
@@ -35,11 +43,12 @@ export async function POST(request: Request) {
   const moved = await recordLedgerMove({
     userId: user.id,
     amount,
+    fee,
     direction: "debit",
     kind: "payout",
     method: network,
     counterparty: phone,
-    note: "API disbursement",
+    note: fee ? `API disbursement · ${fee} XAF fee` : "API disbursement",
     status: result.status,
     rail: result.provider,
     railRef: reference,
@@ -49,6 +58,7 @@ export async function POST(request: Request) {
     id: moved.tx.id,
     object: "payout",
     amount,
+    fee,
     phone,
     network,
     status: moved.tx.status,

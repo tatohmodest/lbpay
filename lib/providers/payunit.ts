@@ -1,19 +1,17 @@
 import { PayunitClient } from "@payunit/nodejs-sdk";
 import { httpsCallbackUrl, payunitGatewayUrl } from "@/lib/site";
+import { cameroonMsisdn } from "@/lib/phone";
 import type { PaymentRail, RailCollectInput, RailDisburseInput, RailResult } from "./types";
 
 type PayUnitMode = "test" | "live";
 
 function collectionPhone(phone?: string) {
-  const digits = String(phone || "").replace(/\D/g, "");
-  if (digits.startsWith("237") && digits.length >= 12) return digits.slice(3);
-  if (digits.startsWith("0") && digits.length === 10) return digits.slice(1);
-  return digits;
+  return cameroonMsisdn(phone);
 }
 
 function disbursementAccount(phone: string) {
-  const local = collectionPhone(phone);
-  return local.startsWith("237") ? local : `237${local}`;
+  const local = cameroonMsisdn(phone);
+  return local ? `237${local}` : phone.replace(/\D/g, "");
 }
 
 function gateway(method: "mtn" | "orange" | "card") {
