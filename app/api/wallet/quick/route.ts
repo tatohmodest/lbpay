@@ -22,7 +22,6 @@ export async function POST(request: Request) {
     const pin = String(body.pin || "");
     const fromNetwork = body.fromNetwork === "orange" ? "orange" : body.fromNetwork === "mtn" ? "mtn" : null;
     const toNetwork = body.toNetwork === "orange" ? "orange" : body.toNetwork === "mtn" ? "mtn" : null;
-    const fee = directTransferFee(amount);
 
     if (!amount) {
       return NextResponse.json({ error: "Enter an amount." }, { status: 400 });
@@ -39,6 +38,7 @@ export async function POST(request: Request) {
     if (!fromNetwork || !toNetwork) {
       return NextResponse.json({ error: "Choose MTN or Orange for both numbers." }, { status: 400 });
     }
+    const fee = directTransferFee(amount, fromNetwork, toNetwork);
     if (!isCameroonMsisdn(from)) {
       return NextResponse.json({ error: "Enter a valid number to pay from." }, { status: 400 });
     }

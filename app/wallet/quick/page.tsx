@@ -63,7 +63,7 @@ export default function QuickTransferPage() {
   const value = Number(amount) || 0;
   const fromPhone = cameroonMsisdn(from);
   const toPhone = cameroonMsisdn(to);
-  const fee = directTransferFee(value);
+  const fee = directTransferFee(value, fromNetwork, toNetwork);
   const payAmount = value + fee;
   const ussdCode = fromNetwork === "orange" ? "#150#" : "*126#";
   const ready =
