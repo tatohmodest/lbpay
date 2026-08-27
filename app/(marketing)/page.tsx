@@ -61,7 +61,7 @@ export default function LandingPage() {
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-deep">
               Cameroon payments
             </p>
-            <h1 className="mt-4 text-[2.15rem] font-semibold leading-[1.12] tracking-tight text-ink md:text-5xl">
+            <h1 className="mt-4 text-[2.15rem] font-medium leading-[1.18] text-ink md:text-5xl">
               Move XAF with the quiet confidence of a bank, and the speed of Mobile Money.
             </h1>
             <p className="mt-5 max-w-xl text-base leading-7 text-muted md:text-lg">
@@ -113,7 +113,7 @@ export default function LandingPage() {
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-deep">
               Products
             </p>
-            <h2 className="mt-3 text-3xl font-semibold tracking-tight md:text-4xl">
+            <h2 className="mt-3 text-3xl font-semibold leading-[1.2] md:text-4xl">
               Three products. One ledger.
             </h2>
             <p className="mt-3 text-muted">
@@ -149,7 +149,7 @@ export default function LandingPage() {
         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-deep">
           Cross-network
         </p>
-        <h2 className="mt-3 text-3xl font-semibold tracking-tight md:text-4xl">
+        <h2 className="mt-3 text-3xl font-semibold leading-[1.2] md:text-4xl">
           MTN to Orange. One send.
         </h2>
         <p className="mt-4 text-[15px] leading-7 text-muted">
@@ -171,7 +171,7 @@ export default function LandingPage() {
         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand">
           Merchant checkout
         </p>
-        <h2 className="mt-3 text-3xl font-semibold tracking-tight md:text-4xl">
+        <h2 className="mt-3 text-3xl font-semibold leading-[1.2] md:text-4xl">
           QR, payment links, one counter.
         </h2>
         <p className="mt-4 text-[15px] leading-7 text-white/70">
@@ -191,7 +191,7 @@ export default function LandingPage() {
         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-deep">
           Developers
         </p>
-        <h2 className="mt-3 text-3xl font-semibold tracking-tight md:text-4xl">
+        <h2 className="mt-3 text-3xl font-semibold leading-[1.2] md:text-4xl">
           Payments, payouts, sandbox, webhooks.
         </h2>
         <p className="mt-4 text-[15px] leading-7 text-muted">
@@ -213,7 +213,7 @@ export default function LandingPage() {
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-deep">
             How it works
           </p>
-          <h2 className="mt-3 text-3xl font-semibold tracking-tight md:text-4xl">
+          <h2 className="mt-3 text-3xl font-semibold leading-[1.2] md:text-4xl">
             Built for how Cameroon already moves money
           </h2>
           <p className="mt-5 text-[15px] leading-7 text-ink">
@@ -264,7 +264,7 @@ export default function LandingPage() {
 
       <section id="faq" className="bg-white py-16 lg:py-24" aria-labelledby="faq-heading">
         <Container className="max-w-2xl">
-          <h2 id="faq-heading" className="text-3xl font-semibold tracking-tight">
+          <h2 id="faq-heading" className="text-3xl font-semibold leading-[1.2]">
             Questions, answered
           </h2>
           <div className="mt-10 divide-y divide-line border-y border-line">
@@ -281,7 +281,7 @@ export default function LandingPage() {
       <section className="bg-navy py-16 text-white">
         <Container className="flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">
           <div>
-            <h2 className="text-3xl font-semibold tracking-tight">Open a wallet in minutes.</h2>
+            <h2 className="text-3xl font-semibold leading-[1.2]">Open a wallet in minutes.</h2>
             <p className="mt-2 max-w-xl text-sm leading-6 text-white/70">
               Email, a one-time code, a PIN. Then you can send XAF across Cameroon.
             </p>
