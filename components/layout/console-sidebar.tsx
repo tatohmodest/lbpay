@@ -3,11 +3,47 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
+import { Code2, Store, Wallet } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { Logo } from "@/components/logo";
 import { RightDrawer } from "@/components/ui/right-drawer";
 
 export type NavItem = { href: string; label: string; icon: LucideIcon };
+
+const products = [
+  { href: "/wallet", label: "Wallet", icon: Wallet },
+  { href: "/business", label: "Business", icon: Store },
+  { href: "/developers", label: "Developers", icon: Code2 },
+];
+
+function ProductSwitch({ onNavigate }: { onNavigate?: () => void }) {
+  const pathname = usePathname();
+  return (
+    <div className="mt-auto border-t border-line pt-3">
+      <p className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-wide text-muted">Products</p>
+      <nav className="flex flex-col gap-1">
+        {products.map((item) => {
+          const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+          const Icon = item.icon;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={onNavigate}
+              className={cn(
+                "flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-medium transition",
+                active ? "bg-brand-soft text-brand-deep" : "text-muted hover:bg-paper hover:text-ink",
+              )}
+            >
+              <Icon className="h-4 w-4" />
+              {item.label}
+            </Link>
+          );
+        })}
+      </nav>
+    </div>
+  );
+}
 
 function SidebarLinks({
   items,
@@ -81,9 +117,10 @@ export function ConsoleSidebar({
           </Link>
         ) : null}
         <SidebarLinks items={items} />
+        <ProductSwitch />
         <Link
           href="/docs"
-          className="mt-auto rounded-2xl px-3 py-2.5 text-sm font-medium text-muted hover:bg-brand-soft hover:text-brand-deep"
+          className="rounded-2xl px-3 py-2.5 text-sm font-medium text-muted hover:bg-brand-soft hover:text-brand-deep"
         >
           Documentation
         </Link>
@@ -107,10 +144,11 @@ export function ConsoleSidebar({
         }
       >
         <SidebarLinks items={items} onNavigate={close} />
+        <ProductSwitch onNavigate={close} />
         <Link
           href="/docs"
           onClick={close}
-          className="mt-4 block rounded-2xl px-3 py-2.5 text-sm font-medium text-muted hover:bg-paper"
+          className="mt-2 block rounded-2xl px-3 py-2.5 text-sm font-medium text-muted hover:bg-paper"
         >
           Documentation
         </Link>

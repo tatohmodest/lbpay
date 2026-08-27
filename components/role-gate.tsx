@@ -72,7 +72,7 @@ export function RoleGate({
         </h1>
         <p className="mt-2 text-sm text-muted">
           {kind === "developer"
-            ? "Apply to use the payments API. The portal appears in your menu after approval."
+            ? "Apply to use the payments API. Developer tools unlock on this page after approval."
             : "Add your business details so we can open merchant tools."}
         </p>
         {kind === "developer" ? (

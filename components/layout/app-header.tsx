@@ -29,8 +29,20 @@ export function AppHeader({ onOpenMenu }: { onOpenMenu?: () => void }) {
   }
   const products = [
     { href: "/wallet", label: "Wallet", icon: Wallet, copy: "Send and receive XAF", show: true },
-    { href: "/business", label: "Business", icon: Store, copy: "Checkout and collections", show: productUnlocked(user, "business") },
-    { href: "/developers", label: "Developers", icon: Code2, copy: "API keys and webhooks", show: productUnlocked(user, "developer") },
+    {
+      href: "/business",
+      label: "Business",
+      icon: Store,
+      copy: productUnlocked(user, "business") ? "Checkout and collections" : "Apply for merchant tools",
+      show: true,
+    },
+    {
+      href: "/developers",
+      label: "Developers",
+      icon: Code2,
+      copy: productUnlocked(user, "developer") ? "API keys and webhooks" : "Apply for API access",
+      show: true,
+    },
     { href: "/admin", label: "Admin", icon: Shield, copy: "Platform control", show: isAdmin(user) },
   ].filter((item) => item.show);
 
@@ -174,8 +186,8 @@ export function BottomNav() {
   const user = me.data?.user;
   const items = [
     { href: "/wallet", label: "Wallet", icon: Wallet, show: true },
-    { href: "/business", label: "Business", icon: Store, show: productUnlocked(user, "business") },
-    { href: "/developers", label: "Dev", icon: Code2, show: productUnlocked(user, "developer") },
+    { href: "/business", label: "Business", icon: Store, show: true },
+    { href: "/developers", label: "Dev", icon: Code2, show: true },
     { href: "/admin", label: "Admin", icon: Shield, show: isAdmin(user) },
     { href: "/wallet/profile", label: "Profile", icon: UserRound, show: true },
   ].filter((item) => item.show);
