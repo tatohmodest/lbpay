@@ -22,8 +22,10 @@ export function randomOtp() {
   return String(Math.floor(100000 + Math.random() * 900000));
 }
 
-export function payunitReference(prefix = "LBPAY") {
-  return `${prefix}${Date.now().toString(36)}${randomBytes(3).toString("hex")}`.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+export function payunitReference(prefix = "LB") {
+  const stamp = Date.now().toString().slice(-10);
+  const rand = randomBytes(2).toString("hex").toUpperCase();
+  return `${prefix}${stamp}${rand}`.replace(/[^A-Z0-9]/g, "").slice(0, 18);
 }
 
 export function randomToken(bytes = 24) {

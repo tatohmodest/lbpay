@@ -29,4 +29,5 @@ export type RailResult = {
 export interface PaymentRail {
   collect(input: RailCollectInput): Promise<RailResult>;
   disburse(input: RailDisburseInput): Promise<RailResult>;
+  getStatus?(reference: string): Promise<RailResult>;
 }

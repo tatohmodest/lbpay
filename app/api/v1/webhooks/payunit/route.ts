@@ -9,11 +9,11 @@ export async function POST(request: Request) {
   );
   const rawStatus = String(payload.transaction_status || payload.status || "").toUpperCase();
   const status: TransactionStatus =
-    rawStatus === "SUCCESS"
+    ["SUCCESS", "SUCCESSFUL", "SUCCESSFULL", "PAID", "CONFIRMED"].includes(rawStatus)
       ? "success"
-      : rawStatus === "CANCELLED"
+      : rawStatus === "CANCELLED" || rawStatus === "CANCELED"
         ? "cancelled"
-        : rawStatus === "FAILED"
+        : rawStatus === "FAILED" || rawStatus === "ERROR"
           ? "failed"
           : "pending";
 

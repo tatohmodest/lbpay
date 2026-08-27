@@ -24,4 +24,13 @@ export class SandboxRail implements PaymentRail {
       status: simulateStatus(input.reference, input.amount),
     };
   }
+
+  async getStatus(reference: string): Promise<RailResult> {
+    return {
+      provider: "sandbox",
+      reference,
+      providerRef: `sbx_${reference}`,
+      status: simulateStatus(reference, 0),
+    };
+  }
 }

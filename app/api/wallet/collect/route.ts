@@ -28,7 +28,7 @@ export async function POST(request: Request) {
     }
 
     const rail = getPaymentRail();
-    const reference = payunitReference("COL");
+    const reference = payunitReference(method === "orange" ? "OM" : method === "card" ? "CD" : "MT");
     const result = await rail.collect({
       amount,
       currency: "XAF",
@@ -62,6 +62,7 @@ export async function POST(request: Request) {
       rail: result.provider,
       status: result.status,
       hostedUrl: result.hostedUrl,
+      transactionId: result.reference,
       balance: moved.balance,
       transaction: moved.tx,
     });

@@ -29,6 +29,8 @@ export default function DepositPage() {
   const [amount, setAmount] = useState("");
   const [open, setOpen] = useState(false);
   const [pinError, setPinError] = useState("");
+  const [waiting, setWaiting] = useState<{ tx: string; seconds: number } | null>(null);
+  const [checking, setChecking] = useState(false);
 
   const balance = me.data?.balance ?? state.balance;
   const value = Number(amount) || 0;
@@ -49,6 +51,59 @@ export default function DepositPage() {
     [method, clean, state.user.lbpayId],
   );
 
+  const pollPayment = useCallback(
+    async (tx: string) => {
+      const deadline = Date.now() + 120_000;
+      while (Date.now() < deadline) {
+        setWaiting((current) => (current ? { ...current, seconds: Math.max(0, Math.ceil((deadline - Date.now()) / 1000)) } : current));
+        try {
+          const res = await fetch(`/api/wallet/collect/status?tx=${encodeURIComponent(tx)}`);
+          const data = (await res.json()) as { status?: string; error?: string };
+          if (data.status === "success") {
+            setWaiting(null);
+            notify.moneyIn(value, "Wallet deposit received");
+            router.push("/wallet");
+            return;
+          }
+          if (data.status === "failed") {
+            setWaiting(null);
+            notify.error("Deposit failed", data.error || "The Mobile Money collection was not approved.");
+            return;
+          }
+        } catch {
+          /* keep polling */
+        }
+        await new Promise((resolve) => setTimeout(resolve, 4000));
+      }
+      setWaiting(null);
+      notify.info("Still waiting", "Enter your PIN on the phone, then tap verify, or check history in a moment.");
+    },
+    [notify, router, value],
+  );
+
+  const verifyNow = useCallback(async () => {
+    if (!waiting?.tx) return;
+    setChecking(true);
+    try {
+      const res = await fetch(`/api/wallet/collect/status?tx=${encodeURIComponent(waiting.tx)}`);
+      const data = (await res.json()) as { status?: string; error?: string };
+      if (data.status === "success") {
+        setWaiting(null);
+        notify.moneyIn(value, "Wallet deposit received");
+        router.push("/wallet");
+        return;
+      }
+      if (data.status === "failed") {
+        setWaiting(null);
+        notify.error("Deposit failed", data.error || "The collection was not approved.");
+        return;
+      }
+      notify.info("Not confirmed yet", "Approve the USSD prompt on your phone, then tap verify again.");
+    } finally {
+      setChecking(false);
+    }
+  }, [waiting, notify, router, value]);
+
   const confirm = useCallback(
     async (pin: string) => {
       setPinError("");
@@ -58,17 +113,20 @@ export default function DepositPage() {
           method: method === "orange" ? "orange" : method === "card" ? "card" : "mtn",
           phone: clean,
           pin,
-        })) as { hostedUrl?: string; status?: string };
+        })) as { hostedUrl?: string; status?: string; transactionId?: string };
         if (result.hostedUrl) {
           notify.pending("Continue on checkout", "Complete the card payment to credit your wallet.");
           window.location.href = result.hostedUrl;
           return;
         }
-        if (result.status === "pending") {
+        if (result.status === "pending" && result.transactionId) {
           notify.pending("Approve on your phone", `Confirm ${formatXAF(value)} on ${method.toUpperCase()}.`);
-        } else {
-          notify.moneyIn(value, "Wallet deposit received");
+          setOpen(false);
+          setWaiting({ tx: result.transactionId, seconds: 120 });
+          void pollPayment(result.transactionId);
+          return;
         }
+        notify.moneyIn(value, "Wallet deposit received");
         setOpen(false);
         router.push("/wallet");
       } catch (err) {
@@ -76,7 +134,7 @@ export default function DepositPage() {
         notify.error("Deposit failed", err instanceof Error ? err.message : "Could not collect");
       }
     },
-    [collect, value, method, clean, notify, router],
+    [collect, value, method, clean, notify, router, pollPayment],
   );
 
   return (
@@ -85,51 +143,70 @@ export default function DepositPage() {
       <p className="mt-1 text-sm text-muted">
         Fund your LBPay wallet. Current balance {formatXAF(balance)}.
       </p>
-      <Card className="mt-6 p-6">
-        <form
-          className="flex flex-col gap-4"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (!ready) return;
-            setPinError("");
-            setOpen(true);
-          }}
-        >
-          <div className="grid gap-2">
-            {methods.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => setMethod(item.id)}
-                className={`rounded-xl border p-3 text-left ${
-                  method === item.id ? "border-brand bg-brand-soft" : "border-line"
-                }`}
-              >
-                <p className="font-semibold">{item.label}</p>
-                <p className="text-xs text-muted">{item.hint}</p>
-              </button>
-            ))}
+      {waiting ? (
+        <Card className="mt-6 p-6 text-center">
+          <p className="text-sm font-bold uppercase tracking-wide text-brand">USSD sent</p>
+          <h2 className="mt-2 text-2xl font-black">Approve on your phone</h2>
+          <p className="mt-2 text-sm text-muted">
+            Enter your {method === "orange" ? "Orange Money" : "MTN"} PIN. This page checks the payment automatically.
+          </p>
+          <p className="mt-6 font-mono text-4xl font-black">{waiting.seconds}s</p>
+          <div className="mt-6 grid gap-2">
+            <Button onClick={() => void verifyNow()} disabled={checking}>
+              {checking ? "Checking…" : "I entered my PIN, verify"}
+            </Button>
+            <Button variant="ghost" onClick={() => setWaiting(null)}>
+              Cancel wait
+            </Button>
           </div>
-          {method !== "card" ? (
-            <Field label="Paying from">
-              <Input value={phone} onChange={(e) => setPhone(e.target.value)} required />
+        </Card>
+      ) : (
+        <Card className="mt-6 p-6">
+          <form
+            className="flex flex-col gap-4"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!ready) return;
+              setPinError("");
+              setOpen(true);
+            }}
+          >
+            <div className="grid gap-2">
+              {methods.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setMethod(item.id)}
+                  className={`rounded-xl border p-3 text-left ${
+                    method === item.id ? "border-brand bg-brand-soft" : "border-line"
+                  }`}
+                >
+                  <p className="font-semibold">{item.label}</p>
+                  <p className="text-xs text-muted">{item.hint}</p>
+                </button>
+              ))}
+            </div>
+            {method !== "card" ? (
+              <Field label="Paying from">
+                <Input value={phone} onChange={(e) => setPhone(e.target.value)} required />
+              </Field>
+            ) : null}
+            <Field label="Amount (XAF)">
+              <Input
+                type="number"
+                min={100}
+                className="font-mono text-lg"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                required
+              />
             </Field>
-          ) : null}
-          <Field label="Amount (XAF)">
-            <Input
-              type="number"
-              min={100}
-              className="font-mono text-lg"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              required
-            />
-          </Field>
-          <Button type="submit" disabled={!ready}>
-            Review deposit
-          </Button>
-        </form>
-      </Card>
+            <Button type="submit" disabled={!ready}>
+              Review deposit
+            </Button>
+          </form>
+        </Card>
+      )}
       <ConfirmSheet
         open={open}
         title="Confirm deposit"
