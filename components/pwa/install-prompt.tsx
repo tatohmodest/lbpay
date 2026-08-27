@@ -7,7 +7,6 @@ import { Download, Share, Smartphone, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   type BeforeInstallPromptEvent,
-  type InstallPlatform,
   INSTALL_EVENT,
   isStandaloneDisplay,
   markInstallDismissed,
@@ -18,14 +17,12 @@ import {
 
 export function InstallPrompt() {
   const pathname = usePathname();
-  const platformHint = useInstallPlatform();
+  const platform = useInstallPlatform();
   const standalone = useStandaloneDisplay();
   const [open, setOpen] = useState(false);
-  const [platformOverride, setPlatformOverride] = useState<InstallPlatform | null>(null);
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null);
   const [busy, setBusy] = useState(false);
   const autoOpened = useRef(false);
-  const platform = platformOverride ?? platformHint;
 
   const close = useCallback((persist = true) => {
     setOpen(false);
@@ -95,8 +92,10 @@ export function InstallPrompt() {
 
   if (!open || standalone) return null;
 
-  const androidOrDesktop = platform !== "ios";
-  const canNativeInstall = Boolean(deferred);
+  const isIos = platform === "ios";
+  const canNativeInstall = Boolean(deferred) && !isIos;
+  const deviceLabel =
+    platform === "ios" ? "iPhone" : platform === "android" ? "Android" : "this device";
 
   return (
     <div className="fixed inset-0 z-[80] flex items-end justify-center sm:items-center">
@@ -110,138 +109,91 @@ export function InstallPrompt() {
         role="dialog"
         aria-modal="true"
         aria-labelledby="lbpay-install-title"
-        className="lb-sheet relative w-full max-w-md overflow-hidden rounded-t-[1.75rem] bg-white shadow-[0_-24px_80px_rgba(7,20,15,0.18)] sm:rounded-[1.75rem] sm:shadow-[0_24px_80px_rgba(7,20,15,0.16)]"
+        className="lb-sheet relative flex min-h-[min(36rem,88svh)] w-full max-w-lg flex-col overflow-hidden rounded-t-[2rem] bg-white shadow-[0_-24px_80px_rgba(7,20,15,0.18)] sm:min-h-0 sm:rounded-[2rem] sm:shadow-[0_24px_80px_rgba(7,20,15,0.16)]"
       >
-        <div className="relative overflow-hidden px-6 pb-2 pt-5">
-          <div className="pointer-events-none absolute -right-10 -top-16 h-40 w-40 rounded-full bg-brand/20 blur-3xl" />
-          <div className="pointer-events-none absolute -left-8 top-12 h-24 w-24 rounded-full bg-brand/10 blur-2xl" />
-          <div className="relative flex items-start justify-between gap-3">
-            <div className="flex items-center gap-3">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/icons/icon-192.png"
-                alt=""
-                width={56}
-                height={56}
-                className="h-14 w-14 rounded-[1rem] shadow-[0_8px_24px_rgba(0,179,105,0.28)]"
-              />
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand-deep">
-                  Home screen app
-                </p>
-                <h2 id="lbpay-install-title" className="text-xl font-semibold tracking-tight text-ink">
-                  Get LBPay
-                </h2>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => close()}
-              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-line bg-white text-ink"
-              aria-label="Close"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
+        <div className="flex justify-center pt-3 sm:hidden">
+          <span className="h-1.5 w-12 rounded-full bg-line" />
+        </div>
+        <div className="absolute right-4 top-[max(0.75rem,env(safe-area-inset-top))] z-10">
+          <button
+            type="button"
+            onClick={() => close()}
+            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-line bg-white text-ink"
+            aria-label="Close"
+          >
+            <X className="h-4 w-4" />
+          </button>
         </div>
 
-        <div className="px-6 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-2">
-          <p className="text-sm leading-6 text-muted">
-            Install LBPay on this device. Open your XAF wallet like any other app, with PIN lock
-            and faster sign-in. Works on iPhone and Android.
-          </p>
-
-          <div className="mt-4 grid grid-cols-2 gap-2">
-            <OsChip
-              active={platform === "ios"}
-              label="iOS"
-              hint="iPhone and iPad"
-              onClick={() => setPlatformOverride("ios")}
+        <div className="flex flex-1 flex-col px-7 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-6 sm:px-10 sm:pt-10">
+          <div className="flex flex-col items-center text-center">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/icons/icon-192.png"
+              alt="LBPay"
+              width={112}
+              height={112}
+              className="h-28 w-28 rounded-[1.75rem] shadow-[0_18px_40px_rgba(12,25,19,0.16)]"
             />
-            <OsChip
-              active={platform !== "ios"}
-              label="Android"
-              hint="Phone and tablet"
-              onClick={() => setPlatformOverride("android")}
-            />
+            <p className="mt-5 rounded-full bg-paper px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
+              App for {deviceLabel}
+            </p>
+            <h2 id="lbpay-install-title" className="mt-3 text-3xl font-semibold tracking-tight text-ink">
+              Get the LBPay app
+            </h2>
+            <p className="mt-3 max-w-sm text-base leading-7 text-muted">
+              Add LBPay to your home screen. Your XAF wallet, PIN lock, and transfers open like any
+              other app on this {deviceLabel}.
+            </p>
           </div>
 
-          {platform === "ios" ? (
-            <ol className="mt-5 space-y-3">
-              <InstallStep n={1} icon={<Share className="h-4 w-4" />}>
-                Tap the <span className="font-medium text-ink">Share</span> button in Safari or
-                Chrome.
+          {isIos ? (
+            <ol className="mt-8 space-y-4">
+              <InstallStep n={1} icon={<Share className="h-5 w-5" />}>
+                Tap the <span className="font-medium text-ink">Share</span> button in Safari.
               </InstallStep>
-              <InstallStep n={2} icon={<Smartphone className="h-4 w-4" />}>
+              <InstallStep n={2} icon={<Smartphone className="h-5 w-5" />}>
                 Choose <span className="font-medium text-ink">Add to Home Screen</span>.
               </InstallStep>
-              <InstallStep n={3} icon={<Download className="h-4 w-4" />}>
-                Tap <span className="font-medium text-ink">Add</span>. LBPay appears with your apps.
+              <InstallStep n={3} icon={<Download className="h-5 w-5" />}>
+                Tap <span className="font-medium text-ink">Add</span>. LBPay sits with your other apps.
               </InstallStep>
             </ol>
+          ) : canNativeInstall ? (
+            <p className="mt-8 rounded-2xl bg-paper px-4 py-4 text-center text-sm leading-6 text-muted">
+              Tap install, then confirm. LBPay will appear on your home screen.
+            </p>
           ) : (
-            <ol className="mt-5 space-y-3">
-              {canNativeInstall ? (
-                <InstallStep n={1} icon={<Download className="h-4 w-4" />}>
-                  Tap <span className="font-medium text-ink">Install app</span>, then confirm in the
-                  browser sheet.
-                </InstallStep>
-              ) : (
-                <>
-                  <InstallStep n={1} icon={<Smartphone className="h-4 w-4" />}>
-                    Open the browser menu (three dots).
-                  </InstallStep>
-                  <InstallStep n={2} icon={<Download className="h-4 w-4" />}>
-                    Tap <span className="font-medium text-ink">Install app</span> or{" "}
-                    <span className="font-medium text-ink">Add to Home screen</span>.
-                  </InstallStep>
-                </>
-              )}
+            <ol className="mt-8 space-y-4">
+              <InstallStep n={1} icon={<Smartphone className="h-5 w-5" />}>
+                Open the browser menu (three dots).
+              </InstallStep>
+              <InstallStep n={2} icon={<Download className="h-5 w-5" />}>
+                Tap <span className="font-medium text-ink">Install app</span> or{" "}
+                <span className="font-medium text-ink">Add to Home screen</span>.
+              </InstallStep>
             </ol>
           )}
 
-          <div className="mt-6 flex flex-col gap-2">
-            {androidOrDesktop && canNativeInstall ? (
-              <Button type="button" onClick={() => void install()} disabled={busy} className="w-full">
+          <div className="mt-auto flex flex-col gap-2 pt-8">
+            {canNativeInstall ? (
+              <Button type="button" size="lg" onClick={() => void install()} disabled={busy} className="h-12 w-full text-[15px]">
                 {busy ? "Opening…" : "Install app"}
               </Button>
             ) : null}
-            <Button type="button" variant={canNativeInstall && androidOrDesktop ? "ghost" : "secondary"} onClick={() => close()} className="w-full">
-              {platform === "ios" || !canNativeInstall ? "I will do this next" : "Not now"}
+            <Button
+              type="button"
+              size="lg"
+              variant={canNativeInstall ? "ghost" : "secondary"}
+              onClick={() => close()}
+              className="h-12 w-full"
+            >
+              {isIos || !canNativeInstall ? "I will do this next" : "Not now"}
             </Button>
           </div>
         </div>
       </div>
     </div>
-  );
-}
-
-function OsChip({
-  active,
-  label,
-  hint,
-  onClick,
-}: {
-  active: boolean;
-  label: string;
-  hint: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={
-        active
-          ? "rounded-2xl border border-brand bg-brand-soft px-3 py-3 text-left"
-          : "rounded-2xl border border-line bg-paper px-3 py-3 text-left"
-      }
-    >
-      <span className={`block text-sm font-medium ${active ? "text-brand-deep" : "text-ink"}`}>
-        {label}
-      </span>
-      <span className="block text-xs text-muted">{hint}</span>
-    </button>
   );
 }
 
@@ -255,11 +207,11 @@ function InstallStep({
   children: ReactNode;
 }) {
   return (
-    <li className="flex items-start gap-3">
-      <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-soft text-brand-deep">
+    <li className="flex items-start gap-4 rounded-2xl bg-paper px-4 py-3.5">
+      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-ink shadow-[0_1px_2px_rgba(12,25,19,0.06)]">
         {icon}
       </span>
-      <p className="pt-1 text-sm leading-6 text-muted">
+      <p className="pt-2 text-[15px] leading-6 text-muted">
         <span className="mr-1.5 font-semibold text-ink">{n}.</span>
         {children}
       </p>

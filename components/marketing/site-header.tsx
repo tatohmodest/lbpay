@@ -108,7 +108,7 @@ export function SiteHeader() {
                   openInstallPrompt();
                 }}
               >
-                Get iPhone and Android app
+                Get the app
               </Button>
             ) : null}
             <div className="grid grid-cols-2 gap-2">
