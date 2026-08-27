@@ -51,6 +51,7 @@ export default function DepositPage() {
     { label: "From", value: method === "mtn" ? "MTN" : method === "orange" ? "Orange" : "Card" },
     { label: "Number", value: method === "card" ? "Card" : clean },
     { label: "Wallet receives", value: formatXAF(value) },
+    ...(fee ? [{ label: "Charge", value: formatXAF(fee) }] : []),
     { label: "You pay", value: formatXAF(payAmount) },
   ];
 
@@ -218,6 +219,7 @@ export default function DepositPage() {
               onChange={setAmount}
               kind="deposit"
               receive={value}
+              fee={fee}
               pay={payAmount}
               receiveLabel="Wallet receives"
             />

@@ -265,13 +265,21 @@ export function CheckoutPay({
                 <span className="ml-1 align-super text-sm font-semibold text-muted">XAF</span>
               </p>
               {method !== "wallet" && value > 0 ? (
-                <div className="mt-3 space-y-1 rounded-2xl bg-paper px-4 py-3 text-sm">
-                  <p>
-                    They receive <span className="font-mono font-semibold">{formatXAF(value)}</span>
-                  </p>
-                  <p className="text-muted">
-                    You pay <span className="font-mono font-semibold text-ink">{formatXAF(payAmount)}</span>
-                  </p>
+                <div className="mt-3 space-y-1.5 rounded-2xl bg-paper px-4 py-3 text-sm">
+                  <div className="flex justify-between gap-3">
+                    <span className="text-muted">They receive</span>
+                    <span className="font-mono font-semibold">{formatXAF(value)}</span>
+                  </div>
+                  {fee ? (
+                    <div className="flex justify-between gap-3">
+                      <span className="text-muted">Charge</span>
+                      <span className="font-mono font-semibold">{formatXAF(fee)}</span>
+                    </div>
+                  ) : null}
+                  <div className="flex justify-between gap-3 border-t border-line pt-1.5">
+                    <span>You pay</span>
+                    <span className="font-mono font-semibold">{formatXAF(payAmount)}</span>
+                  </div>
                 </div>
               ) : null}
             </>
@@ -282,6 +290,7 @@ export function CheckoutPay({
                 onChange={setAmount}
                 kind={amountKind}
                 receive={value}
+                fee={method === "wallet" ? 0 : fee}
                 pay={method === "wallet" ? undefined : payAmount}
               />
             </div>

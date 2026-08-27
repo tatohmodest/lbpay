@@ -79,6 +79,7 @@ function SendInner() {
           { label: "Network", value: network === "orange" ? "Orange" : "MTN" },
           { label: "Phone", value: phone },
           { label: "They receive", value: formatXAF(value) },
+          ...(fee ? [{ label: "Charge", value: formatXAF(fee) }] : []),
           { label: "You pay", value: formatXAF(debit) },
         ];
 
@@ -173,6 +174,7 @@ function SendInner() {
             onChange={setAmount}
             kind={amountKind}
             receive={value}
+            fee={network === "wallet" ? 0 : fee}
             pay={network === "wallet" ? undefined : debit}
           />
           <Field label="Note">

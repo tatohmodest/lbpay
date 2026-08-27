@@ -55,6 +55,7 @@ export default function WithdrawPage() {
   const details = [
     { label: "To", value: `${network === "orange" ? "Orange" : "MTN"} ${clean}` },
     { label: "They receive", value: formatXAF(value) },
+    ...(fee ? [{ label: "Charge", value: formatXAF(fee) }] : []),
     { label: "You pay", value: formatXAF(debit) },
   ];
 
@@ -120,6 +121,7 @@ export default function WithdrawPage() {
             onChange={setAmount}
             kind="withdraw"
             receive={value}
+            fee={fee}
             pay={debit}
             payLabel="Wallet pays"
           />

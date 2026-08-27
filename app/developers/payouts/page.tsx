@@ -38,6 +38,7 @@ export default function PayoutsPage() {
   const details = [
     { label: "To", value: `${network === "orange" ? "Orange" : "MTN"} ${clean}` },
     { label: "They receive", value: formatXAF(value) },
+    ...(fee ? [{ label: "Charge", value: formatXAF(fee) }] : []),
     { label: "You pay", value: formatXAF(debit) },
   ];
 
@@ -70,7 +71,7 @@ export default function PayoutsPage() {
               setOpen(true);
             }}
           >
-            <AmountField value={amount} onChange={setAmount} kind="withdraw" receive={value} pay={debit} />
+            <AmountField value={amount} onChange={setAmount} kind="withdraw" receive={value} fee={fee} pay={debit} />
             <Field label="Number">
               <Input
                 inputMode="numeric"
