@@ -101,6 +101,7 @@ function SendInner() {
   return (
     <div className="mx-auto max-w-xl">
       <h1 className="text-2xl font-black">Send money</h1>
+      <p className="mt-1 text-sm text-muted">Reach a wallet, MTN, or Orange from one place.</p>
       <Card className="mt-6 p-6">
         <p className="mb-4 text-sm text-muted">Available {formatXAF(balance)}</p>
         <form

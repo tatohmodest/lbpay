@@ -190,6 +190,7 @@ export default function QuickTransferPage() {
   return (
     <div className="mx-auto max-w-xl">
       <h1 className="text-2xl font-black">Quick Transfer</h1>
+      <p className="mt-1 text-sm text-muted">Send money to any Mobile Money network in Cameroon.</p>
       {waiting ? (
         <Card className="mt-6 p-6 text-center">
           <p className="text-sm font-bold uppercase tracking-wide text-brand">

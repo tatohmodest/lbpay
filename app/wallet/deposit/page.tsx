@@ -144,6 +144,7 @@ export default function DepositPage() {
   return (
     <div className="mx-auto max-w-xl">
       <h1 className="text-2xl font-black">Add money</h1>
+      <p className="mt-1 text-sm text-muted">Top up your wallet from Mobile Money or card.</p>
       {waiting ? (
         <Card className="mt-6 p-6 text-center">
           <p className="text-sm font-bold uppercase tracking-wide text-brand">Waiting for payment</p>

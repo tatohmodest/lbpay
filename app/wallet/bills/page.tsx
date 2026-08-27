@@ -7,7 +7,6 @@ import { Field, Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ConfirmSheet } from "@/components/confirm-sheet";
 import { useApp } from "@/lib/store";
-import { formatXAF } from "@/lib/format";
 import { useMe, useSpend } from "@/lib/hooks/wallet";
 import { useNotify } from "@/lib/notify";
 
@@ -56,7 +55,7 @@ export default function BillsPage() {
   return (
     <div className="mx-auto max-w-xl">
       <h1 className="text-2xl font-black">Pay bills</h1>
-      <p className="mt-1 text-sm text-muted">Paid from your wallet. Available {formatXAF(balance)}.</p>
+      <p className="mt-1 text-sm text-muted">Settle electricity, water, and TV without leaving LBPay.</p>
       <Card className="mt-6 p-6">
         <form
           className="flex flex-col gap-4"

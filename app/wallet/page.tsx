@@ -140,6 +140,9 @@ export default function WalletPage() {
             <Zap className="h-3.5 w-3.5" /> Fast transfer
           </p>
           <h2 className="mt-2 text-lg font-bold">Quick Transfer</h2>
+          <p className="mt-1 text-sm text-muted">
+            Move money between MTN and Orange without leaving the app.
+          </p>
           <Link href="/wallet/quick" className="mt-4 block">
             <Button className="w-full">Open Quick Transfer</Button>
           </Link>
