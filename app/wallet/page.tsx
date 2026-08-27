@@ -11,6 +11,7 @@ import {
   Receipt,
   Send,
   WalletCards,
+  Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -22,10 +23,10 @@ import { VerifyPrompt } from "@/components/verify-prompt";
 import type { Transaction } from "@/lib/types";
 
 const actions = [
+  { href: "/wallet/quick", label: "Quick Transfer", icon: Zap },
   { href: "/wallet/send", label: "Send Money", icon: Send },
   { href: "/wallet/request", label: "Receive Money", icon: WalletCards },
   { href: "/wallet/qr", label: "QR Code", icon: QrCode },
-  { href: "/wallet/history", label: "Transactions", icon: History },
 ];
 
 export default function WalletPage() {
@@ -85,7 +86,10 @@ export default function WalletPage() {
             </Link>
           ))}
         </div>
-        <div className="flex gap-4 text-sm font-semibold">
+        <div className="flex flex-wrap gap-4 text-sm font-semibold">
+          <Link href="/wallet/history" className="inline-flex items-center gap-1 text-brand">
+            <History className="h-4 w-4" /> Transactions
+          </Link>
           <Link href="/wallet/airtime" className="inline-flex items-center gap-1 text-brand">
             <Phone className="h-4 w-4" /> Buy Airtime
           </Link>
@@ -132,26 +136,25 @@ export default function WalletPage() {
 
       <div className="flex flex-col gap-6 lg:col-span-4">
         <Card className="p-5">
-          <h2 className="text-lg font-bold">Send out of LBPay</h2>
+          <p className="inline-flex items-center gap-1 text-xs font-bold uppercase tracking-wide text-brand">
+            <Zap className="h-3.5 w-3.5" /> Fast transfer
+          </p>
+          <h2 className="mt-2 text-lg font-bold">MTN or Orange to any number</h2>
           <p className="mt-1 text-sm text-muted">
-            Disburse wallet cash to MTN or Orange. Same network 3%, Orange to MTN or MTN to Orange 6%.
-            Wallet-to-wallet stays inside LBPay and is free.
+            Enter the number you pay from and the number receiving the money. Direct transfers are 6%.
+            Minimum 1,000 XAF.
           </p>
           <div className="mt-4 flex items-center gap-2">
             <span className="rounded-full bg-mtn px-2 py-1 text-[10px] font-black text-black">MTN</span>
-            <span className="text-muted">→</span>
+            <span className="text-muted">↔</span>
             <span className="rounded-full bg-om px-2 py-1 text-[10px] font-black text-white">OM</span>
           </div>
-          <div className="mt-4 grid gap-2">
-            <Link href="/wallet/send?via=mtn">
-              <Button className="w-full" variant="secondary">
-                Disburse to MTN
-              </Button>
-            </Link>
-            <Link href="/wallet/send?via=orange">
-              <Button className="w-full">Disburse to Orange</Button>
-            </Link>
-          </div>
+          <Link href="/wallet/quick" className="mt-4 block">
+            <Button className="w-full">Open Quick Transfer</Button>
+          </Link>
+          <Link href="/wallet/send" className="mt-2 block text-center text-sm font-semibold text-brand">
+            Wallet send instead
+          </Link>
         </Card>
 
         <Card className="overflow-hidden">

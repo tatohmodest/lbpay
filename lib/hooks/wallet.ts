@@ -120,6 +120,19 @@ export function useHandleLookup(query: string) {
   });
 }
 
+export function useQuickTransfer() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { amount: number; from: string; to: string; pin: string }) =>
+      fetch("/api/wallet/quick", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      }).then((res) => parseApi(res)),
+    onSuccess: () => client.invalidateQueries({ queryKey: ["me"] }),
+  });
+}
+
 export function useSpend() {
   const client = useQueryClient();
   return useMutation({

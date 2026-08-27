@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { settleRailTx } from "@/lib/server/db";
+import { findTxByRailRef, settleRailTx } from "@/lib/server/db";
 import type { TransactionStatus } from "@/lib/types";
+import { progressQuickTransfer } from "@/lib/server/quick";
 
 export async function POST(request: Request) {
   const payload = await request.json().catch(() => ({} as Record<string, unknown>));
@@ -18,7 +19,12 @@ export async function POST(request: Request) {
           : "pending";
 
   if (reference && status !== "pending") {
-    await settleRailTx(reference, status).catch(() => null);
+    const existing = await findTxByRailRef(reference);
+    if (existing?.kind === "cross_network") {
+      await progressQuickTransfer(reference).catch(() => null);
+    } else {
+      await settleRailTx(reference, status).catch(() => null);
+    }
   }
 
   return NextResponse.json({ received: true, rail: "payunit", reference, status });

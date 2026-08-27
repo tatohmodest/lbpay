@@ -36,3 +36,11 @@ export function momoOutRate(fromPhone: string | undefined, destNetwork: "mtn" | 
 export function feeLabel(rate: number) {
   return `${Math.round(rate * 100)}%`;
 }
+
+export function directTransferFee(amount: number) {
+  return feeOn(amount, FEE_RATES.crossNetwork);
+}
+
+export function directTransferRate() {
+  return FEE_RATES.crossNetwork;
+}

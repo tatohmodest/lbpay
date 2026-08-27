@@ -46,5 +46,5 @@ export function dailyOutboundCap(personal?: string) {
 }
 
 export function outboundKinds(kind: string) {
-  return kind === "withdraw" || kind === "payout";
+  return kind === "withdraw" || kind === "payout" || kind === "cross_network";
 }

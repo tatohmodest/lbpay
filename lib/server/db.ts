@@ -53,6 +53,14 @@ export type StoredTx = Transaction & {
   userId: string;
   counterpartyId?: string;
   rail?: "internal" | "payunit" | "sandbox";
+  meta?: {
+    from?: string;
+    to?: string;
+    fromNetwork?: "mtn" | "orange";
+    toNetwork?: "mtn" | "orange";
+    stage?: "collecting" | "paying" | "done";
+    payoutRef?: string;
+  };
 };
 
 export type KycApplication = {
@@ -412,6 +420,7 @@ export async function recordLedgerMove(params: {
   rail?: StoredTx["rail"];
   railRef?: string;
   fee?: number;
+  meta?: StoredTx["meta"];
 }) {
   const db = await getDb();
   const wallet = db.wallets.find((w) => w.userId === params.userId);
@@ -440,6 +449,7 @@ export async function recordLedgerMove(params: {
     createdAt: new Date().toISOString(),
     rail: params.rail,
     railRef: params.railRef,
+    meta: params.meta,
   };
   db.transactions.unshift(tx);
   await saveDb(db);
@@ -508,6 +518,11 @@ export async function listAllTx() {
 export async function findTxById(id: string) {
   const db = await getDb();
   return db.transactions.find((tx) => tx.id === id) ?? null;
+}
+
+export async function findTxByRailRef(railRef: string) {
+  const db = await getDb();
+  return db.transactions.find((tx) => tx.railRef === railRef) ?? null;
 }
 
 export async function patchTx(id: string, patch: Partial<StoredTx>) {
