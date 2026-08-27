@@ -58,13 +58,20 @@ const OTP_COPY = {
     kind: "password reset",
     footer: "If you did not ask to reset your password, ignore this email.",
   },
+  pin: {
+    title: "Reset your PIN",
+    body: "Use this code to confirm it is you, then you can set a new PIN. It expires in 10 minutes.",
+    subject: (otp: string) => `${otp} is your LBPay PIN reset code`,
+    kind: "PIN reset",
+    footer: "If you did not ask to reset your PIN, ignore this email.",
+  },
 } as const;
 
 export async function sendOtpEmail(
   to: string,
   otp: string,
   name?: string,
-  purpose: "verify" | "admin" | "reset" = "verify",
+  purpose: "verify" | "admin" | "reset" | "pin" = "verify",
 ) {
   const copy = OTP_COPY[purpose];
   const html = `<!doctype html>

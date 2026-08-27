@@ -51,8 +51,8 @@ const actions = [
 
 const extras = [
   { href: "/wallet/history", label: "Transactions", copy: "Every payment in one place", icon: History },
-  { href: "/wallet/airtime", label: "Airtime", copy: "Top up any MTN or Orange line", icon: Phone },
-  { href: "/wallet/bills", label: "Bills", copy: "Electricity, water, and TV", icon: Receipt },
+  { href: "/wallet/airtime", label: "Airtime", copy: "Coming soon", icon: Phone },
+  { href: "/wallet/bills", label: "Bills", copy: "Coming soon", icon: Receipt },
 ];
 
 export default function WalletPage() {

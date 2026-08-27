@@ -19,7 +19,7 @@ const products = [
   {
     icon: Wallet,
     title: "Personal",
-    copy: "An XAF wallet with an @handle. Send, receive, buy airtime, and pay bills.",
+    copy: "An XAF wallet with an @handle. Send, receive, and cash out to Mobile Money.",
     href: "/products/wallet",
     cta: "See the wallet",
   },
@@ -224,8 +224,8 @@ export default function LandingPage() {
           </p>
           <p className="mt-4 text-[15px] leading-7 text-ink">
             Anyone can open a personal wallet from the signup page. After an email one-time code
-            and a PIN, you hold XAF, send to a phone number or an @handle, request money, split
-            a bill, buy airtime, and pay bills. Transfers between two LBPay wallets post on the
+            and a PIN, you hold XAF, send to a phone number or an @handle, request money, and split
+            a bill. Airtime and bill pay are coming next. Transfers between two LBPay wallets post on the
             ledger immediately. When cash has to leave to MTN or Orange, LBPay runs a
             disbursement on the payment rail so the recipient still gets Mobile Money they can
             spend.

@@ -17,6 +17,7 @@ import { cameroonMsisdn, isCameroonMsisdn } from "@/lib/phone";
 import { momoOutFee } from "@/lib/fees";
 import { AmountField } from "@/components/amount-field";
 import { amountIssue, cameroonDay, dailyOutboundCap, outboundKinds } from "@/lib/limits";
+import { readPinFail, isPinError } from "@/lib/pin-fail";
 
 type Network = "wallet" | "mtn" | "orange";
 
@@ -41,6 +42,7 @@ function SendInner() {
   const [note, setNote] = useState("");
   const [open, setOpen] = useState(false);
   const [pinError, setPinError] = useState("");
+  const [pinLockedUntil, setPinLockedUntil] = useState(0);
   const lookup = useHandleLookup(network === "wallet" ? to : "");
 
   const balance = me.data?.balance ?? state.balance;
@@ -82,6 +84,7 @@ function SendInner() {
 
   async function confirm(pin: string) {
     setPinError("");
+    setPinLockedUntil(0);
     try {
       if (network === "wallet") {
         await transfer.mutateAsync({ to, amount: value, pin, note });
@@ -93,8 +96,12 @@ function SendInner() {
       setOpen(false);
       router.push("/wallet");
     } catch (err) {
-      setPinError(err instanceof Error ? err.message : "Could not send");
-      notify.error("Send failed", err instanceof Error ? err.message : "Could not send");
+      const fail = readPinFail(err);
+      setPinError(fail.error);
+      setPinLockedUntil(fail.lockedUntil);
+      if (!isPinError(fail.error)) {
+        notify.error("Send failed", fail.error);
+      }
     }
   }
 
@@ -110,6 +117,7 @@ function SendInner() {
             e.preventDefault();
             if (!ready) return;
             setPinError("");
+            setPinLockedUntil(0);
             setOpen(true);
           }}
         >
@@ -209,6 +217,7 @@ function SendInner() {
         details={details}
         loading={transfer.isPending || disburse.isPending}
         error={pinError}
+        lockedUntil={pinLockedUntil}
         confirmLabel="Enter PIN to send"
         onClose={() => setOpen(false)}
         onConfirm={confirm}

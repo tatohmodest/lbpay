@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { findUserByHandle, recordTransfer } from "@/lib/server/db";
-import { verifySecret } from "@/lib/server/crypto";
 import { requireActiveUser } from "@/lib/server/guard";
 import { assertAmount } from "@/lib/server/limits";
+import { pinFailResponse, verifyUserPin } from "@/lib/server/pin";
 
 export async function POST(request: Request) {
   const auth = await requireActiveUser();
@@ -26,10 +26,8 @@ export async function POST(request: Request) {
     );
   }
 
-  if (!sender.pinHash) return NextResponse.json({ error: "PIN required." }, { status: 400 });
-  if (!(await verifySecret(pin, sender.pinHash))) {
-    return NextResponse.json({ error: "Incorrect PIN." }, { status: 401 });
-  }
+  const pinCheck = await verifyUserPin(sender, pin);
+  if (!pinCheck.ok) return pinFailResponse(pinCheck);
 
   const recipient = await findUserByHandle(to);
   if (!recipient) {

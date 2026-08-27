@@ -63,6 +63,7 @@ export function CheckoutPay({
   const [error, setError] = useState("");
   const [pinOpen, setPinOpen] = useState(false);
   const [pinError, setPinError] = useState("");
+  const [pinLockedUntil, setPinLockedUntil] = useState(0);
   const [busy, setBusy] = useState(false);
   const [waiting, setWaiting] = useState<{ tx: string; seconds: number } | null>(null);
   const [checking, setChecking] = useState(false);
@@ -134,6 +135,7 @@ export function CheckoutPay({
   async function payNow(pin?: string) {
     setError("");
     setPinError("");
+    setPinLockedUntil(0);
     setBusy(true);
     try {
       const res = await fetch("/api/pay/checkout", {
@@ -154,10 +156,13 @@ export function CheckoutPay({
         status?: string;
         hostedUrl?: string;
         transactionId?: string;
+        retryAfter?: number;
       };
       if (!res.ok) {
-        if (method === "wallet") setPinError(data.error || "Could not pay");
-        else setError(data.error || "Could not pay");
+        if (method === "wallet") {
+          setPinError(data.error || "Could not pay");
+          setPinLockedUntil(Number(data.retryAfter) ? Date.now() + Number(data.retryAfter) * 1000 : 0);
+        } else setError(data.error || "Could not pay");
         return;
       }
       if (data.hostedUrl) {
@@ -323,6 +328,7 @@ export function CheckoutPay({
             onClick={() => {
               if (method === "wallet") {
                 setPinError("");
+                setPinLockedUntil(0);
                 setPinOpen(true);
                 return;
               }
@@ -348,6 +354,7 @@ export function CheckoutPay({
         ]}
         loading={busy}
         error={pinError}
+        lockedUntil={pinLockedUntil}
         confirmLabel="Enter PIN to pay"
         onClose={() => setPinOpen(false)}
         onConfirm={(pin) => void payNow(pin)}

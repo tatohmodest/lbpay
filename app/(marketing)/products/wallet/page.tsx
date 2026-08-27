@@ -11,7 +11,7 @@ export default function WalletProductPage() {
     <ProductPage
       eyebrow="Personal"
       title="Your XAF wallet, with an @handle."
-      description="Send to a number or an @handle, request money, buy airtime, and pay bills. Wallet to wallet is instant. Cash out to MTN or Orange when you need it."
+      description="Send to a number or an @handle, request money, and cash out to MTN or Orange. Wallet to wallet is instant."
       image="/illustrations/hero-send-money.png"
       alt="LBPay personal wallet for sending money in Cameroon"
       points={[

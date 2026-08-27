@@ -35,7 +35,7 @@ export async function createSession(userId: string, maxAgeSec: number) {
 
 export async function setPreauth(
   userId: string,
-  step: "otp" | "pin" | "pin-setup" | "reset",
+  step: "otp" | "pin" | "pin-setup" | "reset" | "pin-reset" | "pin-reset-pin",
 ) {
   const exp = Date.now() + 10 * 60 * 1000;
   const token = signValue(JSON.stringify({ userId, step, exp }), secret());

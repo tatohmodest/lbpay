@@ -1,5 +1,5 @@
 import { depositFee } from "@/lib/fees";
-import { payunitReference, verifySecret } from "@/lib/server/crypto";
+import { payunitReference } from "@/lib/server/crypto";
 import {
   findLinkBySlug,
   findUserByHandle,
@@ -13,6 +13,7 @@ import { getPaymentRail } from "@/lib/providers";
 import { cameroonMsisdn, isCameroonMsisdn } from "@/lib/phone";
 import { assertAmount } from "@/lib/server/limits";
 import { publicPaymentError } from "@/lib/public-error";
+import { verifyUserPin } from "@/lib/server/pin";
 import type { PaymentMethod } from "@/lib/types";
 
 export async function resolveCheckoutTarget(input: { handle?: string; slug?: string }) {
@@ -78,9 +79,13 @@ export async function startCheckoutPayment(input: {
     if (payer.id === merchant.id) {
       return { error: "You cannot pay your own wallet with wallet balance.", status: 400 as const };
     }
-    if (!payer.pinHash) return { error: "PIN required.", status: 400 as const };
-    if (!(await verifySecret(String(input.pin || ""), payer.pinHash))) {
-      return { error: "Incorrect PIN.", status: 401 as const };
+    const pinCheck = await verifyUserPin(payer, String(input.pin || ""));
+    if (!pinCheck.ok) {
+      return {
+        error: pinCheck.error,
+        status: pinCheck.status as 400 | 401 | 403 | 404 | 429,
+        retryAfter: pinCheck.retryAfter,
+      };
     }
     try {
       const moved = await recordTransfer({

@@ -2,10 +2,12 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import Link from "next/link";
 import { PinPad } from "@/components/auth/pin-pad";
 import { Logo } from "@/components/logo";
 import { useMe } from "@/lib/hooks/wallet";
 import { useApp } from "@/lib/store";
+import { secondsLeft, useNow } from "@/lib/use-now";
 import type { Transaction, UserProfile } from "@/lib/types";
 
 const PUBLIC = [
@@ -20,6 +22,7 @@ const PUBLIC = [
   "/p",
   "/r",
   "/products",
+  "/pin",
 ];
 const WEB_IDLE_MS = 15 * 60 * 1000;
 const HIDDEN_LOCK_MS = 2000;
@@ -35,6 +38,7 @@ export function SessionGuard({ children }: { children: React.ReactNode }) {
   const { state, hydrateFromServer, lockPin, unlockPin } = useApp();
   const [pin, setPin] = useState("");
   const [pinError, setPinError] = useState("");
+  const [lockedUntil, setLockedUntil] = useState(0);
   const hiddenAt = useRef<number | null>(null);
   const pinBusy = useRef(false);
 
@@ -129,16 +133,20 @@ export function SessionGuard({ children }: { children: React.ReactNode }) {
       pinBusy.current = false;
       if (!res.ok) {
         setPinError(data.error || "Incorrect PIN");
+        setLockedUntil(Number(data.retryAfter) ? Date.now() + Number(data.retryAfter) * 1000 : 0);
         setPin("");
         return;
       }
       setPinError("");
+      setLockedUntil(0);
       setPin("");
       unlockPin();
     },
     [unlockPin],
   );
 
+  const now = useNow(lockedUntil > 0);
+  const pinWait = secondsLeft(lockedUntil, now);
   const showLock = Boolean(me.data?.session && !state.pinUnlocked && !isPublic(path));
 
   return (
@@ -154,13 +162,18 @@ export function SessionGuard({ children }: { children: React.ReactNode }) {
             </p>
             <PinPad
               value={pin}
+              disabled={pinWait > 0}
               onChange={(next) => {
                 setPin(next);
                 setPinError("");
-                if (next.length === 4) void submitPin(next);
+                if (next.length === 4 && pinWait <= 0) void submitPin(next);
               }}
               error={pinError}
+              hint={pinWait > 0 ? `Too many incorrect PINs. Wait ${pinWait}s.` : undefined}
             />
+            <Link href="/pin/forgot" className="mt-6 block text-center text-sm font-semibold text-brand">
+              Forgot PIN?
+            </Link>
           </div>
         </div>
       ) : null}

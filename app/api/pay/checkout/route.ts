@@ -28,7 +28,10 @@ export async function POST(request: Request) {
   });
 
   if ("error" in result && result.error) {
-    return NextResponse.json({ error: result.error }, { status: result.status || 400 });
+    return NextResponse.json(
+      { error: result.error, retryAfter: "retryAfter" in result ? result.retryAfter : undefined },
+      { status: result.status || 400 },
+    );
   }
 
   return NextResponse.json({

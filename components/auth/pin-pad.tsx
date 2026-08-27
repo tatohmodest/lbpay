@@ -9,12 +9,14 @@ export function PinPad({
   length = 4,
   error,
   hint,
+  disabled = false,
 }: {
   value: string;
   onChange: (next: string) => void;
   length?: number;
   error?: string;
   hint?: string;
+  disabled?: boolean;
 }) {
   const keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "del"];
 
@@ -42,10 +44,12 @@ export function PinPad({
               key={key}
               type="button"
               onClick={() => {
+                if (disabled) return;
                 if (key === "del") onChange(value.slice(0, -1));
                 else if (value.length < length) onChange(value + key);
               }}
-              className="grid h-16 place-items-center rounded-2xl bg-paper text-2xl font-bold text-ink transition active:scale-95 hover:bg-brand-soft"
+              disabled={disabled}
+              className="grid h-16 place-items-center rounded-2xl bg-paper text-2xl font-bold text-ink transition active:scale-95 hover:bg-brand-soft disabled:cursor-not-allowed disabled:opacity-40"
             >
               {key === "del" ? <Delete className="h-6 w-6" /> : key}
             </button>

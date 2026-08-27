@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { catchRoute, jsonError } from "@/lib/server/api";
 import { findUserById, publicUser } from "@/lib/server/db";
-import { verifySecret } from "@/lib/server/crypto";
+import { pinFailResponse, verifyUserPin } from "@/lib/server/pin";
 import { clearPreauth, createSession, readPreauth, readSession, SESSION_TTL_SEC } from "@/lib/server/session";
 
 export async function POST(request: Request) {
@@ -18,11 +18,9 @@ export async function POST(request: Request) {
     if (!userId) return jsonError("Sign in first.", 401);
 
     const user = await findUserById(userId);
-    if (!user?.pinHash) {
-      return jsonError("Set a PIN first.");
-    }
-    const ok = await verifySecret(pin, user.pinHash);
-    if (!ok) return jsonError("Incorrect PIN.", 401);
+    if (!user) return jsonError("Sign in first.", 401);
+    const pinCheck = await verifyUserPin(user, pin);
+    if (!pinCheck.ok) return pinFailResponse(pinCheck);
 
     await clearPreauth();
     await createSession(user.id, SESSION_TTL_SEC);

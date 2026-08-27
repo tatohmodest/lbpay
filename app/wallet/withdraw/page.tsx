@@ -15,6 +15,7 @@ import { cameroonMsisdn, isCameroonMsisdn } from "@/lib/phone";
 import { momoOutFee } from "@/lib/fees";
 import { AmountField } from "@/components/amount-field";
 import { amountIssue, cameroonDay, dailyOutboundCap, outboundKinds } from "@/lib/limits";
+import { readPinFail, isPinError } from "@/lib/pin-fail";
 
 export default function WithdrawPage() {
   const { state } = useApp();
@@ -27,6 +28,7 @@ export default function WithdrawPage() {
   const [amount, setAmount] = useState("");
   const [open, setOpen] = useState(false);
   const [pinError, setPinError] = useState("");
+  const [pinLockedUntil, setPinLockedUntil] = useState(0);
 
   const balance = me.data?.balance ?? state.balance;
   const value = Number(amount) || 0;
@@ -58,14 +60,19 @@ export default function WithdrawPage() {
 
   async function confirm(pin: string) {
     setPinError("");
+    setPinLockedUntil(0);
     try {
       await disburse.mutateAsync({ amount: value, phone: clean, network, pin, note: "Wallet withdrawal" });
       notify.moneyOut(debit, `Withdrawing ${formatXAF(value)} to ${clean} on ${network.toUpperCase()}`);
       setOpen(false);
       router.push("/wallet");
     } catch (err) {
-      setPinError(err instanceof Error ? err.message : "Withdrawal failed");
-      notify.error("Withdrawal failed", err instanceof Error ? err.message : "Could not disburse");
+      const fail = readPinFail(err);
+      setPinError(fail.error);
+      setPinLockedUntil(fail.lockedUntil);
+      if (!isPinError(fail.error)) {
+        notify.error("Withdrawal failed", fail.error);
+      }
     }
   }
 
@@ -80,6 +87,7 @@ export default function WithdrawPage() {
             e.preventDefault();
             if (!ready) return;
             setPinError("");
+            setPinLockedUntil(0);
             setOpen(true);
           }}
         >
@@ -134,6 +142,7 @@ export default function WithdrawPage() {
         details={details}
         loading={disburse.isPending}
         error={pinError}
+        lockedUntil={pinLockedUntil}
         confirmLabel="Enter PIN to withdraw"
         onClose={() => setOpen(false)}
         onConfirm={confirm}

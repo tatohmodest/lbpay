@@ -1,9 +1,11 @@
 "use client";
 
 import { useRef, useState } from "react";
+import Link from "next/link";
 import { PinPad } from "@/components/auth/pin-pad";
 import { Button } from "@/components/ui/button";
 import { formatXAF } from "@/lib/format";
+import { secondsLeft, useNow } from "@/lib/use-now";
 
 function ConfirmSheetInner({
   title,
@@ -16,6 +18,7 @@ function ConfirmSheetInner({
   confirmLabel,
   onClose,
   onConfirm,
+  lockedUntil = 0,
 }: {
   title: string;
   subtitle: string;
@@ -27,10 +30,13 @@ function ConfirmSheetInner({
   confirmLabel: string;
   onClose: () => void;
   onConfirm: (pin: string) => void;
+  lockedUntil?: number;
 }) {
   const [pin, setPin] = useState("");
   const [step, setStep] = useState<"review" | "pin">("review");
   const sent = useRef("");
+  const now = useNow(lockedUntil > 0);
+  const wait = secondsLeft(lockedUntil, now);
 
   return (
     <div className="fixed inset-0 z-[85] grid place-items-end bg-navy/50 p-0 md:place-items-center md:p-6">
@@ -64,17 +70,27 @@ function ConfirmSheetInner({
             <h2 className="mb-2 text-center text-xl font-black">{confirmLabel}</h2>
             <PinPad
               value={pin}
+              disabled={wait > 0}
               onChange={(next) => {
                 if (next.length < 4) sent.current = "";
                 setPin(next);
-                if (next.length === 4 && !loading && sent.current !== next) {
+                if (next.length === 4 && !loading && wait <= 0 && sent.current !== next) {
                   sent.current = next;
                   onConfirm(next);
                 }
               }}
               error={error}
-              hint={loading ? "Authorizing…" : "Confirm with your 4-digit PIN"}
+              hint={
+                wait > 0
+                  ? `Too many incorrect PINs. Wait ${wait}s.`
+                  : loading
+                    ? "Authorizing…"
+                    : "Confirm with your 4-digit PIN"
+              }
             />
+            <Link href="/pin/forgot" className="mt-4 block text-center text-sm font-semibold text-brand">
+              Forgot PIN?
+            </Link>
             <Button className="mt-4 w-full" variant="secondary" type="button" onClick={() => setStep("review")}>
               Back
             </Button>
@@ -97,6 +113,7 @@ export function ConfirmSheet({
   confirmLabel = "Enter PIN to send",
   onClose,
   onConfirm,
+  lockedUntil = 0,
 }: {
   open: boolean;
   title: string;
@@ -109,6 +126,7 @@ export function ConfirmSheet({
   confirmLabel?: string;
   onClose: () => void;
   onConfirm: (pin: string) => void;
+  lockedUntil?: number;
 }) {
   if (!open) return null;
   return (
@@ -123,6 +141,7 @@ export function ConfirmSheet({
       confirmLabel={confirmLabel}
       onClose={onClose}
       onConfirm={onConfirm}
+      lockedUntil={lockedUntil}
     />
   );
 }

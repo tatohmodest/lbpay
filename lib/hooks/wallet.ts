@@ -39,8 +39,12 @@ export type MeResponse = {
 };
 
 async function parseApi<T>(res: Response): Promise<T> {
-  const data = await readApiJson<T & { error?: string }>(res);
-  if (!res.ok) throw new Error(data.error || "Request failed");
+  const data = await readApiJson<T & { error?: string; retryAfter?: number }>(res);
+  if (!res.ok) {
+    const err = new Error(data.error || "Request failed") as Error & { retryAfter?: number };
+    if (data.retryAfter) err.retryAfter = data.retryAfter;
+    throw err;
+  }
   return data as T;
 }
 

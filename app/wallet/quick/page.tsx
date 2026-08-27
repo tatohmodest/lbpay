@@ -15,6 +15,7 @@ import { cameroonMsisdn, isCameroonMsisdn } from "@/lib/phone";
 import { directTransferFee } from "@/lib/fees";
 import { AmountField } from "@/components/amount-field";
 import { amountIssue } from "@/lib/limits";
+import { readPinFail, isPinError } from "@/lib/pin-fail";
 
 async function pollQuickStatus(
   tx: string,
@@ -53,6 +54,7 @@ export default function QuickTransferPage() {
   const [amount, setAmount] = useState("");
   const [open, setOpen] = useState(false);
   const [pinError, setPinError] = useState("");
+  const [pinLockedUntil, setPinLockedUntil] = useState(0);
   const [waiting, setWaiting] = useState<{ tx: string; seconds: number; stage: "collecting" | "paying" } | null>(
     null,
   );
@@ -149,6 +151,7 @@ export default function QuickTransferPage() {
 
   async function confirm(pin: string) {
     setPinError("");
+    setPinLockedUntil(0);
     try {
       const result = (await quick.mutateAsync({
         amount: value,
@@ -182,8 +185,12 @@ export default function QuickTransferPage() {
         void pollPayment(result.transactionId);
       }
     } catch (err) {
-      setPinError(err instanceof Error ? err.message : "Transfer failed");
-      notify.error("Transfer failed", err instanceof Error ? err.message : "Could not send");
+      const fail = readPinFail(err);
+      setPinError(fail.error);
+      setPinLockedUntil(fail.lockedUntil);
+      if (!isPinError(fail.error)) {
+        notify.error("Transfer failed", fail.error);
+      }
     }
   }
 
@@ -223,6 +230,7 @@ export default function QuickTransferPage() {
               e.preventDefault();
               if (!ready) return;
               setPinError("");
+              setPinLockedUntil(0);
               setOpen(true);
             }}
           >
@@ -277,6 +285,7 @@ export default function QuickTransferPage() {
         warning={`If the popup does not appear, dial ${ussdCode} and confirm pay.`}
         loading={quick.isPending}
         error={pinError}
+        lockedUntil={pinLockedUntil}
         confirmLabel="Enter PIN to send"
         onClose={() => setOpen(false)}
         onConfirm={confirm}

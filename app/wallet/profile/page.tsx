@@ -65,6 +65,9 @@ export default function ProfilePage() {
         ) : null}
         <div className="mt-6 flex flex-col gap-2">
           <PushSettings />
+          <Link href="/pin/forgot" className="text-sm font-bold text-brand">
+            Forgot PIN
+          </Link>
           <Link href="/wallet/kyc" className="text-sm font-bold text-brand">
             Verify account
           </Link>

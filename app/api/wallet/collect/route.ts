@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { recordLedgerMove } from "@/lib/server/db";
-import { payunitReference, verifySecret } from "@/lib/server/crypto";
+import { payunitReference } from "@/lib/server/crypto";
 import { getPaymentRail } from "@/lib/providers";
 import { requireActiveUser } from "@/lib/server/guard";
 import { cameroonMsisdn, isCameroonMsisdn } from "@/lib/phone";
 import { depositFee } from "@/lib/fees";
 import { assertAmount } from "@/lib/server/limits";
 import { publicPaymentError } from "@/lib/public-error";
+import { pinFailResponse, verifyUserPin } from "@/lib/server/pin";
 
 export async function POST(request: Request) {
   try {
@@ -35,10 +36,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Enter the Mobile Money number that will pay." }, { status: 400 });
     }
 
-    if (!user.pinHash) return NextResponse.json({ error: "PIN required." }, { status: 400 });
-    if (!(await verifySecret(pin, user.pinHash))) {
-      return NextResponse.json({ error: "Incorrect PIN." }, { status: 401 });
-    }
+    const pinCheck = await verifyUserPin(user, pin);
+    if (!pinCheck.ok) return pinFailResponse(pinCheck);
 
     const rail = getPaymentRail();
     const reference = payunitReference(method === "orange" ? "OM" : method === "card" ? "CD" : "MT");

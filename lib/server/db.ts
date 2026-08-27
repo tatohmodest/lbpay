@@ -28,6 +28,8 @@ export type StoredUser = {
   avatar: string;
   passwordHash: string;
   pinHash: string | null;
+  pinFailCount?: number;
+  pinLockedUntil?: number;
   emailVerified: boolean;
   kycStatus: KycState;
   roles: AccountKind[];
@@ -62,6 +64,7 @@ export type StoredTx = Transaction & {
     payoutRef?: string;
     linkSlug?: string;
     handle?: string;
+    refunded?: boolean;
   };
 };
 
@@ -340,6 +343,7 @@ export async function upsertUser(user: StoredUser) {
 }
 
 export async function getWallet(userId: string) {
+  await refundUndeliveredSpends(userId);
   const db = await getDb();
   let wallet = db.wallets.find((w) => w.userId === userId);
   if (!wallet) {
@@ -348,6 +352,41 @@ export async function getWallet(userId: string) {
     await saveDb(db);
   }
   return wallet;
+}
+
+export async function refundUndeliveredSpends(userId?: string) {
+  const db = await getDb();
+  let changed = false;
+  const now = new Date().toISOString();
+  for (const tx of [...db.transactions]) {
+    if (userId && tx.userId !== userId) continue;
+    if (tx.kind !== "airtime" && tx.kind !== "bill") continue;
+    if (tx.status !== "success") continue;
+    if (tx.rail && tx.rail !== "internal") continue;
+    if (tx.meta?.refunded) continue;
+    const wallet = db.wallets.find((item) => item.userId === tx.userId);
+    if (!wallet) continue;
+    wallet.balance += tx.amount + (tx.fee || 0);
+    tx.status = "failed";
+    tx.meta = { ...tx.meta, refunded: true };
+    const reversal: StoredTx = {
+      id: uid("TXN"),
+      userId: tx.userId,
+      kind: "reversal",
+      amount: tx.amount,
+      fee: 0,
+      status: "success",
+      method: "wallet",
+      counterparty: tx.counterparty,
+      note: "Refund because this service was not delivered",
+      createdAt: now,
+      rail: "internal",
+      meta: { from: tx.id, refunded: true },
+    };
+    db.transactions.unshift(reversal);
+    changed = true;
+  }
+  if (changed) await saveDb(db);
 }
 
 export async function listTx(userId: string) {
@@ -461,6 +500,10 @@ export async function recordLedgerMove(params: {
 
 export function resetOtpKey(email: string) {
   return `reset:${email.trim().toLowerCase()}`;
+}
+
+export function pinResetOtpKey(email: string) {
+  return `pinreset:${email.trim().toLowerCase()}`;
 }
 
 export async function saveOtp(otp: StoredOtp) {

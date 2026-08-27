@@ -15,6 +15,7 @@ import { cameroonMsisdn, isCameroonMsisdn } from "@/lib/phone";
 import { depositFee } from "@/lib/fees";
 import { AmountField } from "@/components/amount-field";
 import { amountIssue } from "@/lib/limits";
+import { readPinFail, isPinError } from "@/lib/pin-fail";
 import type { PaymentMethod } from "@/lib/types";
 
 const methods: { id: PaymentMethod; label: string }[] = [
@@ -34,6 +35,7 @@ export default function DepositPage() {
   const [amount, setAmount] = useState("");
   const [open, setOpen] = useState(false);
   const [pinError, setPinError] = useState("");
+  const [pinLockedUntil, setPinLockedUntil] = useState(0);
   const [waiting, setWaiting] = useState<{ tx: string; seconds: number } | null>(null);
   const [checking, setChecking] = useState(false);
 
@@ -113,6 +115,7 @@ export default function DepositPage() {
 
   const confirm = async (pin: string) => {
     setPinError("");
+    setPinLockedUntil(0);
     try {
       const result = (await collect.mutateAsync({
         amount: value,
@@ -136,8 +139,12 @@ export default function DepositPage() {
       setOpen(false);
       router.push("/wallet");
     } catch (err) {
-      setPinError(err instanceof Error ? err.message : "Deposit failed");
-      notify.error("Deposit failed", err instanceof Error ? err.message : "Could not collect");
+      const fail = readPinFail(err);
+      setPinError(fail.error);
+      setPinLockedUntil(fail.lockedUntil);
+      if (!isPinError(fail.error)) {
+        notify.error("Deposit failed", fail.error);
+      }
     }
   };
 
@@ -176,6 +183,7 @@ export default function DepositPage() {
               e.preventDefault();
               if (!ready) return;
               setPinError("");
+              setPinLockedUntil(0);
               setOpen(true);
             }}
           >
@@ -232,6 +240,7 @@ export default function DepositPage() {
         }
         loading={collect.isPending}
         error={pinError}
+        lockedUntil={pinLockedUntil}
         confirmLabel="Enter PIN to deposit"
         onClose={() => setOpen(false)}
         onConfirm={confirm}

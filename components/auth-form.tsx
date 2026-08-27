@@ -14,6 +14,7 @@ import { useNotify } from "@/lib/notify";
 import { useApp } from "@/lib/store";
 import { useQueryClient } from "@tanstack/react-query";
 import { cameroonMsisdn } from "@/lib/phone";
+import { secondsLeft, useNow } from "@/lib/use-now";
 
 export function AuthForm({
   mode,
@@ -33,7 +34,10 @@ export function AuthForm({
   const [password, setPassword] = useState("");
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
+  const [lockedUntil, setLockedUntil] = useState(0);
   const [loading, setLoading] = useState(false);
+  const now = useNow(lockedUntil > 0);
+  const pinWait = secondsLeft(lockedUntil, now);
 
   async function finishSession() {
     await queryClient.invalidateQueries({ queryKey: ["me"] });
@@ -80,9 +84,10 @@ export function AuthForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ pin: value, mobile: isMobileClient() }),
       });
-      const data = await readApiJson<AuthApiResponse>(res);
+      const data = await readApiJson<AuthApiResponse & { retryAfter?: number }>(res);
       if (!res.ok) {
         setError(data.error || "Incorrect PIN");
+        setLockedUntil(Number(data.retryAfter) ? Date.now() + Number(data.retryAfter) * 1000 : 0);
         setPin("");
         return;
       }
@@ -208,13 +213,18 @@ export function AuthForm({
             <p className="mt-2 mb-6 text-sm text-muted">This confirms it is you.</p>
             <PinPad
               value={pin}
+              disabled={pinWait > 0}
               onChange={(next) => {
                 setPin(next);
                 setError("");
-                if (next.length === 4) void submitPin(next);
+                if (next.length === 4 && pinWait <= 0) void submitPin(next);
               }}
               error={error}
+              hint={pinWait > 0 ? `Too many incorrect PINs. Wait ${pinWait}s.` : undefined}
             />
+            <Link href="/pin/forgot" className="mt-6 block text-center text-sm font-semibold text-brand">
+              Forgot PIN?
+            </Link>
           </div>
         )}
       </div>
