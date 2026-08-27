@@ -67,8 +67,8 @@ npm run dev
 ## Supabase
 
 1. Create a project.
-2. Run `supabase/migrations/0001_init.sql`, `0002_auth_pin.sql`, and `0003_rbac.sql`.
-3. Put the project URL and anon key in `.env.local`.
+2. Run `supabase/migrations/0001_init.sql`, `0002_auth_pin.sql`, `0003_rbac.sql`, and `0004_app_ledger.sql`.
+3. Put the project URL, anon key, and `SUPABASE_SERVICE_ROLE_KEY` in `.env.local`. Accounts are stored in `app_ledger` so they survive deploys.
 
 ## Developer API
 

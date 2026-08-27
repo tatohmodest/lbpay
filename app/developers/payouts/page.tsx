@@ -9,6 +9,7 @@ import { ConfirmSheet } from "@/components/confirm-sheet";
 import { formatDate, formatXAF } from "@/lib/format";
 import { useDisburse, useMe } from "@/lib/hooks/wallet";
 import { useNotify } from "@/lib/notify";
+import { NetworkMark } from "@/components/network-mark";
 
 export default function PayoutsPage() {
   const me = useMe();
@@ -81,11 +82,12 @@ export default function PayoutsPage() {
                   key={item}
                   type="button"
                   onClick={() => setNetwork(item)}
-                  className={`rounded-xl border py-3 font-semibold uppercase ${
+                  className={`flex items-center justify-center gap-2 rounded-xl border py-3 font-semibold ${
                     network === item ? "border-brand bg-brand-soft" : "border-line"
                   }`}
                 >
-                  {item}
+                  <NetworkMark network={item} className="h-9 w-9 rounded-xl text-[9px]" />
+                  {item === "mtn" ? "MTN" : "Orange"}
                 </button>
               ))}
             </div>

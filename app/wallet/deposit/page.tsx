@@ -10,6 +10,7 @@ import { useApp } from "@/lib/store";
 import { formatXAF } from "@/lib/format";
 import { useCollect, useMe } from "@/lib/hooks/wallet";
 import { useNotify } from "@/lib/notify";
+import { NetworkMark } from "@/components/network-mark";
 import type { PaymentMethod } from "@/lib/types";
 
 const methods: { id: PaymentMethod; label: string; hint: string }[] = [
@@ -177,12 +178,15 @@ export default function DepositPage() {
                   key={item.id}
                   type="button"
                   onClick={() => setMethod(item.id)}
-                  className={`rounded-xl border p-3 text-left ${
+                  className={`flex items-center gap-3 rounded-2xl border p-3 text-left ${
                     method === item.id ? "border-brand bg-brand-soft" : "border-line"
                   }`}
                 >
-                  <p className="font-semibold">{item.label}</p>
-                  <p className="text-xs text-muted">{item.hint}</p>
+                  <NetworkMark network={item.id} />
+                  <span>
+                    <p className="font-semibold">{item.label}</p>
+                    <p className="text-xs text-muted">{item.hint}</p>
+                  </span>
                 </button>
               ))}
             </div>

@@ -2,16 +2,12 @@ import { NextResponse } from "next/server";
 import { catchRoute, jsonError } from "@/lib/server/api";
 import { findUserById, publicUser } from "@/lib/server/db";
 import { verifySecret } from "@/lib/server/crypto";
-import { clearPreauth, createSession, readPreauth, readSession } from "@/lib/server/session";
-
-const WEB_IDLE_SEC = 20 * 60;
-const MOBILE_SEC = 30 * 24 * 60 * 60;
+import { clearPreauth, createSession, readPreauth, readSession, SESSION_TTL_SEC } from "@/lib/server/session";
 
 export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => ({}));
     const pin = String(body.pin || "");
-    const mobile = Boolean(body.mobile);
     if (!/^\d{4}$/.test(pin)) {
       return jsonError("PIN must be 4 digits.");
     }
@@ -28,10 +24,8 @@ export async function POST(request: Request) {
     const ok = await verifySecret(pin, user.pinHash);
     if (!ok) return jsonError("Incorrect PIN.", 401);
 
-    if (!session) {
-      await clearPreauth();
-      await createSession(user.id, mobile ? MOBILE_SEC : WEB_IDLE_SEC);
-    }
+    await clearPreauth();
+    await createSession(user.id, SESSION_TTL_SEC);
     return NextResponse.json({ ok: true, user: publicUser(user) });
   } catch (error) {
     return catchRoute("pin", error);

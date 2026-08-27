@@ -5,6 +5,8 @@ const COOKIE = "lbpay_sid";
 const PREAUTH = "lbpay_preauth";
 const ADMIN = "lbpay_admin";
 
+export const SESSION_TTL_SEC = 30 * 24 * 60 * 60;
+
 function secret() {
   const value = process.env.SESSION_SECRET;
   if (!value) {

@@ -10,6 +10,7 @@ import { useApp } from "@/lib/store";
 import { formatXAF } from "@/lib/format";
 import { useMe, useSpend } from "@/lib/hooks/wallet";
 import { useNotify } from "@/lib/notify";
+import { NetworkMark } from "@/components/network-mark";
 
 export default function AirtimePage() {
   const { state } = useApp();
@@ -78,11 +79,12 @@ export default function AirtimePage() {
                 key={item}
                 type="button"
                 onClick={() => setNetwork(item)}
-                className={`rounded-xl border py-3 font-semibold uppercase ${
-                  network === item ? "border-brand bg-brand-soft" : "border-line"
+                className={`flex items-center justify-center gap-2 rounded-xl border py-3 font-semibold ${
+                  network === item ? "border-brand bg-brand-soft text-brand-dark" : "border-line"
                 }`}
               >
-                {item}
+                <NetworkMark network={item} className="h-9 w-9 rounded-xl text-[9px]" />
+                {item === "mtn" ? "MTN" : "Orange"}
               </button>
             ))}
           </div>

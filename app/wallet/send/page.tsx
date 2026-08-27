@@ -3,11 +3,12 @@
 import { useCallback, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
-import { ArrowLeftRight, Landmark, Smartphone } from "lucide-react";
+import { ArrowLeftRight } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Field, Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ConfirmSheet } from "@/components/confirm-sheet";
+import { NetworkMark } from "@/components/network-mark";
 import { useApp } from "@/lib/store";
 import { formatXAF } from "@/lib/format";
 import { useDisburse, useHandleLookup, useMe, useTransfer } from "@/lib/hooks/wallet";
@@ -104,10 +105,10 @@ function SendInner() {
             <div className="grid grid-cols-3 gap-2">
               {(
                 [
-                  { id: "wallet", label: "LBPay", icon: ArrowLeftRight },
-                  { id: "mtn", label: "MTN", icon: Smartphone },
-                  { id: "orange", label: "Orange", icon: Landmark },
-                ] as const
+                  { id: "wallet" as const, label: "LBPay" },
+                  { id: "mtn" as const, label: "MTN" },
+                  { id: "orange" as const, label: "Orange" },
+                ]
               ).map((item) => (
                 <button
                   key={item.id}
@@ -117,7 +118,11 @@ function SendInner() {
                     network === item.id ? "border-brand bg-brand-soft text-brand-dark" : "border-line"
                   }`}
                 >
-                  <item.icon className="mx-auto mb-1 h-4 w-4" />
+                  {item.id === "wallet" ? (
+                    <ArrowLeftRight className="mx-auto mb-1 h-5 w-5" />
+                  ) : (
+                    <NetworkMark network={item.id} className="mx-auto mb-1 h-9 w-9 rounded-xl text-[9px]" />
+                  )}
                   {item.label}
                 </button>
               ))}

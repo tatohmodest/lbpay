@@ -3,6 +3,7 @@ import path from "path";
 import { verifySecret } from "./crypto";
 import { isBootstrapAdmin } from "@/lib/roles";
 import { uid } from "@/lib/format";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 import type {
   AccountKind,
   AccountStatus,
@@ -171,17 +172,63 @@ function withCollections(db: DbShape): DbShape {
   };
 }
 
+async function loadRemote(): Promise<DbShape | null> {
+  const sb = supabaseAdmin();
+  if (!sb) return null;
+  const { data, error } = await sb.from("app_ledger").select("data").eq("id", "lbpay").maybeSingle();
+  if (error) {
+    console.error("[lbpay] could not read the ledger from Supabase", error.message);
+    return null;
+  }
+  if (!data?.data) return null;
+  return withCollections(data.data as DbShape);
+}
+
+async function saveRemote(db: DbShape) {
+  const sb = supabaseAdmin();
+  if (!sb) return false;
+  const { error } = await sb.from("app_ledger").upsert({
+    id: "lbpay",
+    data: db,
+    updated_at: new Date().toISOString(),
+  });
+  if (error) {
+    console.error("[lbpay] could not save the ledger to Supabase", error.message);
+    return false;
+  }
+  return true;
+}
+
 async function readDb(): Promise<DbShape> {
   if (cache) return cache;
+  const remoteFirst = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+  if (remoteFirst) {
+    const remote = await loadRemote();
+    if (remote) {
+      cache = remote;
+      return cache;
+    }
+  }
   for (const file of candidateFiles()) {
     try {
       const raw = await readFile(file, "utf8");
       cache = withCollections(JSON.parse(raw) as DbShape);
       filePath = file;
+      if (!remoteFirst) {
+        const remote = await loadRemote();
+        if (remote && (remote.users?.length || 0) >= (cache.users?.length || 0)) {
+          cache = remote;
+        }
+      }
       return cache;
     } catch {
       /* try the next location */
     }
+  }
+  const remote = await loadRemote();
+  if (remote) {
+    cache = remote;
+    return cache;
   }
   cache = await empty();
   try {
@@ -194,6 +241,7 @@ async function readDb(): Promise<DbShape> {
 
 async function writeDb(db: DbShape) {
   cache = db;
+  const remoteOk = await saveRemote(db);
   const payload = JSON.stringify(db, null, 2);
   const targets = [filePath, ...candidateFiles().filter((item) => item !== filePath)];
   let lastError: unknown;
@@ -207,6 +255,7 @@ async function writeDb(db: DbShape) {
       lastError = error;
     }
   }
+  if (remoteOk) return;
   throw lastError instanceof Error ? lastError : new Error("Could not save account data.");
 }
 

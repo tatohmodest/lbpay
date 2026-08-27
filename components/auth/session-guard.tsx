@@ -1,41 +1,30 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { useQueryClient } from "@tanstack/react-query";
 import { PinPad } from "@/components/auth/pin-pad";
 import { Logo } from "@/components/logo";
 import { useMe } from "@/lib/hooks/wallet";
 import { useApp } from "@/lib/store";
-import { useNotify } from "@/lib/notify";
-import { isMobileClient } from "@/lib/device";
 import type { Transaction, UserProfile } from "@/lib/types";
 
 const PUBLIC = ["/", "/login", "/signup", "/verify", "/pin/setup", "/docs", "/pay", "/r"];
-const WEB_IDLE_MS = 18 * 60 * 1000;
-const MOBILE_HIDDEN_MS = 2000;
+const WEB_IDLE_MS = 15 * 60 * 1000;
+const HIDDEN_LOCK_MS = 2000;
 
 function isPublic(path: string) {
   return PUBLIC.some((item) => (item === "/" ? path === "/" : path === item || path.startsWith(`${item}/`)));
-}
-
-function subscribeViewport(cb: () => void) {
-  window.addEventListener("resize", cb);
-  return () => window.removeEventListener("resize", cb);
 }
 
 export function SessionGuard({ children }: { children: React.ReactNode }) {
   const path = usePathname();
   const router = useRouter();
   const me = useMe();
-  const notify = useNotify();
-  const queryClient = useQueryClient();
-  const { state, hydrateFromServer, logout, lockPin, unlockPin } = useApp();
+  const { state, hydrateFromServer, lockPin, unlockPin } = useApp();
   const [pin, setPin] = useState("");
   const [pinError, setPinError] = useState("");
   const hiddenAt = useRef<number | null>(null);
   const pinBusy = useRef(false);
-  const mobile = useSyncExternalStore(subscribeViewport, isMobileClient, () => false);
 
   useEffect(() => {
     if (!me.data?.session || !me.data.user) return;
@@ -60,8 +49,7 @@ export function SessionGuard({ children }: { children: React.ReactNode }) {
       balance: me.data.balance ?? 0,
       transactions: (me.data.transactions as Transaction[]) || [],
     });
-    if (!isMobileClient()) unlockPin();
-  }, [me.data, hydrateFromServer, unlockPin]);
+  }, [me.data, hydrateFromServer]);
 
   useEffect(() => {
     if (me.isFetched && !me.data?.session && !isPublic(path)) {
@@ -70,16 +58,14 @@ export function SessionGuard({ children }: { children: React.ReactNode }) {
   }, [me.isFetched, me.data?.session, path, router]);
 
   useEffect(() => {
-    if (mobile || !me.data?.session) return;
+    if (!me.data?.session) return;
     let timer: number;
     const bump = () => {
       window.clearTimeout(timer);
-      timer = window.setTimeout(async () => {
-        await fetch("/api/auth/logout", { method: "POST" });
-        logout();
-        queryClient.clear();
-        notify.info("Signed out", "You were inactive for about 18 minutes.");
-        router.replace("/login");
+      timer = window.setTimeout(() => {
+        lockPin();
+        setPin("");
+        setPinError("");
       }, WEB_IDLE_MS);
     };
     const events: Array<keyof WindowEventMap> = ["mousemove", "keydown", "click", "scroll", "touchstart"];
@@ -89,12 +75,12 @@ export function SessionGuard({ children }: { children: React.ReactNode }) {
       window.clearTimeout(timer);
       events.forEach((event) => window.removeEventListener(event, bump));
     };
-  }, [mobile, me.data?.session, logout, notify, queryClient, router]);
+  }, [me.data?.session, lockPin]);
 
   useEffect(() => {
-    if (!mobile || !me.data?.session) return;
+    if (!me.data?.session) return;
     const lockIfAway = () => {
-      if (hiddenAt.current && Date.now() - hiddenAt.current > MOBILE_HIDDEN_MS) {
+      if (hiddenAt.current && Date.now() - hiddenAt.current > HIDDEN_LOCK_MS) {
         lockPin();
         setPin("");
         setPinError("");
@@ -116,7 +102,7 @@ export function SessionGuard({ children }: { children: React.ReactNode }) {
       window.removeEventListener("pagehide", onHide);
       window.removeEventListener("pageshow", onShow);
     };
-  }, [mobile, me.data?.session, lockPin]);
+  }, [me.data?.session, lockPin]);
 
   const submitPin = useCallback(
     async (value: string) => {
@@ -141,7 +127,7 @@ export function SessionGuard({ children }: { children: React.ReactNode }) {
     [unlockPin],
   );
 
-  const showLock = Boolean(me.data?.session && mobile && !state.pinUnlocked && !isPublic(path));
+  const showLock = Boolean(me.data?.session && !state.pinUnlocked && !isPublic(path));
 
   return (
     <>
