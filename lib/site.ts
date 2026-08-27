@@ -2,7 +2,33 @@ import type { Metadata } from "next";
 
 export const SITE_NAME = "LBPay";
 export const SITE_TAGLINE = "Financial infrastructure for Cameroon";
-export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://lbpay.cm").replace(/\/$/, "");
+
+const FALLBACK_SITE_URL = "https://lbpay.cm";
+
+function normalizeSiteUrl(raw: string | undefined): string {
+  let value = (raw || "").trim().replace(/^['"]|['"]$/g, "");
+  if (!value) return FALLBACK_SITE_URL;
+
+  value = value.replace(/^(https?);\/\//i, "$1://");
+  value = value.replace(/^(https?):;\/\//i, "$1://");
+  value = value.replace(/^(https?):\/(?!\/)/i, "$1://");
+  value = value.replace(/^(https?)\/\//i, "$1://");
+  if (!/^https?:\/\//i.test(value)) {
+    value = `https://${value.replace(/^\/+/, "")}`;
+  }
+
+  try {
+    const url = new URL(value);
+    if (url.protocol !== "http:" && url.protocol !== "https:") return FALLBACK_SITE_URL;
+    if (!url.hostname.includes(".")) return FALLBACK_SITE_URL;
+    return url.origin;
+  } catch {
+    return FALLBACK_SITE_URL;
+  }
+}
+
+export const SITE_URL = normalizeSiteUrl(process.env.NEXT_PUBLIC_SITE_URL);
+export const SITE_ORIGIN = new URL(SITE_URL);
 
 export const SITE_TITLE = "LBPay | Send money in Cameroon, MTN, Orange Money, XAF wallet";
 

@@ -6,6 +6,7 @@ import {
   SITE_DESCRIPTION,
   SITE_KEYWORDS,
   SITE_NAME,
+  SITE_ORIGIN,
   SITE_TITLE,
   SITE_URL,
 } from "@/lib/site";
@@ -22,7 +23,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(SITE_URL),
+  metadataBase: SITE_ORIGIN,
   title: {
     default: SITE_TITLE,
     template: "%s | LBPay",
