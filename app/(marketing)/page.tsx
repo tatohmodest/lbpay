@@ -33,7 +33,7 @@ const products = [
   {
     icon: Code2,
     title: "Developers",
-    copy: "Sandbox keys on apply, live keys after KYC. Payments, payouts, webhooks, and a Mobile Money API.",
+    copy: "Apply from Profile. After approval, the Developer Portal unlocks with sandbox and live keys.",
     href: "/products/developers",
     cta: "See the API",
   },

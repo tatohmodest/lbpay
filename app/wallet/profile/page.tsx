@@ -11,7 +11,7 @@ import { LEGAL_NOTE } from "@/lib/flags";
 import { useApp } from "@/lib/store";
 import { useMe } from "@/lib/hooks/wallet";
 import { useNotify } from "@/lib/notify";
-import { isAdmin } from "@/lib/roles";
+import { isAdmin, productUnlocked } from "@/lib/roles";
 import { disablePush, enablePush, openPushPrompt, pushPermission, pushSupported } from "@/lib/push-client";
 
 export default function ProfilePage() {
@@ -68,12 +68,24 @@ export default function ProfilePage() {
           <Link href="/wallet/kyc" className="text-sm font-bold text-brand">
             Verify account
           </Link>
-          <Link href="/business" className="text-sm font-bold text-brand">
-            Apply for Business
-          </Link>
-          <Link href="/developers" className="text-sm font-bold text-brand">
-            Apply for Developers
-          </Link>
+          {productUnlocked(user, "business") ? (
+            <Link href="/business" className="text-sm font-bold text-brand">
+              Business console
+            </Link>
+          ) : (
+            <Link href="/business" className="text-sm font-bold text-brand">
+              {user?.kyc?.business === "pending" ? "Business application pending" : "Open a business account"}
+            </Link>
+          )}
+          {productUnlocked(user, "developer") ? (
+            <Link href="/developers" className="text-sm font-bold text-brand">
+              Developer portal
+            </Link>
+          ) : (
+            <Link href="/developers" className="text-sm font-bold text-brand">
+              {user?.kyc?.developer === "pending" ? "Developer application pending" : "Become a developer"}
+            </Link>
+          )}
           {isAdmin(user) ? (
             <Link href="/admin" className="text-sm font-bold text-brand">
               Open admin console

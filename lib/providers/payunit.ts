@@ -1,6 +1,7 @@
 import { PayunitClient } from "@payunit/nodejs-sdk";
 import { httpsCallbackUrl, payunitGatewayUrl } from "@/lib/site";
 import { cameroonMsisdn } from "@/lib/phone";
+import { publicPaymentError } from "@/lib/public-error";
 import type { PaymentRail, RailCollectInput, RailDisburseInput, RailResult } from "./types";
 
 type PayUnitMode = "test" | "live";
@@ -30,8 +31,9 @@ function railStatus(raw: string | undefined): RailResult["status"] {
 }
 
 function errorMessage(error: unknown, fallback: string) {
-  if (error instanceof Error && error.message) return error.message.replace(/^API request failed:\s*/i, "");
-  return fallback;
+  const raw = error instanceof Error && error.message ? error.message.replace(/^API request failed:\s*/i, "") : fallback;
+  console.error("[lbpay] payunit raw error", raw);
+  return publicPaymentError(raw);
 }
 
 export function createPayunitClient() {
@@ -179,12 +181,18 @@ export class PayUnitRail implements PaymentRail {
   async getStatus(reference: string): Promise<RailResult> {
     try {
       const status = await this.client.collections.getTransactionStatus(reference);
+      const mapped = railStatus(status.transaction_status);
       return {
         provider: "payunit",
         reference: status.transaction_id || reference,
         providerRef: status.transaction_id || reference,
-        status: railStatus(status.transaction_status),
-        message: status.message,
+        status: mapped,
+        message:
+          mapped === "failed"
+            ? publicPaymentError(status.message || "failed")
+            : mapped === "pending"
+              ? "Your transaction is being processed. This usually takes less than two minutes."
+              : undefined,
         raw: status,
       };
     } catch (error) {

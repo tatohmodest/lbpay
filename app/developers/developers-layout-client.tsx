@@ -4,29 +4,48 @@ import {
   BookOpen,
   KeyRound,
   LayoutDashboard,
-  Repeat,
   ScrollText,
   Send,
   Webhook,
 } from "lucide-react";
-import { ConsoleShell } from "@/components/layout/shells";
+import { ConsoleShell, WalletShell } from "@/components/layout/shells";
 import { RoleGate } from "@/components/role-gate";
+import { useMe } from "@/lib/hooks/wallet";
+import { productUnlocked } from "@/lib/roles";
 
 const items = [
-  { href: "/developers", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/developers/keys", label: "API Keys", icon: KeyRound },
+  { href: "/developers", label: "API Dashboard", icon: LayoutDashboard },
+  { href: "/developers/keys", label: "Applications", icon: KeyRound },
   { href: "/developers/webhooks", label: "Webhooks", icon: Webhook },
   { href: "/developers/logs", label: "Logs", icon: ScrollText },
-  { href: "/developers/payouts", label: "Payouts", icon: Send },
-  { href: "/developers/subscriptions", label: "Subscriptions", icon: Repeat },
-  { href: "/developers/docs", label: "Docs", icon: BookOpen },
+  { href: "/developers/payouts", label: "Test payouts", icon: Send },
+  { href: "/developers/docs", label: "Documentation", icon: BookOpen },
 ];
 
 export function DevelopersLayoutClient({ children }: { children: React.ReactNode }) {
+  const me = useMe();
+  const unlocked = productUnlocked(me.data?.user, "developer");
+
+  if (!me.isFetched) {
+    return (
+      <WalletShell>
+        <p className="p-8 text-sm text-muted">Checking access…</p>
+      </WalletShell>
+    );
+  }
+
+  if (!unlocked) {
+    return (
+      <WalletShell>
+        <RoleGate kind="developer">{children}</RoleGate>
+      </WalletShell>
+    );
+  }
+
   return (
     <ConsoleShell
-      title="Developer Console"
-      subtitle="Sandbox + live"
+      title="Developer Portal"
+      subtitle="Sandbox and live"
       items={items}
       cta={{ href: "/developers/docs", label: "API reference" }}
     >

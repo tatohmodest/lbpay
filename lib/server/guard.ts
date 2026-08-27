@@ -39,6 +39,16 @@ export async function requireKind(kind: AccountKind) {
       user: null,
     };
   }
+  if (
+    (kind === "developer" || kind === "business") &&
+    result.user.kyc[kind] !== "verified" &&
+    !isAdmin(result.user)
+  ) {
+    return {
+      error: NextResponse.json({ error: "This product unlocks after your application is approved." }, { status: 403 }),
+      user: null,
+    };
+  }
   return result;
 }
 

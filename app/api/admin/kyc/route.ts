@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { findKycById, findUserById, grantRole, listKyc, saveKyc, upsertUser, writeAudit } from "@/lib/server/db";
+import { findKycById, findUserById, grantRole, listKyc, listKeys, saveKyc, upsertUser, writeAudit } from "@/lib/server/db";
 import { requireAdmin } from "@/lib/server/guard";
-import { issueLiveKey } from "@/lib/server/apikey";
+import { issueLiveKey, issueSandboxKey } from "@/lib/server/apikey";
 import { publicUser } from "@/lib/server/db";
 import { pushAccount } from "@/lib/server/push";
 
@@ -46,7 +46,9 @@ export async function POST(request: Request) {
     }
     if (app.track === "developer") {
       await grantRole(user, "developer");
-      await issueLiveKey(user);
+      const keys = await listKeys(user.id);
+      if (!keys.some((key) => key.env === "sandbox" && !key.revokedAt)) await issueSandboxKey(user);
+      if (!keys.some((key) => key.env === "live" && !key.revokedAt)) await issueLiveKey(user);
     }
     await upsertUser(user);
   } else {

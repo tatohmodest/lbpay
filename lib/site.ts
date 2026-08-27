@@ -105,7 +105,7 @@ export const SITE_FAQS = [
   {
     question: "Does LBPay support a payments API and sandbox?",
     answer:
-      "Developers apply for API access and receive sandbox keys immediately. Live keys are issued after KYC approval. The API covers payments, payouts, payment links, webhooks, and balance.",
+      "Developers apply from Profile. After approval, sandbox and live keys appear in the Developer Portal. The API covers payments, payouts, payment links, webhooks, and balance.",
   },
   {
     question: "How do merchants collect payments in Cameroon?",

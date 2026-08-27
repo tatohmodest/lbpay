@@ -29,7 +29,10 @@ export async function POST(request: Request) {
 
   const wallet = await getWallet(user.id);
   if (wallet.balance < amount) {
-    return NextResponse.json({ error: "Insufficient wallet balance." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Insufficient wallet balance. Deposit funds or enter a lower amount." },
+      { status: 400 },
+    );
   }
 
   try {
@@ -47,7 +50,10 @@ export async function POST(request: Request) {
     });
     return NextResponse.json({ ok: true, balance: moved.balance, transaction: moved.tx });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Payment failed";
+    const raw = error instanceof Error ? error.message : "";
+    const message = /insufficient/i.test(raw)
+      ? "Insufficient wallet balance. Deposit funds or enter a lower amount."
+      : "Payment could not be completed.";
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }

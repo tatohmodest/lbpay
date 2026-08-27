@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Field, Input } from "@/components/ui/input";
@@ -13,6 +13,8 @@ import { useNotify } from "@/lib/notify";
 import { NetworkMark } from "@/components/network-mark";
 import { cameroonMsisdn, isCameroonMsisdn } from "@/lib/phone";
 import { feeLabel, momoOutFee, momoOutRate } from "@/lib/fees";
+import { AmountField } from "@/components/amount-field";
+import { amountIssue, cameroonDay, dailyOutboundCap, outboundKinds } from "@/lib/limits";
 
 export default function WithdrawPage() {
   const { state } = useApp();
@@ -32,35 +34,44 @@ export default function WithdrawPage() {
   const rate = momoOutRate(state.user.phone, network);
   const fee = momoOutFee(value, state.user.phone, network);
   const debit = value + fee;
-  const ready = value >= 100 && debit <= balance && isCameroonMsisdn(clean);
+  const cap = dailyOutboundCap(me.data?.user?.kyc?.personal);
+  const usedToday = (me.data?.transactions || [])
+    .filter(
+      (tx) =>
+        outboundKinds(tx.kind) &&
+        cameroonDay(tx.createdAt) === cameroonDay() &&
+        (tx.status === "success" || tx.status === "pending"),
+    )
+    .reduce((sum, tx) => sum + tx.amount, 0);
+  const overDaily = cap != null && value > 0 && usedToday + value > cap;
+  const ready =
+    !amountIssue(value, "withdraw") &&
+    value > 0 &&
+    debit <= balance &&
+    !overDaily &&
+    isCameroonMsisdn(clean);
 
-  const details = useMemo(
-    () => [
-      { label: "Type", value: "Wallet withdrawal" },
-      { label: "Network", value: network === "orange" ? "Orange Money" : "MTN Mobile Money" },
-      { label: "Phone", value: clean },
-      { label: "They receive", value: formatXAF(value) },
-      { label: `Fee ${feeLabel(rate)}`, value: formatXAF(fee) },
-      { label: "Debited from wallet", value: formatXAF(debit) },
-    ],
-    [network, clean, value, rate, fee, debit],
-  );
+  const details = [
+    { label: "Type", value: "Wallet withdrawal" },
+    { label: "Network", value: network === "orange" ? "Orange Money" : "MTN Mobile Money" },
+    { label: "Phone", value: clean },
+    { label: "They receive", value: formatXAF(value) },
+    { label: `Fee ${feeLabel(rate)}`, value: formatXAF(fee) },
+    { label: "Debited from wallet", value: formatXAF(debit) },
+  ];
 
-  const confirm = useCallback(
-    async (pin: string) => {
-      setPinError("");
-      try {
-        await disburse.mutateAsync({ amount: value, phone: clean, network, pin, note: "Wallet withdrawal" });
-        notify.moneyOut(debit, `Withdrawing ${formatXAF(value)} to ${clean} on ${network.toUpperCase()}`);
-        setOpen(false);
-        router.push("/wallet");
-      } catch (err) {
-        setPinError(err instanceof Error ? err.message : "Withdrawal failed");
-        notify.error("Withdrawal failed", err instanceof Error ? err.message : "Could not disburse");
-      }
-    },
-    [disburse, value, clean, network, debit, notify, router],
-  );
+  async function confirm(pin: string) {
+    setPinError("");
+    try {
+      await disburse.mutateAsync({ amount: value, phone: clean, network, pin, note: "Wallet withdrawal" });
+      notify.moneyOut(debit, `Withdrawing ${formatXAF(value)} to ${clean} on ${network.toUpperCase()}`);
+      setOpen(false);
+      router.push("/wallet");
+    } catch (err) {
+      setPinError(err instanceof Error ? err.message : "Withdrawal failed");
+      notify.error("Withdrawal failed", err instanceof Error ? err.message : "Could not disburse");
+    }
+  }
 
   return (
     <div className="mx-auto max-w-xl">
@@ -103,24 +114,28 @@ export default function WithdrawPage() {
               required
             />
           </Field>
-          <Field label="Amount they receive (XAF)">
-            <Input
-              type="number"
-              min={100}
-              className="font-mono text-lg"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              required
-            />
-          </Field>
-          {value >= 100 ? (
+          <AmountField
+            value={amount}
+            onChange={setAmount}
+            kind="withdraw"
+            label="Amount they receive (XAF)"
+            extra={
+              cap
+                ? `KYC Level 1 daily limit: ${formatXAF(cap)}. Remaining today ${formatXAF(Math.max(0, cap - usedToday))}.`
+                : "KYC Level 2: no daily withdrawal cap."
+            }
+          />
+          {value > 0 && !amountIssue(value, "withdraw") ? (
             <p className="text-sm text-muted">
               Fee {feeLabel(rate)} {formatXAF(fee)}. They receive {formatXAF(value)}. Wallet is charged{" "}
               {formatXAF(debit)}.
             </p>
           ) : null}
-          {value >= 100 && debit > balance ? (
-            <p className="text-sm font-semibold text-danger">Not enough wallet balance for amount plus fee.</p>
+          {overDaily ? (
+            <p className="text-sm font-semibold text-danger">Daily limit remaining is {formatXAF(Math.max(0, (cap || 0) - usedToday))}.</p>
+          ) : null}
+          {value > 0 && debit > balance ? (
+            <p className="text-sm font-semibold text-danger">Insufficient wallet balance. Deposit funds or enter a lower amount.</p>
           ) : null}
           <Button type="submit" disabled={!ready}>
             Review withdrawal

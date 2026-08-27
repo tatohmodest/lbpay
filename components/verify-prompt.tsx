@@ -1,12 +1,32 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { X } from "lucide-react";
 import { Card } from "@/components/ui/card";
 
+const EVENT = "lbpay-verify-prompt";
+
 function storageKey(userId: string, status: string) {
   return `lbpay.hide-verify-prompt:${userId}:${status}`;
+}
+
+function readHidden(userId: string | undefined, status: string) {
+  if (!userId || status === "verified") return true;
+  try {
+    return localStorage.getItem(storageKey(userId, status)) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function subscribe(onStoreChange: () => void) {
+  window.addEventListener("storage", onStoreChange);
+  window.addEventListener(EVENT, onStoreChange);
+  return () => {
+    window.removeEventListener("storage", onStoreChange);
+    window.removeEventListener(EVENT, onStoreChange);
+  };
 }
 
 export function VerifyPrompt({
@@ -16,49 +36,26 @@ export function VerifyPrompt({
   userId?: string;
   status: string;
 }) {
-  const [hidden, setHidden] = useState(true);
-
-  useEffect(() => {
-    if (!userId || status === "verified") {
-      setHidden(true);
-      return;
-    }
-    try {
-      setHidden(localStorage.getItem(storageKey(userId, status)) === "1");
-    } catch {
-      setHidden(false);
-    }
-  }, [userId, status]);
+  const getSnapshot = useCallback(() => readHidden(userId, status), [userId, status]);
+  const hidden = useSyncExternalStore(subscribe, getSnapshot, () => true);
 
   if (!userId || status === "verified" || hidden) return null;
 
   const copy =
     status === "pending"
       ? {
-          title: "We're reviewing your account",
-          body: "You'll get business benefits once this is done.",
+          title: "We are reviewing your account",
+          body: "You will get business benefits once this is done.",
         }
       : status === "rejected"
         ? {
-            title: "We couldn't verify your account",
-            body: "You can try again whenever you're ready.",
+            title: "We could not verify your account",
+            body: "You can try again whenever you are ready.",
           }
         : {
             title: "Verify your account",
             body: "Unlock business benefits on LBPay.",
           };
-
-  function dismiss(e: React.MouseEvent) {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!userId) return;
-    try {
-      localStorage.setItem(storageKey(userId, status), "1");
-    } catch {
-      /* ignore */
-    }
-    setHidden(true);
-  }
 
   return (
     <Card className="relative border-brand/30 bg-brand-soft p-4 pr-12 lg:col-span-12">
@@ -69,7 +66,16 @@ export function VerifyPrompt({
       <button
         type="button"
         aria-label="Dismiss"
-        onClick={dismiss}
+        onClick={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          try {
+            localStorage.setItem(storageKey(userId, status), "1");
+          } catch {
+            /* ignore */
+          }
+          window.dispatchEvent(new Event(EVENT));
+        }}
         className="absolute right-3 top-3 rounded-full p-1.5 text-muted hover:bg-white/70 hover:text-ink"
       >
         <X className="h-4 w-4" />

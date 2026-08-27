@@ -23,6 +23,20 @@ export function isAdmin(user: { roles?: AccountKind[] } | null | undefined) {
   return Boolean(user?.roles?.includes("admin"));
 }
 
+export function productUnlocked(
+  user:
+    | {
+        roles?: AccountKind[];
+        kyc?: { personal?: string; business?: string; developer?: string };
+      }
+    | null
+    | undefined,
+  kind: "business" | "developer",
+) {
+  if (isAdmin(user)) return true;
+  return Boolean(user?.roles?.includes(kind) && user?.kyc?.[kind] === "verified");
+}
+
 export function defaultKyc() {
   return {
     personal: "unverified" as const,

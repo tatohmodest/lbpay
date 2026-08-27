@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { settleRailTx } from "@/lib/server/db";
 import { getPaymentRail } from "@/lib/providers";
 import { requireActiveUser } from "@/lib/server/guard";
+import { publicPaymentError } from "@/lib/public-error";
 
 export async function GET(request: Request) {
   try {
@@ -21,10 +22,15 @@ export async function GET(request: Request) {
       ok: true,
       status: result.status,
       transactionId: result.reference,
-      message: result.message,
+      message:
+        result.status === "failed"
+          ? result.message ||
+            "Your transaction could not be completed. No money has been deducted. Please try again."
+          : result.status === "pending"
+            ? "Your transaction is being processed. This usually takes less than two minutes. We will notify you once it completes."
+            : undefined,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Could not verify payment.";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: publicPaymentError(error) }, { status: 500 });
   }
 }

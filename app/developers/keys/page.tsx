@@ -29,10 +29,27 @@ export default function KeysPage() {
     },
     onError: (err: Error) => notify.error("Failed", err.message),
   });
+  const disable = useMutation({
+    mutationFn: (id: string) =>
+      fetch("/api/developer/keys", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      }).then(async (res) => {
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || "Failed");
+        return json;
+      }),
+    onSuccess: () => {
+      client.invalidateQueries({ queryKey: ["dev-keys"] });
+      notify.success("Key disabled", "That secret will no longer work.");
+    },
+    onError: (err: Error) => notify.error("Failed", err.message),
+  });
 
   return (
     <div className="max-w-2xl">
-      <h1 className="text-2xl font-black">API keys</h1>
+      <h1 className="text-2xl font-black">Applications</h1>
       <p className="text-sm text-muted">
         Sandbox keys never move live money. Live keys appear only after developer KYC is approved.
       </p>
@@ -49,6 +66,14 @@ export default function KeysPage() {
             <p className="mt-3 font-mono text-sm">{key.secretMasked}</p>
             <p className="mt-4 text-xs font-bold uppercase text-white/60">Publishable</p>
             <p className="mt-1 font-mono text-sm">{key.publicKey}</p>
+            <Button
+              className="mt-4"
+              variant="secondary"
+              onClick={() => disable.mutate(key.id)}
+              disabled={disable.isPending}
+            >
+              Disable key
+            </Button>
           </Card>
         ))}
         <div className="flex gap-2">

@@ -17,9 +17,9 @@ export default function PersonalKycPage() {
   if (personal === "pending") {
     return (
       <Card className="mx-auto mt-6 max-w-lg p-8 text-center">
-        <h1 className="text-2xl font-black">We're reviewing your account</h1>
+        <h1 className="text-2xl font-black">We are reviewing your account</h1>
         <p className="mt-2 text-sm leading-6 text-muted">
-          You'll get business benefits once this is done.
+          You will get business benefits once this is done.
         </p>
         <Link href="/wallet" className="mt-6 inline-block">
           <Button variant="secondary">Back to wallet</Button>
@@ -31,7 +31,7 @@ export default function PersonalKycPage() {
   if (personal === "verified") {
     return (
       <Card className="mx-auto mt-6 max-w-lg p-8 text-center">
-        <h1 className="text-2xl font-black">You're verified</h1>
+        <h1 className="text-2xl font-black">You are verified</h1>
         <p className="mt-2 text-sm leading-6 text-muted">Business benefits are ready when you are.</p>
         <div className="mt-6 grid gap-2">
           <Link href="/business">
@@ -52,7 +52,7 @@ export default function PersonalKycPage() {
       <h1 className="text-3xl font-black">Verify your account</h1>
       <p className="mt-2 text-sm leading-6 text-muted">
         {personal === "rejected"
-          ? "We couldn't verify last time. You can try again whenever you're ready."
+          ? "We could not verify last time. You can try again whenever you are ready."
           : "A few details to unlock business benefits."}
       </p>
       <div className="mt-6">

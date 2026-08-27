@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
-import { createKyc, grantRole, listKycForUser, upsertUser } from "@/lib/server/db";
+import { createKyc, listKycForUser, upsertUser } from "@/lib/server/db";
 import { requireActiveUser } from "@/lib/server/guard";
-import { issueSandboxKey } from "@/lib/server/apikey";
 import { isOurCloudinaryUrl } from "@/lib/server/cloudinary";
 import { kycDocsComplete, type KycDocuments, type KycDocumentType } from "@/lib/kyc";
 import type { KycTrack } from "@/lib/types";
@@ -85,11 +84,6 @@ export async function POST(request: Request) {
 
   auth.user.kyc = { ...auth.user.kyc, [track]: "pending" };
   if (track === "personal") auth.user.kycStatus = "pending";
-  if (track === "developer") {
-    const firstApply = !auth.user.roles.includes("developer");
-    await grantRole(auth.user, "developer");
-    if (firstApply) await issueSandboxKey(auth.user);
-  }
   if (track === "business") {
     auth.user.businessName = String(body.businessName || auth.user.businessName || "");
   }

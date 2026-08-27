@@ -43,9 +43,7 @@ export default function DevelopersPage() {
       <header className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-black">Developer overview</h1>
-          <p className="text-muted">
-            Sandbox is for testing. Live keys move real money after KYC approval.
-          </p>
+          <p className="text-muted">Sandbox is for testing. Live keys move real money.</p>
         </div>
         <span className={`rounded-full px-3 py-1 text-xs font-bold uppercase ${liveReady ? "bg-brand text-white" : "bg-paper text-muted"}`}>
           {liveReady ? "Live enabled" : "Sandbox only"}

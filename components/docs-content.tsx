@@ -49,7 +49,7 @@ export function DocsContent() {
         <ul className="list-disc pl-5 text-muted">
           <li>Personal: wallet. Verify your account from Profile when you want business benefits.</li>
           <li>Business: merchant console. Available after your account is verified.</li>
-          <li>Developer: sandbox keys on apply; live keys after review.</li>
+          <li>Developer: apply from Profile. Portal, sandbox keys, and live keys unlock after approval.</li>
           <li>Admin: platform operators. Entering /admin always requires a fresh email OTP.</li>
         </ul>
         <h2 className="text-xl font-semibold">Authentication</h2>

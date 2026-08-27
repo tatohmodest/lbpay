@@ -9,7 +9,7 @@ import { RightDrawer } from "@/components/ui/right-drawer";
 import { useApp } from "@/lib/store";
 import { useMe } from "@/lib/hooks/wallet";
 import { cn } from "@/lib/cn";
-import { isAdmin } from "@/lib/roles";
+import { isAdmin, productUnlocked } from "@/lib/roles";
 import { openInstallPrompt, useStandaloneDisplay } from "@/lib/pwa";
 import { openPushPrompt } from "@/lib/push-client";
 import Image from "next/image";
@@ -28,9 +28,9 @@ export function AppHeader({ onOpenMenu }: { onOpenMenu?: () => void }) {
     setOpen(false);
   }
   const products = [
-    { href: "/wallet", label: "Personal", icon: Wallet, copy: "Send and receive XAF", show: true },
-    { href: "/business", label: "Business", icon: Store, copy: "Checkout and collections", show: true },
-    { href: "/developers", label: "Developers", icon: Code2, copy: "Keys, webhooks, payouts", show: true },
+    { href: "/wallet", label: "Wallet", icon: Wallet, copy: "Send and receive XAF", show: true },
+    { href: "/business", label: "Business", icon: Store, copy: "Checkout and collections", show: productUnlocked(user, "business") },
+    { href: "/developers", label: "Developers", icon: Code2, copy: "API keys and webhooks", show: productUnlocked(user, "developer") },
     { href: "/admin", label: "Admin", icon: Shield, copy: "Platform control", show: isAdmin(user) },
   ].filter((item) => item.show);
 
@@ -111,7 +111,7 @@ export function AppHeader({ onOpenMenu }: { onOpenMenu?: () => void }) {
           open={open}
           onClose={() => setOpen(false)}
           title="LBPay"
-          subtitle="Switch product"
+          subtitle="Account"
           footer={
             <Link
               href="/wallet/profile"
@@ -128,7 +128,7 @@ export function AppHeader({ onOpenMenu }: { onOpenMenu?: () => void }) {
               </span>
               <span>
                 <span className="block text-sm font-medium text-ink">Profile</span>
-                <span className="block text-xs text-muted">PIN, KYC, and account</span>
+                <span className="block text-xs text-muted">Settings and account</span>
               </span>
             </Link>
           }
@@ -174,8 +174,8 @@ export function BottomNav() {
   const user = me.data?.user;
   const items = [
     { href: "/wallet", label: "Wallet", icon: Wallet, show: true },
-    { href: "/business", label: "Business", icon: Store, show: true },
-    { href: "/developers", label: "Dev", icon: Code2, show: true },
+    { href: "/business", label: "Business", icon: Store, show: productUnlocked(user, "business") },
+    { href: "/developers", label: "Dev", icon: Code2, show: productUnlocked(user, "developer") },
     { href: "/admin", label: "Admin", icon: Shield, show: isAdmin(user) },
     { href: "/wallet/profile", label: "Profile", icon: UserRound, show: true },
   ].filter((item) => item.show);

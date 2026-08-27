@@ -1,4 +1,4 @@
-const CACHE = "lbpay-shell-v2";
+const CACHE = "lbpay-shell-v4";
 const PRECACHE = [
   "/icons/icon-192.png",
   "/icons/icon-512.png",
@@ -24,13 +24,20 @@ self.addEventListener("activate", (event) => {
   );
 });
 
+self.addEventListener("message", (event) => {
+  if (event.data === "SKIP_WAITING") self.skipWaiting();
+});
+
 self.addEventListener("fetch", (event) => {
   const request = event.request;
   if (request.method !== "GET") return;
+  if (request.mode === "navigate") return;
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
   if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/_next/")) return;
-  event.respondWith(fetch(request).catch(() => caches.match(request)));
+  event.respondWith(
+    caches.match(request).then((cached) => cached || fetch(request)),
+  );
 });
 
 self.addEventListener("push", (event) => {

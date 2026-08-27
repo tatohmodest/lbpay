@@ -5,6 +5,8 @@ import { getPaymentRail } from "@/lib/providers";
 import { requireActiveUser } from "@/lib/server/guard";
 import { cameroonMsisdn, detectMobileNetwork, isCameroonMsisdn } from "@/lib/phone";
 import { momoOutFee } from "@/lib/fees";
+import { assertAmount, assertDailyOutbound } from "@/lib/server/limits";
+import { publicPaymentError } from "@/lib/public-error";
 
 export async function POST(request: Request) {
   try {
@@ -24,8 +26,17 @@ export async function POST(request: Request) {
     const note = String(body.note || "Wallet withdrawal");
     const fee = momoOutFee(amount, user.phone, network);
 
-    if (!amount || amount < 100) {
-      return NextResponse.json({ error: "Minimum disbursement is 100 XAF." }, { status: 400 });
+    if (!amount) {
+      return NextResponse.json({ error: "Enter an amount." }, { status: 400 });
+    }
+    try {
+      await assertAmount(amount, "withdraw");
+      await assertDailyOutbound(user, amount);
+    } catch (limitErr) {
+      return NextResponse.json(
+        { error: limitErr instanceof Error ? limitErr.message : "That amount is not allowed." },
+        { status: 400 },
+      );
     }
     if (!isCameroonMsisdn(phone)) {
       return NextResponse.json({ error: "Enter a valid Cameroon mobile number." }, { status: 400 });
@@ -38,7 +49,10 @@ export async function POST(request: Request) {
 
     const wallet = await getWallet(user.id);
     if (wallet.balance < amount + fee) {
-      return NextResponse.json({ error: "Insufficient wallet balance." }, { status: 400 });
+      return NextResponse.json(
+        { error: "Insufficient wallet balance. Deposit funds or enter a lower amount." },
+        { status: 400 },
+      );
     }
 
     const rail = getPaymentRail();
@@ -55,7 +69,7 @@ export async function POST(request: Request) {
 
     if (result.status === "failed") {
       return NextResponse.json(
-        { error: result.message || "Disbursement failed on the payment rail." },
+        { error: result.message || "Your transaction could not be completed. No money has been deducted. Please try again." },
         { status: 502 },
       );
     }
@@ -85,7 +99,6 @@ export async function POST(request: Request) {
       transaction: moved.tx,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Disbursement failed";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: publicPaymentError(error) }, { status: 500 });
   }
 }

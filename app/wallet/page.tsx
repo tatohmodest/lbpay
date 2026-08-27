@@ -5,7 +5,9 @@ import Image from "next/image";
 import {
   ArrowDownLeft,
   ArrowUpRight,
+  History,
   Phone,
+  QrCode,
   Receipt,
   Send,
   WalletCards,
@@ -21,9 +23,9 @@ import type { Transaction } from "@/lib/types";
 
 const actions = [
   { href: "/wallet/send", label: "Send Money", icon: Send },
-  { href: "/wallet/request", label: "Request Money", icon: WalletCards },
-  { href: "/wallet/airtime", label: "Buy Airtime", icon: Phone },
-  { href: "/wallet/bills", label: "Pay Bills", icon: Receipt },
+  { href: "/wallet/request", label: "Receive Money", icon: WalletCards },
+  { href: "/wallet/qr", label: "QR Code", icon: QrCode },
+  { href: "/wallet/history", label: "Transactions", icon: History },
 ];
 
 export default function WalletPage() {
@@ -82,6 +84,14 @@ export default function WalletPage() {
               </Card>
             </Link>
           ))}
+        </div>
+        <div className="flex gap-4 text-sm font-semibold">
+          <Link href="/wallet/airtime" className="inline-flex items-center gap-1 text-brand">
+            <Phone className="h-4 w-4" /> Buy Airtime
+          </Link>
+          <Link href="/wallet/bills" className="inline-flex items-center gap-1 text-brand">
+            <Receipt className="h-4 w-4" /> Pay Bills
+          </Link>
         </div>
 
         <Card className="p-5">

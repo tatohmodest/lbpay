@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Field, Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,8 @@ import { useNotify } from "@/lib/notify";
 import { NetworkMark } from "@/components/network-mark";
 import { cameroonMsisdn, isCameroonMsisdn } from "@/lib/phone";
 import { feeLabel, momoOutFee, momoOutRate } from "@/lib/fees";
+import { AmountField } from "@/components/amount-field";
+import { amountIssue } from "@/lib/limits";
 
 export default function PayoutsPage() {
   const me = useMe();
@@ -30,39 +32,33 @@ export default function PayoutsPage() {
   const fee = momoOutFee(value, sourcePhone, network);
   const debit = value + fee;
   const balance = me.data?.balance ?? 0;
-  const ready = value >= 100 && debit <= balance && isCameroonMsisdn(clean);
+  const ready = !amountIssue(value, "withdraw") && value > 0 && debit <= balance && isCameroonMsisdn(clean);
   const payouts = (me.data?.transactions || []).filter(
     (tx) => tx.kind === "withdraw" || tx.kind === "payout",
   );
 
-  const details = useMemo(
-    () => [
-      { label: "Type", value: "API disbursement" },
-      { label: "Network", value: network.toUpperCase() },
-      { label: "Phone", value: clean },
-      { label: "They receive", value: formatXAF(value) },
-      { label: `Fee ${feeLabel(rate)}`, value: formatXAF(fee) },
-      { label: "Debited from wallet", value: formatXAF(debit) },
-    ],
-    [network, clean, value, rate, fee, debit],
-  );
+  const details = [
+    { label: "Type", value: "API disbursement" },
+    { label: "Network", value: network.toUpperCase() },
+    { label: "Phone", value: clean },
+    { label: "They receive", value: formatXAF(value) },
+    { label: `Fee ${feeLabel(rate)}`, value: formatXAF(fee) },
+    { label: "Debited from wallet", value: formatXAF(debit) },
+  ];
 
-  const confirm = useCallback(
-    async (pin: string) => {
-      setPinError("");
-      try {
-        await disburse.mutateAsync({ amount: value, phone: clean, network, pin, note: "Developer payout" });
-        notify.moneyOut(debit, `Payout queued to ${clean}`);
-        setOpen(false);
-        setAmount("");
-        setPhone("");
-      } catch (err) {
-        setPinError(err instanceof Error ? err.message : "Payout failed");
-        notify.error("Payout failed", err instanceof Error ? err.message : "Could not disburse");
-      }
-    },
-    [disburse, value, clean, network, debit, notify],
-  );
+  async function confirm(pin: string) {
+    setPinError("");
+    try {
+      await disburse.mutateAsync({ amount: value, phone: clean, network, pin, note: "Developer payout" });
+      notify.moneyOut(debit, `Payout queued to ${clean}`);
+      setOpen(false);
+      setAmount("");
+      setPhone("");
+    } catch (err) {
+      setPinError(err instanceof Error ? err.message : "Payout failed");
+      notify.error("Payout failed", err instanceof Error ? err.message : "Could not disburse");
+    }
+  }
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
@@ -82,9 +78,7 @@ export default function PayoutsPage() {
               setOpen(true);
             }}
           >
-            <Field label="Amount (XAF)">
-              <Input type="number" className="font-mono" value={amount} onChange={(e) => setAmount(e.target.value)} />
-            </Field>
+            <AmountField value={amount} onChange={setAmount} kind="withdraw" />
             <Field label="Phone" hint="9-digit number, no +237">
               <Input
                 inputMode="numeric"
@@ -108,7 +102,7 @@ export default function PayoutsPage() {
                 </button>
               ))}
             </div>
-            {value >= 100 ? (
+            {value > 0 && !amountIssue(value, "withdraw") ? (
               <p className="text-sm text-muted">
                 Fee {feeLabel(rate)} {formatXAF(fee)}. They receive {formatXAF(value)}. Wallet is charged{" "}
                 {formatXAF(debit)}.

@@ -4,6 +4,7 @@ import { recordLedgerMove, getWallet } from "@/lib/server/db";
 import { payunitReference } from "@/lib/server/crypto";
 import { cameroonMsisdn, isCameroonMsisdn } from "@/lib/phone";
 import { momoOutFee } from "@/lib/fees";
+import { assertAmount, assertDailyOutbound } from "@/lib/server/limits";
 
 export async function POST(request: Request) {
   const auth = await authenticateApiKey(request);
@@ -14,14 +15,24 @@ export async function POST(request: Request) {
   const phone = cameroonMsisdn(body.phone);
   const network = body.network === "orange" ? "orange" : "mtn";
   const fee = momoOutFee(amount, user.phone, network);
-  if (!amount || amount < 100 || !isCameroonMsisdn(phone)) {
+  if (!amount || !isCameroonMsisdn(phone)) {
     await logApi(user.id, "POST", "/v1/payouts", 400);
     return NextResponse.json({ error: "amount and a valid Cameroon phone are required" }, { status: 400 });
+  }
+  try {
+    await assertAmount(amount, "withdraw");
+    await assertDailyOutbound(user, amount);
+  } catch (limitErr) {
+    await logApi(user.id, "POST", "/v1/payouts", 400);
+    return NextResponse.json(
+      { error: limitErr instanceof Error ? limitErr.message : "That amount is not allowed." },
+      { status: 400 },
+    );
   }
   const wallet = await getWallet(user.id);
   if (wallet.balance < amount + fee) {
     await logApi(user.id, "POST", "/v1/payouts", 400);
-    return NextResponse.json({ error: "Insufficient wallet balance." }, { status: 400 });
+    return NextResponse.json({ error: "Insufficient wallet balance. Deposit funds or enter a lower amount." }, { status: 400 });
   }
   if (env === "live" && user.kyc.developer !== "verified") {
     return NextResponse.json({ error: "Live payouts need approved developer KYC." }, { status: 403 });
@@ -38,7 +49,7 @@ export async function POST(request: Request) {
   });
   if (result.status === "failed") {
     await logApi(user.id, "POST", "/v1/payouts", 502);
-    return NextResponse.json({ error: "Payout failed on the rail.", result }, { status: 502 });
+    return NextResponse.json({ error: result.message || "Your transaction could not be completed. No money has been deducted. Please try again." }, { status: 502 });
   }
   const moved = await recordLedgerMove({
     userId: user.id,

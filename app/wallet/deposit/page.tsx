@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Field, Input } from "@/components/ui/input";
@@ -13,6 +13,8 @@ import { useNotify } from "@/lib/notify";
 import { NetworkMark } from "@/components/network-mark";
 import { cameroonMsisdn, isCameroonMsisdn } from "@/lib/phone";
 import { depositFee } from "@/lib/fees";
+import { AmountField } from "@/components/amount-field";
+import { amountIssue } from "@/lib/limits";
 import type { PaymentMethod } from "@/lib/types";
 
 const methods: { id: PaymentMethod; label: string; hint: string }[] = [
@@ -40,23 +42,20 @@ export default function DepositPage() {
   const clean = cameroonMsisdn(phone);
   const fee = depositFee(value);
   const payAmount = value + fee;
-  const ready = value >= 100 && (method === "card" || isCameroonMsisdn(clean));
+  const ready = !amountIssue(value, "deposit") && value > 0 && (method === "card" || isCameroonMsisdn(clean));
   const ussdCode = method === "orange" ? "#150#" : "*126#";
 
-  const details = useMemo(
-    () => [
-      { label: "Type", value: "Wallet deposit" },
-      {
-        label: "From",
-        value: method === "mtn" ? "MTN Mobile Money" : method === "orange" ? "Orange Money" : "Card",
-      },
-      { label: "Number", value: method === "card" ? "Hosted checkout" : clean },
-      { label: "To wallet", value: formatXAF(value) },
-      { label: "Fee 3%", value: formatXAF(fee) },
-      { label: "You pay", value: formatXAF(payAmount) },
-    ],
-    [method, clean, value, fee, payAmount],
-  );
+  const details = [
+    { label: "Type", value: "Wallet deposit" },
+    {
+      label: "From",
+      value: method === "mtn" ? "MTN Mobile Money" : method === "orange" ? "Orange Money" : "Card",
+    },
+    { label: "Number", value: method === "card" ? "Hosted checkout" : clean },
+    { label: "To wallet", value: formatXAF(value) },
+    { label: "Fee 3%", value: formatXAF(fee) },
+    { label: "You pay", value: formatXAF(payAmount) },
+  ];
 
   const pollPayment = useCallback(
     async (tx: string) => {
@@ -65,7 +64,7 @@ export default function DepositPage() {
         setWaiting((current) => (current ? { ...current, seconds: Math.max(0, Math.ceil((deadline - Date.now()) / 1000)) } : current));
         try {
           const res = await fetch(`/api/wallet/collect/status?tx=${encodeURIComponent(tx)}`);
-          const data = (await res.json()) as { status?: string; error?: string };
+          const data = (await res.json()) as { status?: string; error?: string; message?: string };
           if (data.status === "success") {
             setWaiting(null);
             notify.moneyIn(value, "Wallet deposit received");
@@ -74,7 +73,10 @@ export default function DepositPage() {
           }
           if (data.status === "failed") {
             setWaiting(null);
-            notify.error("Deposit failed", data.error || "The Mobile Money collection was not approved.");
+            notify.error(
+              "Deposit failed",
+              data.error || data.message || "Your transaction could not be completed. No money has been deducted. Please try again.",
+            );
             return;
           }
         } catch {
@@ -93,7 +95,7 @@ export default function DepositPage() {
     setChecking(true);
     try {
       const res = await fetch(`/api/wallet/collect/status?tx=${encodeURIComponent(waiting.tx)}`);
-      const data = (await res.json()) as { status?: string; error?: string };
+      const data = (await res.json()) as { status?: string; error?: string; message?: string };
       if (data.status === "success") {
         setWaiting(null);
         notify.moneyIn(value, "Wallet deposit received");
@@ -102,7 +104,10 @@ export default function DepositPage() {
       }
       if (data.status === "failed") {
         setWaiting(null);
-        notify.error("Deposit failed", data.error || "The collection was not approved.");
+        notify.error(
+          "Deposit failed",
+          data.error || data.message || "Your transaction could not be completed. No money has been deducted. Please try again.",
+        );
         return;
       }
       notify.info("Not confirmed yet", `If you have not seen a popup, dial ${ussdCode} and confirm pay.`);
@@ -111,38 +116,35 @@ export default function DepositPage() {
     }
   }, [waiting, notify, router, value, ussdCode]);
 
-  const confirm = useCallback(
-    async (pin: string) => {
-      setPinError("");
-      try {
-        const result = (await collect.mutateAsync({
-          amount: value,
-          method: method === "orange" ? "orange" : method === "card" ? "card" : "mtn",
-          phone: clean,
-          pin,
-        })) as { hostedUrl?: string; status?: string; transactionId?: string };
-        if (result.hostedUrl) {
-          notify.pending("Continue on checkout", "Complete the card payment to credit your wallet.");
-          window.location.href = result.hostedUrl;
-          return;
-        }
-        if (result.status === "pending" && result.transactionId) {
-          notify.pending("Approve on your phone", `Confirm ${formatXAF(payAmount)} on ${method.toUpperCase()}.`);
-          setOpen(false);
-          setWaiting({ tx: result.transactionId, seconds: 120 });
-          void pollPayment(result.transactionId);
-          return;
-        }
-        notify.moneyIn(value, "Wallet deposit received");
-        setOpen(false);
-        router.push("/wallet");
-      } catch (err) {
-        setPinError(err instanceof Error ? err.message : "Deposit failed");
-        notify.error("Deposit failed", err instanceof Error ? err.message : "Could not collect");
+  const confirm = async (pin: string) => {
+    setPinError("");
+    try {
+      const result = (await collect.mutateAsync({
+        amount: value,
+        method: method === "orange" ? "orange" : method === "card" ? "card" : "mtn",
+        phone: clean,
+        pin,
+      })) as { hostedUrl?: string; status?: string; transactionId?: string };
+      if (result.hostedUrl) {
+        notify.pending("Continue on checkout", "Complete the card payment to credit your wallet.");
+        window.location.assign(result.hostedUrl);
+        return;
       }
-    },
-    [collect, value, method, clean, payAmount, notify, router, pollPayment],
-  );
+      if (result.status === "pending" && result.transactionId) {
+        notify.pending("Approve on your phone", `Confirm ${formatXAF(payAmount)} on ${method.toUpperCase()}.`);
+        setOpen(false);
+        setWaiting({ tx: result.transactionId, seconds: 120 });
+        void pollPayment(result.transactionId);
+        return;
+      }
+      notify.moneyIn(value, "Wallet deposit received");
+      setOpen(false);
+      router.push("/wallet");
+    } catch (err) {
+      setPinError(err instanceof Error ? err.message : "Deposit failed");
+      notify.error("Deposit failed", err instanceof Error ? err.message : "Could not collect");
+    }
+  };
 
   return (
     <div className="mx-auto max-w-xl">
@@ -212,17 +214,8 @@ export default function DepositPage() {
                 />
               </Field>
             ) : null}
-            <Field label="Amount (XAF)">
-              <Input
-                type="number"
-                min={100}
-                className="font-mono text-lg"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                required
-              />
-            </Field>
-            {value >= 100 ? (
+            <AmountField value={amount} onChange={setAmount} kind="deposit" />
+            {value > 0 && !amountIssue(value, "deposit") ? (
               <p className="text-sm text-muted">
                 Fee 3% {formatXAF(fee)}. You pay {formatXAF(payAmount)}. Wallet receives {formatXAF(value)}.
               </p>

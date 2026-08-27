@@ -31,12 +31,14 @@ export function KycApplyForm({
   const [website, setWebsite] = useState("");
   const [docs, setDocs] = useState<Partial<KycDocuments>>({});
   const [loading, setLoading] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const nameValue = legalName || me.data?.user?.name || "";
 
   const needsPhotos = track === "personal" || track === "developer";
   const ready =
     Boolean(nameValue.trim() && idNumber.trim()) &&
     (track !== "business" || Boolean(businessName.trim())) &&
+    (track !== "developer" || acceptedTerms) &&
     (!needsPhotos || Boolean(docs.idFrontUrl && docs.idBackUrl && docs.selfieUrl));
 
   async function submit(e: React.FormEvent) {
@@ -66,7 +68,7 @@ export function KycApplyForm({
     notify.success(
       "Application sent",
       track === "developer"
-        ? "Sandbox is unlocking now. Live keys wait until we review your account."
+        ? "We'll review your application. The developer portal unlocks after approval."
         : "We'll review your account shortly.",
     );
     await client.invalidateQueries({ queryKey: ["me"] });
@@ -145,12 +147,26 @@ export function KycApplyForm({
           </>
         ) : null}
         {track === "developer" ? (
-          <Field label="Website / app">
-            <Input value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://" />
-          </Field>
+          <>
+            <Field label="Website / app">
+              <Input value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://" />
+            </Field>
+            <label className="flex items-start gap-3 text-sm leading-6 text-ink">
+              <input
+                type="checkbox"
+                className="mt-1 h-4 w-4 accent-[#00b369]"
+                checked={acceptedTerms}
+                onChange={(e) => setAcceptedTerms(e.target.checked)}
+              />
+              <span>
+                I accept the developer API terms. Sandbox and live keys are issued after approval. Do not
+                expose secret keys in client apps.
+              </span>
+            </label>
+          </>
         ) : null}
         <Button type="submit" disabled={loading || !ready}>
-          {loading ? "Sending…" : "Submit verification"}
+          {loading ? "Sending…" : track === "developer" ? "Submit application" : "Submit verification"}
         </Button>
       </form>
     </Card>

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { authenticateApiKey, logApi, railForEnv } from "@/lib/server/apikey";
 import { recordLedgerMove } from "@/lib/server/db";
 import { payunitReference } from "@/lib/server/crypto";
+import { assertAmount } from "@/lib/server/limits";
 
 export async function POST(request: Request) {
   const auth = await authenticateApiKey(request);
@@ -10,11 +11,10 @@ export async function POST(request: Request) {
 
   const body = await request.json().catch(() => ({}));
   const amount = Number(body.amount);
-  if (!amount || amount < 100) {
+  if (!amount) {
     await logApi(user.id, "POST", "/v1/payments", 400);
-    return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
+    return NextResponse.json({ error: "Enter an amount." }, { status: 400 });
   }
-
   const method =
     body.method === "orange"
       ? "orange"
@@ -23,6 +23,20 @@ export async function POST(request: Request) {
         : body.method === "wallet"
           ? "wallet"
           : "mtn";
+  if (method !== "wallet") {
+    try {
+      await assertAmount(amount, "deposit");
+    } catch (limitErr) {
+      await logApi(user.id, "POST", "/v1/payments", 400);
+      return NextResponse.json(
+        { error: limitErr instanceof Error ? limitErr.message : "That amount is not allowed." },
+        { status: 400 },
+      );
+    }
+  } else if (amount < 100) {
+    await logApi(user.id, "POST", "/v1/payments", 400);
+    return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
+  }
 
   const reference = payunitReference("PAY");
   const rail = railForEnv(env);

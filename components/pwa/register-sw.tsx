@@ -17,9 +17,27 @@ export function getServiceWorkerRegistration() {
   return registrationPromise;
 }
 
+function activateWaiting(reg: ServiceWorkerRegistration) {
+  const waiting = reg.waiting;
+  if (waiting) waiting.postMessage("SKIP_WAITING");
+  const installing = reg.installing;
+  if (!installing) return;
+  installing.addEventListener("statechange", () => {
+    if (installing.state === "installed" && navigator.serviceWorker.controller) {
+      installing.postMessage("SKIP_WAITING");
+    }
+  });
+}
+
 export function RegisterServiceWorker() {
   useEffect(() => {
-    void getServiceWorkerRegistration().catch(() => undefined);
+    void getServiceWorkerRegistration()
+      .then((reg) => {
+        activateWaiting(reg);
+        void reg.update();
+        reg.addEventListener("updatefound", () => activateWaiting(reg));
+      })
+      .catch(() => undefined);
   }, []);
   return null;
 }

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { findUserByHandle, recordTransfer } from "@/lib/server/db";
 import { verifySecret } from "@/lib/server/crypto";
 import { requireActiveUser } from "@/lib/server/guard";
+import { assertAmount } from "@/lib/server/limits";
 
 export async function POST(request: Request) {
   const auth = await requireActiveUser();
@@ -13,8 +14,16 @@ export async function POST(request: Request) {
   const pin = String(body.pin || "");
   const note = String(body.note || "");
 
-  if (!amount || amount < 100) {
-    return NextResponse.json({ error: "Minimum transfer is 100 XAF." }, { status: 400 });
+  if (!amount) {
+    return NextResponse.json({ error: "Enter an amount." }, { status: 400 });
+  }
+  try {
+    await assertAmount(amount, "wallet");
+  } catch (limitErr) {
+    return NextResponse.json(
+      { error: limitErr instanceof Error ? limitErr.message : "That amount is not allowed." },
+      { status: 400 },
+    );
   }
 
   if (!sender.pinHash) return NextResponse.json({ error: "PIN required." }, { status: 400 });
@@ -39,7 +48,10 @@ export async function POST(request: Request) {
       transaction: result.outgoing,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Transfer failed";
+    const raw = error instanceof Error ? error.message : "";
+    const message = /insufficient/i.test(raw)
+      ? "Insufficient wallet balance. Deposit funds or enter a lower amount."
+      : "Transfer could not be completed. Please try again.";
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }

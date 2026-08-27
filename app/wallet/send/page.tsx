@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { ArrowLeftRight } from "lucide-react";
@@ -15,6 +15,8 @@ import { useDisburse, useHandleLookup, useMe, useTransfer } from "@/lib/hooks/wa
 import { useNotify } from "@/lib/notify";
 import { cameroonMsisdn, isCameroonMsisdn } from "@/lib/phone";
 import { feeLabel, momoOutFee, momoOutRate } from "@/lib/fees";
+import { AmountField } from "@/components/amount-field";
+import { amountIssue, cameroonDay, dailyOutboundCap, outboundKinds } from "@/lib/limits";
 
 type Network = "wallet" | "mtn" | "orange";
 
@@ -47,52 +49,60 @@ function SendInner() {
   const rate = network === "wallet" ? 0 : momoOutRate(state.user.phone, network);
   const fee = network === "wallet" ? 0 : momoOutFee(value, state.user.phone, network);
   const debit = value + fee;
+  const amountKind = network === "wallet" ? "wallet" : "momo";
+  const cap = network === "wallet" ? null : dailyOutboundCap(me.data?.user?.kyc?.personal);
+  const usedToday = (me.data?.transactions || [])
+    .filter(
+      (tx) =>
+        outboundKinds(tx.kind) &&
+        cameroonDay(tx.createdAt) === cameroonDay() &&
+        (tx.status === "success" || tx.status === "pending"),
+    )
+    .reduce((sum, tx) => sum + tx.amount, 0);
+  const overDaily = cap != null && value > 0 && usedToday + value > cap;
 
   const ready =
-    value >= 100 &&
+    !amountIssue(value, amountKind) &&
+    value > 0 &&
     debit <= balance &&
+    !overDaily &&
     (network === "wallet" ? Boolean(lookup.data?.found) : isCameroonMsisdn(phone));
 
-  const details = useMemo(() => {
-    if (network === "wallet") {
-      return [
-        { label: "Type", value: "LBPay wallet transfer" },
-        { label: "To", value: `@${lookup.data?.user?.lbpayId || to.replace(/^@/, "")}` },
-        { label: "Name", value: lookup.data?.user?.name || "n/a" },
-        { label: "Rail", value: "Internal ledger" },
-        { label: "Fee", value: "Free" },
-      ];
-    }
-    return [
-      { label: "Type", value: "Disbursement" },
-      { label: "Network", value: network === "orange" ? "Orange Money" : "MTN Mobile Money" },
-      { label: "Phone", value: phone },
-      { label: "They receive", value: formatXAF(value) },
-      { label: `Fee ${feeLabel(rate)}`, value: formatXAF(fee) },
-      { label: "Debited from wallet", value: formatXAF(debit) },
-    ];
-  }, [network, lookup.data, to, phone, value, rate, fee, debit]);
+  const details =
+    network === "wallet"
+      ? [
+          { label: "Type", value: "LBPay wallet transfer" },
+          { label: "To", value: `@${lookup.data?.user?.lbpayId || to.replace(/^@/, "")}` },
+          { label: "Name", value: lookup.data?.user?.name || "n/a" },
+          { label: "Rail", value: "Internal ledger" },
+          { label: "Fee", value: "Free" },
+        ]
+      : [
+          { label: "Type", value: "Disbursement" },
+          { label: "Network", value: network === "orange" ? "Orange Money" : "MTN Mobile Money" },
+          { label: "Phone", value: phone },
+          { label: "They receive", value: formatXAF(value) },
+          { label: `Fee ${feeLabel(rate)}`, value: formatXAF(fee) },
+          { label: "Debited from wallet", value: formatXAF(debit) },
+        ];
 
-  const confirm = useCallback(
-    async (pin: string) => {
-      setPinError("");
-      try {
-        if (network === "wallet") {
-          await transfer.mutateAsync({ to, amount: value, pin, note });
-          notify.moneyOut(value, `Transferred to @${lookup.data?.user?.lbpayId || to.replace(/^@/, "")}`);
-        } else {
-          await disburse.mutateAsync({ amount: value, phone, network, pin, note });
-          notify.moneyOut(debit, `Sent ${formatXAF(value)} to ${phone} on ${network.toUpperCase()}`);
-        }
-        setOpen(false);
-        router.push("/wallet");
-      } catch (err) {
-        setPinError(err instanceof Error ? err.message : "Could not send");
-        notify.error("Send failed", err instanceof Error ? err.message : "Could not send");
+  async function confirm(pin: string) {
+    setPinError("");
+    try {
+      if (network === "wallet") {
+        await transfer.mutateAsync({ to, amount: value, pin, note });
+        notify.moneyOut(value, `Transferred to @${lookup.data?.user?.lbpayId || to.replace(/^@/, "")}`);
+      } else {
+        await disburse.mutateAsync({ amount: value, phone, network, pin, note });
+        notify.moneyOut(debit, `Sent ${formatXAF(value)} to ${phone} on ${network.toUpperCase()}`);
       }
-    },
-    [network, transfer, disburse, to, value, note, lookup.data, notify, router, phone, debit],
-  );
+      setOpen(false);
+      router.push("/wallet");
+    } catch (err) {
+      setPinError(err instanceof Error ? err.message : "Could not send");
+      notify.error("Send failed", err instanceof Error ? err.message : "Could not send");
+    }
+  }
 
   return (
     <div className="mx-auto max-w-xl">
@@ -165,27 +175,35 @@ function SendInner() {
           {network === "wallet" && to.replace(/^@/, "").length >= 2 && lookup.data && !lookup.data.found ? (
             <p className="text-sm font-semibold text-danger">No wallet with that ID.</p>
           ) : null}
-          <Field label="Amount (XAF)">
-            <Input
-              type="number"
-              min={100}
-              className="font-mono text-lg"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              required
-            />
-          </Field>
+          <AmountField
+            value={amount}
+            onChange={setAmount}
+            kind={amountKind}
+            label="Amount (XAF)"
+            extra={
+              network === "wallet"
+                ? undefined
+                : cap
+                  ? `KYC Level 1 daily limit: ${formatXAF(cap)}. Remaining today ${formatXAF(Math.max(0, cap - usedToday))}.`
+                  : "KYC Level 2: no daily sending cap."
+            }
+          />
           <Field label="Note">
             <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Optional" />
           </Field>
-          {value >= 100 && network !== "wallet" ? (
+          {value > 0 && network !== "wallet" && !amountIssue(value, "momo") ? (
             <p className="text-sm text-muted">
               Fee {feeLabel(rate)} {formatXAF(fee)}. They receive {formatXAF(value)}. Wallet is charged{" "}
               {formatXAF(debit)}.
             </p>
           ) : null}
-          {value >= 100 && debit > balance ? (
-            <p className="text-sm font-semibold text-danger">Not enough wallet balance for amount plus fee.</p>
+          {overDaily ? (
+            <p className="text-sm font-semibold text-danger">
+              Daily limit remaining is {formatXAF(Math.max(0, (cap || 0) - usedToday))}.
+            </p>
+          ) : null}
+          {value > 0 && debit > balance ? (
+            <p className="text-sm font-semibold text-danger">Insufficient wallet balance. Deposit funds or enter a lower amount.</p>
           ) : null}
           <Button type="submit" disabled={!ready}>
             Review and confirm

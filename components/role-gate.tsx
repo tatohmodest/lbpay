@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { KycApplyForm } from "@/components/kyc-apply-form";
 import { useMe } from "@/lib/hooks/wallet";
-import { hasKind, isAdmin } from "@/lib/roles";
+import { isAdmin, productUnlocked } from "@/lib/roles";
 import type { AccountKind, KycTrack } from "@/lib/types";
 
 export function RoleGate({
@@ -28,66 +28,70 @@ export function RoleGate({
 
   if (isAdmin(user)) return <>{children}</>;
 
-  if (kind === "business" && personal !== "verified") {
-    return (
-      <Card className="mx-auto mt-10 max-w-lg p-8 text-center">
-        <h1 className="text-2xl font-semibold tracking-tight">Verify your account first</h1>
-        <p className="mt-2 text-sm leading-6 text-muted">
-          {personal === "pending"
-            ? "We're still reviewing your account. Business benefits unlock after that."
-            : "Verify your account to unlock business benefits."}
-        </p>
-        <Link href="/wallet/kyc" className="mt-6 inline-block">
-          <Button>{personal === "pending" ? "See status" : "Verify account"}</Button>
-        </Link>
-      </Card>
-    );
-  }
+  if (kind === "business" || kind === "developer") {
+    if (productUnlocked(user, kind)) return <>{children}</>;
 
-  if (hasKind(user, kind) && state !== "rejected") {
-    return <>{children}</>;
-  }
+    if (kind === "business" && personal !== "verified") {
+      return (
+        <Card className="mx-auto mt-10 max-w-lg p-8 text-center">
+          <h1 className="text-2xl font-semibold tracking-tight">Verify your account first</h1>
+          <p className="mt-2 text-sm leading-6 text-muted">
+            {personal === "pending"
+              ? "We are still reviewing your account. Business benefits unlock after that."
+              : "Verify your account to unlock business benefits."}
+          </p>
+          <Link href="/wallet/kyc" className="mt-6 inline-block">
+            <Button>{personal === "pending" ? "See status" : "Verify account"}</Button>
+          </Link>
+        </Card>
+      );
+    }
 
-  if (state === "pending") {
+    if (state === "pending") {
+      return (
+        <Card className="mx-auto mt-10 max-w-lg p-8 text-center">
+          <h1 className="text-2xl font-semibold tracking-tight">
+            {kind === "business" ? "Business application received" : "Developer application received"}
+          </h1>
+          <p className="mt-2 text-sm text-muted">
+            {kind === "developer"
+              ? "The developer portal unlocks after approval."
+              : "The business console unlocks after approval."}
+          </p>
+          <Link href="/wallet" className="mt-6 inline-block">
+            <Button variant="secondary">Back to wallet</Button>
+          </Link>
+        </Card>
+      );
+    }
+
     return (
-      <Card className="mx-auto mt-10 max-w-lg p-8 text-center">
-        <p className="text-xs font-bold uppercase tracking-wide text-brand">KYC in review</p>
-        <h1 className="mt-2 text-2xl font-semibold tracking-tight">
-          {kind === "business" ? "Business access pending" : "Live developer access pending"}
+      <div className="mx-auto max-w-lg py-8">
+        <h1 className="text-3xl font-semibold tracking-tight">
+          {kind === "business" ? "Open a business account" : "Become a developer"}
         </h1>
         <p className="mt-2 text-sm text-muted">
           {kind === "developer"
-            ? "Sandbox is ready. Live keys wait until your account is approved."
-            : "You'll get the Business console after this is approved."}
+            ? "Apply to use the payments API. The portal appears in your menu after approval."
+            : "Add your business details so we can open merchant tools."}
         </p>
-      </Card>
+        {kind === "developer" ? (
+          <Link href="/docs" className="mt-3 inline-block text-sm font-bold text-brand">
+            Learn about APIs
+          </Link>
+        ) : null}
+        <div className="mt-6">
+          <KycApplyForm
+            track={track}
+            title={kind === "business" ? "Business profile" : "Developer application"}
+            subtitle={kind === "developer" ? "Photos are compressed. 10MB max." : "Collections, payment links, and QR for your shop."}
+          />
+        </div>
+      </div>
     );
   }
 
-  return (
-    <div className="mx-auto max-w-lg py-8">
-      <p className="text-xs font-bold uppercase tracking-wide text-brand">Role access</p>
-      <h1 className="mt-2 text-3xl font-semibold tracking-tight">
-        {kind === "business" ? "Apply for Business" : "Apply for Developers"}
-      </h1>
-      <p className="mt-2 text-sm text-muted">
-        {kind === "developer"
-          ? "Confirm your account to get sandbox access. Live keys after we review."
-          : "Add your business details so we can open the merchant tools."}
-      </p>
-      <div className="mt-6">
-        <KycApplyForm
-          track={track}
-          title={kind === "business" ? "Business profile" : "Developer account"}
-          subtitle={
-            kind === "developer"
-              ? "Photos are compressed. 10MB max."
-              : "Collections, payment links, and QR for your shop."
-          }
-        />
-      </div>
-    </div>
-  );
+  return <>{children}</>;
 }
 
 export function useAdminSession() {

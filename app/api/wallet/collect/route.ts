@@ -5,6 +5,8 @@ import { getPaymentRail } from "@/lib/providers";
 import { requireActiveUser } from "@/lib/server/guard";
 import { cameroonMsisdn, isCameroonMsisdn } from "@/lib/phone";
 import { depositFee } from "@/lib/fees";
+import { assertAmount } from "@/lib/server/limits";
+import { publicPaymentError } from "@/lib/public-error";
 
 export async function POST(request: Request) {
   try {
@@ -18,8 +20,16 @@ export async function POST(request: Request) {
     const pin = String(body.pin || "");
     const fee = depositFee(amount);
 
-    if (!amount || amount < 100) {
-      return NextResponse.json({ error: "Minimum deposit is 100 XAF." }, { status: 400 });
+    if (!amount) {
+      return NextResponse.json({ error: "Enter an amount." }, { status: 400 });
+    }
+    try {
+      await assertAmount(amount, "deposit");
+    } catch (limitErr) {
+      return NextResponse.json(
+        { error: limitErr instanceof Error ? limitErr.message : "That amount is not allowed." },
+        { status: 400 },
+      );
     }
     if (method !== "card" && !isCameroonMsisdn(phone)) {
       return NextResponse.json({ error: "Enter the Mobile Money number that will pay." }, { status: 400 });
@@ -42,7 +52,7 @@ export async function POST(request: Request) {
 
     if (result.status === "failed") {
       return NextResponse.json(
-        { error: result.message || "Collection failed on the payment rail." },
+        { error: result.message || "Your transaction could not be completed. No money has been deducted. Please try again." },
         { status: 502 },
       );
     }
@@ -73,7 +83,6 @@ export async function POST(request: Request) {
       transaction: moved.tx,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Deposit failed";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: publicPaymentError(error) }, { status: 500 });
   }
 }
