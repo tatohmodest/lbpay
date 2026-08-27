@@ -31,15 +31,14 @@ export function RoleGate({
   if (kind === "business" && personal !== "verified") {
     return (
       <Card className="mx-auto mt-10 max-w-lg p-8 text-center">
-        <p className="text-xs font-bold uppercase tracking-wide text-brand">Personal KYC required</p>
-        <h1 className="mt-2 text-2xl font-semibold tracking-tight">Verify yourself first</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Verify your account first</h1>
         <p className="mt-2 text-sm leading-6 text-muted">
           {personal === "pending"
-            ? "Your personal identity review is still in progress. Business verification unlocks after it is approved."
-            : "You cannot start Business verification until personal identity is approved. Send the front, back, and a photo of you holding your ID or passport."}
+            ? "We're still reviewing your account. Business benefits unlock after that."
+            : "Verify your account to unlock business benefits."}
         </p>
         <Link href="/wallet/kyc" className="mt-6 inline-block">
-          <Button>{personal === "pending" ? "View personal KYC" : "Verify identity"}</Button>
+          <Button>{personal === "pending" ? "See status" : "Verify account"}</Button>
         </Link>
       </Card>
     );
@@ -58,8 +57,8 @@ export function RoleGate({
         </h1>
         <p className="mt-2 text-sm text-muted">
           {kind === "developer"
-            ? "Sandbox is available as soon as you apply. Live keys wait for an admin to check your ID photos."
-            : "An admin will review this application. You will get the Business console after approval."}
+            ? "Sandbox is ready. Live keys wait until your account is approved."
+            : "You'll get the Business console after this is approved."}
         </p>
       </Card>
     );
@@ -73,17 +72,17 @@ export function RoleGate({
       </h1>
       <p className="mt-2 text-sm text-muted">
         {kind === "developer"
-          ? "Send the front and back of your national ID or passport, plus a photo of you holding it. Sandbox unlocks on submit. Live keys wait for an admin."
-          : "Your personal identity is verified. Add the merchant details so an admin can open Business."}
+          ? "Confirm your account to get sandbox access. Live keys after we review."
+          : "Add your business details so we can open the merchant tools."}
       </p>
       <div className="mt-6">
         <KycApplyForm
           track={track}
-          title={kind === "business" ? "Business profile" : "Developer identity"}
+          title={kind === "business" ? "Business profile" : "Developer account"}
           subtitle={
             kind === "developer"
-              ? "Photos are compressed on upload. Maximum 10MB each."
-              : "Business collections, payment links, and QR need a verified merchant profile."
+              ? "Photos are compressed. 10MB max."
+              : "Collections, payment links, and QR for your shop."
           }
         />
       </div>

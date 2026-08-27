@@ -53,8 +53,7 @@ export default function DevelopersPage() {
       </header>
       {!liveReady ? (
         <Card className="mb-4 border-brand/30 bg-brand-soft p-4 text-sm">
-          Live API access is locked until an admin approves your developer KYC photos (ID front, back,
-          and you holding the document).
+          Live keys wait until your developer account is approved.
         </Card>
       ) : null}
       <div className="grid gap-4 md:grid-cols-2">

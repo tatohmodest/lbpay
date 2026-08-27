@@ -17,11 +17,9 @@ export default function PersonalKycPage() {
   if (personal === "pending") {
     return (
       <Card className="mx-auto mt-6 max-w-lg p-8 text-center">
-        <p className="text-xs font-bold uppercase tracking-wide text-brand">KYC in review</p>
-        <h1 className="mt-2 text-2xl font-black">Personal verification pending</h1>
+        <h1 className="text-2xl font-black">We're reviewing your account</h1>
         <p className="mt-2 text-sm leading-6 text-muted">
-          We have your ID photos. An admin will review the front, back, and the photo of you holding
-          the document.
+          You'll get business benefits once this is done.
         </p>
         <Link href="/wallet" className="mt-6 inline-block">
           <Button variant="secondary">Back to wallet</Button>
@@ -33,15 +31,11 @@ export default function PersonalKycPage() {
   if (personal === "verified") {
     return (
       <Card className="mx-auto mt-6 max-w-lg p-8 text-center">
-        <p className="text-xs font-bold uppercase tracking-wide text-brand">Verified</p>
-        <h1 className="mt-2 text-2xl font-black">Your identity is verified</h1>
-        <p className="mt-2 text-sm leading-6 text-muted">
-          You can now apply for Business. Developer access still needs its own ID photos for live
-          keys.
-        </p>
+        <h1 className="text-2xl font-black">You're verified</h1>
+        <p className="mt-2 text-sm leading-6 text-muted">Business benefits are ready when you are.</p>
         <div className="mt-6 grid gap-2">
           <Link href="/business">
-            <Button className="w-full">Apply for Business</Button>
+            <Button className="w-full">Open Business</Button>
           </Link>
           <Link href="/wallet/profile">
             <Button variant="secondary" className="w-full">
@@ -55,18 +49,17 @@ export default function PersonalKycPage() {
 
   return (
     <div className="mx-auto max-w-lg py-4">
-      <p className="text-xs font-bold uppercase tracking-wide text-brand">Personal verification</p>
-      <h1 className="mt-2 text-3xl font-black">Verify your identity</h1>
+      <h1 className="text-3xl font-black">Verify your account</h1>
       <p className="mt-2 text-sm leading-6 text-muted">
         {personal === "rejected"
-          ? "The last review was not approved. Upload clear photos of your national ID or passport and try again."
-          : "Everyone starts here. Business verification stays locked until this is approved."}
+          ? "We couldn't verify last time. You can try again whenever you're ready."
+          : "A few details to unlock business benefits."}
       </p>
       <div className="mt-6">
         <KycApplyForm
           track="personal"
-          title="Identity documents"
-          subtitle="Front, back, and a photo of you holding the same ID or passport. Files are compressed. Maximum 10MB each."
+          title="Your details"
+          subtitle="Photos are compressed. 10MB max."
         />
       </div>
     </div>

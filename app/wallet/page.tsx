@@ -16,6 +16,7 @@ import { StatusBadge } from "@/components/ui/badge";
 import { formatDate, formatXAF, isMoneyOut } from "@/lib/format";
 import { useApp } from "@/lib/store";
 import { useMe } from "@/lib/hooks/wallet";
+import { VerifyPrompt } from "@/components/verify-prompt";
 import type { Transaction } from "@/lib/types";
 
 const actions = [
@@ -40,25 +41,7 @@ export default function WalletPage() {
           This account is frozen. Deposits, sends, and withdrawals are blocked until an admin restores it.
         </div>
       ) : null}
-      {personalKyc !== "verified" ? (
-        <Link href="/wallet/kyc" className="lg:col-span-12">
-          <Card className="border-brand/30 bg-brand-soft p-4">
-            <p className="text-xs font-bold uppercase tracking-wide text-brand">Personal verification</p>
-            <p className="mt-1 font-semibold text-ink">
-              {personalKyc === "pending"
-                ? "Your ID photos are with an admin."
-                : personalKyc === "rejected"
-                  ? "Personal verification was not approved. Send clearer photos."
-                  : "Verify your identity to unlock Business."}
-            </p>
-            <p className="mt-1 text-sm text-muted">
-              {personalKyc === "pending"
-                ? "You will be able to apply for Business after this is approved."
-                : "Send the front, back, and a photo of you holding your national ID or passport."}
-            </p>
-          </Card>
-        </Link>
-      ) : null}
+      <VerifyPrompt userId={me.data?.user?.id} status={personalKyc} />
       <div className="flex flex-col gap-6 lg:col-span-8">
         <section className="relative overflow-hidden rounded-3xl bg-brand p-6 text-white shadow-lg">
           <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/10 blur-3xl" />

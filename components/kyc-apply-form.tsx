@@ -66,8 +66,8 @@ export function KycApplyForm({
     notify.success(
       "Application sent",
       track === "developer"
-        ? "Sandbox is unlocking now. Live keys wait for an admin to check your photos."
-        : "An admin will review your documents.",
+        ? "Sandbox is unlocking now. Live keys wait until we review your account."
+        : "We'll review your account shortly.",
     );
     await client.invalidateQueries({ queryKey: ["me"] });
     await client.invalidateQueries({ queryKey: ["kyc"] });
@@ -107,14 +107,11 @@ export function KycApplyForm({
                 ))}
               </div>
             </Field>
-            <p className="text-sm text-muted">
-              Photos are compressed on upload. Maximum 10MB each. Send a clear front, back, and a
-              selfie holding the same document.
-            </p>
+            <p className="text-sm text-muted">Clear photos, 10MB max.</p>
             <KycPhotoField
               kind="idFront"
               url={docs.idFrontUrl}
-              hint="Data page facing the camera. Max 10MB."
+              hint="Front of your ID. 10MB max."
               onUploaded={(result) =>
                 setDocs((prev) => ({ ...prev, idFrontUrl: result.url, idFrontId: result.publicId }))
               }
@@ -122,7 +119,7 @@ export function KycApplyForm({
             <KycPhotoField
               kind="idBack"
               url={docs.idBackUrl}
-              hint="The other side of the ID or passport. Max 10MB."
+              hint="Back of your ID. 10MB max."
               onUploaded={(result) =>
                 setDocs((prev) => ({ ...prev, idBackUrl: result.url, idBackId: result.publicId }))
               }
@@ -130,7 +127,7 @@ export function KycApplyForm({
             <KycPhotoField
               kind="selfie"
               url={docs.selfieUrl}
-              hint="Hold the document next to your face. Max 10MB."
+              hint="A photo of you with your ID. 10MB max."
               onUploaded={(result) =>
                 setDocs((prev) => ({ ...prev, selfieUrl: result.url, selfieId: result.publicId }))
               }

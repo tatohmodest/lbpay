@@ -22,7 +22,7 @@ export function kycDocsComplete(docs: Partial<KycDocuments> | undefined | null):
 }
 
 export function kycKindLabel(kind: KycImageKind) {
-  if (kind === "idFront") return "Front of ID or passport";
-  if (kind === "idBack") return "Back of ID or passport";
-  return "Photo of you holding the document";
+  if (kind === "idFront") return "Front";
+  if (kind === "idBack") return "Back";
+  return "You with your ID";
 }

@@ -47,9 +47,9 @@ export function DocsContent() {
         </ul>
         <h2 className="text-xl font-semibold">Roles</h2>
         <ul className="list-disc pl-5 text-muted">
-          <li>Personal: wallet. Verify identity from Profile or Wallet with ID front, back, and a holding photo.</li>
-          <li>Business: merchant console. Personal verification must be approved first, then apply with merchant details.</li>
-          <li>Developer: sandbox keys on apply with the same ID photos; live keys after KYC approval.</li>
+          <li>Personal: wallet. Verify your account from Profile when you want business benefits.</li>
+          <li>Business: merchant console. Available after your account is verified.</li>
+          <li>Developer: sandbox keys on apply; live keys after review.</li>
           <li>Admin: platform operators. Entering /admin always requires a fresh email OTP.</li>
         </ul>
         <h2 className="text-xl font-semibold">Authentication</h2>
