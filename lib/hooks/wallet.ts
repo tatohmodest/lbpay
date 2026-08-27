@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatXAF } from "@/lib/format";
+import { readApiJson } from "@/lib/http";
 
 export type MeResponse = {
   session: boolean;
@@ -38,7 +39,7 @@ export type MeResponse = {
 };
 
 async function parseApi<T>(res: Response): Promise<T> {
-  const data = await res.json().catch(() => ({}));
+  const data = await readApiJson<T & { error?: string }>(res);
   if (!res.ok) throw new Error(data.error || "Request failed");
   return data as T;
 }

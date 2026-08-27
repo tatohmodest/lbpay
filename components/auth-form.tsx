@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/card";
 import { Field, Input } from "@/components/ui/input";
 import { PinPad } from "@/components/auth/pin-pad";
 import { isMobileClient } from "@/lib/device";
+import { readApiJson, type AuthApiResponse } from "@/lib/http";
 import { useNotify } from "@/lib/notify";
 import { useApp } from "@/lib/store";
 import { useQueryClient } from "@tanstack/react-query";
@@ -46,7 +47,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, email, phone, password, lbpayId: name }),
       });
-      const data = await res.json();
+      const data = await readApiJson<AuthApiResponse>(res);
       if (!res.ok) throw new Error(data.error || "Could not continue");
       if (data.step === "otp") {
         const q = new URLSearchParams({ email });
@@ -69,19 +70,25 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
 
   async function submitPin(value: string) {
     setLoading(true);
-    const res = await fetch("/api/auth/pin", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ pin: value, mobile: isMobileClient() }),
-    });
-    const data = await res.json().catch(() => ({}));
-    setLoading(false);
-    if (!res.ok) {
-      setError(data.error || "Incorrect PIN");
+    try {
+      const res = await fetch("/api/auth/pin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pin: value, mobile: isMobileClient() }),
+      });
+      const data = await readApiJson<AuthApiResponse>(res);
+      if (!res.ok) {
+        setError(data.error || "Incorrect PIN");
+        setPin("");
+        return;
+      }
+      await finishSession();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not verify PIN");
       setPin("");
-      return;
+    } finally {
+      setLoading(false);
     }
-    await finishSession();
   }
 
   return (

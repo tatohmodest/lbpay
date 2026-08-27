@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Logo } from "@/components/logo";
 import { PinPad } from "@/components/auth/pin-pad";
 import { isMobileClient } from "@/lib/device";
+import { readApiJson } from "@/lib/http";
 import { useNotify } from "@/lib/notify";
 import { useApp } from "@/lib/store";
 import { useQueryClient } from "@tanstack/react-query";
@@ -20,24 +21,31 @@ export default function PinSetupPage() {
   const [error, setError] = useState("");
 
   async function save(finalPin: string) {
-    const res = await fetch("/api/auth/set-pin", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ pin: finalPin, confirm: finalPin, mobile: isMobileClient() }),
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      setError(data.error || "Could not save PIN");
+    try {
+      const res = await fetch("/api/auth/set-pin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pin: finalPin, confirm: finalPin, mobile: isMobileClient() }),
+      });
+      const data = await readApiJson<{ error?: string }>(res);
+      if (!res.ok) {
+        setError(data.error || "Could not save PIN");
+        setPin("");
+        setConfirm("");
+        setStage("create");
+        return;
+      }
+      await queryClient.invalidateQueries({ queryKey: ["me"] });
+      login();
+      unlockPin();
+      notify.success("PIN set", "Use it to confirm sends and to reopen the app.");
+      router.push("/wallet");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not save PIN");
       setPin("");
       setConfirm("");
       setStage("create");
-      return;
     }
-    await queryClient.invalidateQueries({ queryKey: ["me"] });
-    login();
-    unlockPin();
-    notify.success("PIN set", "Use it to confirm sends and to reopen the app.");
-    router.push("/wallet");
   }
 
   return (

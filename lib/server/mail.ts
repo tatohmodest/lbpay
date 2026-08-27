@@ -1,17 +1,34 @@
 import nodemailer from "nodemailer";
 
+function smtpPort() {
+  return Number(process.env.SMTP_PORT || 587);
+}
+
+function smtpSecure() {
+  if (process.env.SMTP_SECURE === "true") return true;
+  if (process.env.SMTP_SECURE === "false") return smtpPort() === 465;
+  return smtpPort() === 465;
+}
+
+function fromAddress() {
+  return process.env.SMTP_FROM || process.env.EMAIL_FROM || "LBPay <noreply@lbpay.cm>";
+}
+
 function transport() {
   if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
     return null;
   }
   return nodemailer.createTransport({
     host: process.env.SMTP_HOST,
-    port: Number(process.env.SMTP_PORT || 587),
-    secure: process.env.SMTP_SECURE === "true",
+    port: smtpPort(),
+    secure: smtpSecure(),
     auth: {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS,
     },
+    connectionTimeout: 8_000,
+    greetingTimeout: 8_000,
+    socketTimeout: 8_000,
   });
 }
 
@@ -50,12 +67,18 @@ export async function sendOtpEmail(
     return { delivered: false, otp };
   }
 
-  await mailer.sendMail({
-    from: process.env.SMTP_FROM || "LBPay <noreply@lbpay.cm>",
-    to,
-    subject: purpose === "admin" ? `${otp} is your LBPay admin code` : `${otp} is your LBPay verification code`,
-    html,
-    text: `Your LBPay ${purpose === "admin" ? "admin" : "verification"} code is ${otp}. It expires in 10 minutes.`,
-  });
-  return { delivered: true };
+  try {
+    await mailer.sendMail({
+      from: fromAddress(),
+      to,
+      subject: purpose === "admin" ? `${otp} is your LBPay admin code` : `${otp} is your LBPay verification code`,
+      html,
+      text: `Your LBPay ${purpose === "admin" ? "admin" : "verification"} code is ${otp}. It expires in 10 minutes.`,
+    });
+    return { delivered: true as const };
+  } catch (error) {
+    console.error("[lbpay] SMTP send failed", error);
+    console.info(`[lbpay] OTP for ${to}: ${otp}`);
+    return { delivered: false as const, otp };
+  }
 }

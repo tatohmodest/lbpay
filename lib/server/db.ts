@@ -110,10 +110,19 @@ export type DbShape = {
   logs: StoredLog[];
 };
 
-const FILE = path.join(process.cwd(), "data", "lbpay.json");
+const LOCAL_FILE = path.join(process.cwd(), "data", "lbpay.json");
+const TMP_FILE = path.join("/tmp", "lbpay.json");
 
+let filePath = LOCAL_FILE;
 let cache: DbShape | null = null;
 let seeding: Promise<void> | null = null;
+
+function candidateFiles() {
+  if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) {
+    return [TMP_FILE];
+  }
+  return [LOCAL_FILE, TMP_FILE];
+}
 
 function normalizeUser(user: StoredUser): StoredUser {
   const kyc = user.kyc ?? {
@@ -164,20 +173,41 @@ function withCollections(db: DbShape): DbShape {
 
 async function readDb(): Promise<DbShape> {
   if (cache) return cache;
-  try {
-    const raw = await readFile(FILE, "utf8");
-    cache = withCollections(JSON.parse(raw) as DbShape);
-  } catch {
-    cache = await empty();
+  for (const file of candidateFiles()) {
+    try {
+      const raw = await readFile(file, "utf8");
+      cache = withCollections(JSON.parse(raw) as DbShape);
+      filePath = file;
+      return cache;
+    } catch {
+      /* try the next location */
+    }
   }
-  await writeDb(cache);
+  cache = await empty();
+  try {
+    await writeDb(cache);
+  } catch (error) {
+    console.error("[lbpay] could not initialize the data file", error);
+  }
   return cache;
 }
 
 async function writeDb(db: DbShape) {
   cache = db;
-  await mkdir(path.dirname(FILE), { recursive: true });
-  await writeFile(FILE, JSON.stringify(db, null, 2), "utf8");
+  const payload = JSON.stringify(db, null, 2);
+  const targets = [filePath, ...candidateFiles().filter((item) => item !== filePath)];
+  let lastError: unknown;
+  for (const file of targets) {
+    try {
+      await mkdir(path.dirname(file), { recursive: true });
+      await writeFile(file, payload, "utf8");
+      filePath = file;
+      return;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error("Could not save account data.");
 }
 
 export async function getDb() {

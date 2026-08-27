@@ -7,6 +7,7 @@ import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Field, Input } from "@/components/ui/input";
+import { readApiJson, type AuthApiResponse } from "@/lib/http";
 import { useNotify } from "@/lib/notify";
 
 function VerifyInner() {
@@ -21,19 +22,25 @@ function VerifyInner() {
   async function verify(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    const res = await fetch("/api/auth/verify-otp", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, otp }),
-    });
-    const data = await res.json();
-    setLoading(false);
-    if (!res.ok) {
-      setError(data.error || "Could not verify");
-      return;
+    setError("");
+    try {
+      const res = await fetch("/api/auth/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, otp }),
+      });
+      const data = await readApiJson<AuthApiResponse>(res);
+      if (!res.ok) {
+        setError(data.error || "Could not verify");
+        return;
+      }
+      notify.success("Email verified", "Now set a 4-digit PIN.");
+      router.push("/pin/setup");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not verify");
+    } finally {
+      setLoading(false);
     }
-    notify.success("Email verified", "Now set a 4-digit PIN.");
-    router.push("/pin/setup");
   }
 
   async function resend() {
@@ -42,12 +49,20 @@ function VerifyInner() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email }),
     });
-    const data = await res.json();
-    if (data.devOtp) {
-      setOtp(data.devOtp);
-      notify.info("Verification code", data.devOtp);
-    } else {
-      notify.success("Code sent", "Check your inbox.");
+    try {
+      const data = await readApiJson<AuthApiResponse>(res);
+      if (!res.ok) {
+        notify.info("Could not resend", data.error || "Try again in a moment.");
+        return;
+      }
+      if (data.devOtp) {
+        setOtp(data.devOtp);
+        notify.info("Verification code", data.devOtp);
+      } else {
+        notify.success("Code sent", "Check your inbox.");
+      }
+    } catch (err) {
+      notify.info("Could not resend", err instanceof Error ? err.message : "Try again.");
     }
   }
 
