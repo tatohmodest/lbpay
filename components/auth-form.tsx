@@ -223,11 +223,6 @@ export function AuthForm({
                           Your LBPay ID
                         </p>
                         <p className="mt-1 font-mono text-base font-semibold text-ink">@{previewId}</p>
-                        {!idConflict ? (
-                          <p className="mt-1 text-sm text-muted">
-                            Created from your name. You do not type it.
-                          </p>
-                        ) : null}
                       </div>
                     ) : null}
                     {idConflict ? (
