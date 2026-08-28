@@ -183,7 +183,7 @@ export function BottomNav() {
   const user = me.data?.user;
   const items = [
     { href: "/wallet", label: "Wallet", icon: Wallet, show: true },
-    { href: "/business", label: "Business", icon: Store, show: productUnlocked(user, "business") },
+    { href: "/business", label: "Business", icon: Store, show: true },
     { href: "/developers", label: "Dev", icon: Code2, show: productUnlocked(user, "developer") },
     { href: "/admin", label: "Admin", icon: Shield, show: isAdmin(user) },
     { href: "/wallet/profile", label: "Profile", icon: UserRound, show: true },
