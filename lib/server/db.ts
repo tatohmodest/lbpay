@@ -158,6 +158,51 @@ function candidateFiles() {
   return [LOCAL_FILE, TMP_FILE];
 }
 
+function remoteConfigured() {
+  return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
+}
+
+function accountRowId(email: string) {
+  return `user:${email.trim().toLowerCase()}`;
+}
+
+function mergeById<T extends { id: string }>(base: T[] = [], next: T[] = []) {
+  const map = new Map<string, T>();
+  for (const item of base) map.set(item.id, item);
+  for (const item of next) map.set(item.id, item);
+  return [...map.values()];
+}
+
+function mergeLedgers(base: DbShape, next: DbShape): DbShape {
+  const users = new Map<string, StoredUser>();
+  for (const user of [...(base.users || []), ...(next.users || [])]) {
+    users.set(user.email.trim().toLowerCase(), user);
+  }
+  const wallets = new Map<string, StoredWallet>();
+  for (const wallet of [...(base.wallets || []), ...(next.wallets || [])]) {
+    wallets.set(wallet.userId, wallet);
+  }
+  return {
+    ...next,
+    users: [...users.values()].map(normalizeUser),
+    wallets: [...wallets.values()],
+    transactions: mergeById(base.transactions, next.transactions),
+    kyc: mergeById(base.kyc, next.kyc),
+    keys: mergeById(base.keys, next.keys),
+    audit: mergeById(base.audit, next.audit),
+    webhooks: mergeById(base.webhooks, next.webhooks),
+    links: mergeById(base.links, next.links),
+    logs: mergeById(base.logs, next.logs),
+    pushSubscriptions: [
+      ...new Map(
+        [...(base.pushSubscriptions || []), ...(next.pushSubscriptions || [])].map((item) => [item.endpoint, item]),
+      ).values(),
+    ],
+    otps: next.otps || [],
+    vapid: next.vapid || base.vapid,
+  };
+}
+
 function normalizeUser(user: StoredUser): StoredUser {
   const kyc = user.kyc ?? {
     personal: user.kycStatus ?? "unverified",
@@ -221,9 +266,89 @@ async function loadRemote(): Promise<DbShape | null> {
   return withCollections(data.data as DbShape);
 }
 
+type AccountRow = { user: StoredUser; wallet?: StoredWallet };
+
+async function loadAccountRows(): Promise<AccountRow[]> {
+  const sb = supabaseAdmin();
+  if (!sb) return [];
+  const { data, error } = await sb.from("app_ledger").select("id,data").like("id", "user:%");
+  if (error) {
+    console.error("[lbpay] could not read saved accounts", error.message);
+    return [];
+  }
+  return (data || [])
+    .map((row) => row.data as AccountRow)
+    .filter((row) => row?.user?.id && row.user.email);
+}
+
+async function loadAccount(email: string): Promise<AccountRow | null> {
+  const sb = supabaseAdmin();
+  if (!sb) return null;
+  const { data, error } = await sb.from("app_ledger").select("data").eq("id", accountRowId(email)).maybeSingle();
+  if (error) {
+    console.error("[lbpay] could not read account", email, error.message);
+    return null;
+  }
+  const row = data?.data as AccountRow | undefined;
+  return row?.user?.id ? row : null;
+}
+
+function applyAccounts(db: DbShape, rows: AccountRow[]): DbShape {
+  const next = { ...db, users: [...db.users], wallets: [...db.wallets] };
+  for (const row of rows) {
+    const user = normalizeUser(row.user);
+    const idx = next.users.findIndex(
+      (item) => item.id === user.id || item.email.toLowerCase() === user.email.toLowerCase(),
+    );
+    if (idx >= 0) next.users[idx] = { ...next.users[idx], ...user, roles: user.roles };
+    else next.users.push(user);
+    if (row.wallet) {
+      const widx = next.wallets.findIndex((item) => item.userId === user.id);
+      if (widx >= 0) next.wallets[widx] = row.wallet;
+      else next.wallets.push(row.wallet);
+    } else if (!next.wallets.some((item) => item.userId === user.id)) {
+      next.wallets.push({ userId: user.id, balance: 0 });
+    }
+  }
+  return next;
+}
+
+async function persistAccount(user: StoredUser, wallet?: StoredWallet) {
+  const sb = supabaseAdmin();
+  if (!sb) {
+    if (remoteConfigured()) {
+      throw new Error("Could not save the account. Storage is not connected.");
+    }
+    return;
+  }
+  const { error } = await sb.from("app_ledger").upsert({
+    id: accountRowId(user.email),
+    data: { user, wallet: wallet || { userId: user.id, balance: 0 } },
+    updated_at: new Date().toISOString(),
+  });
+  if (error) {
+    console.error("[lbpay] could not save account", user.email, error.message);
+    throw new Error("Could not save the account. Try again.");
+  }
+}
+
+async function persistAllAccounts(db: DbShape) {
+  for (const user of db.users) {
+    const wallet = db.wallets.find((item) => item.userId === user.id);
+    await persistAccount(user, wallet);
+  }
+}
+
 async function saveRemote(db: DbShape) {
   const sb = supabaseAdmin();
   if (!sb) return false;
+  if (!db.users.length) {
+    const existing = await loadRemote();
+    if (existing?.users?.length) {
+      console.error("[lbpay] refused to overwrite saved accounts with an empty ledger");
+      return false;
+    }
+  }
   const { error } = await sb.from("app_ledger").upsert({
     id: "lbpay",
     data: db,
@@ -237,48 +362,36 @@ async function saveRemote(db: DbShape) {
 }
 
 async function readDb(): Promise<DbShape> {
-  if (cache) return cache;
-  const remoteFirst = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
-  if (remoteFirst) {
-    const remote = await loadRemote();
-    if (remote) {
-      cache = remote;
-      return cache;
-    }
-  }
-  for (const file of candidateFiles()) {
-    try {
-      const raw = await readFile(file, "utf8");
-      cache = withCollections(JSON.parse(raw) as DbShape);
-      filePath = file;
-      if (!remoteFirst) {
-        const remote = await loadRemote();
-        if (remote && (remote.users?.length || 0) >= (cache.users?.length || 0)) {
-          cache = remote;
-        }
-      }
-      return cache;
-    } catch {
-      /* try the next location */
-    }
-  }
+  if (cache && !remoteConfigured()) return cache;
+  let loaded: DbShape | null = null;
   const remote = await loadRemote();
-  if (remote) {
-    cache = remote;
-    return cache;
+  if (remote) loaded = remote;
+  if (!loaded) {
+    for (const file of candidateFiles()) {
+      try {
+        const raw = await readFile(file, "utf8");
+        loaded = withCollections(JSON.parse(raw) as DbShape);
+        filePath = file;
+        break;
+      } catch {
+        /* try the next location */
+      }
+    }
   }
-  cache = await empty();
-  try {
-    await writeDb(cache);
-  } catch (error) {
-    console.error("[lbpay] could not initialize the data file", error);
+  if (!loaded) loaded = await empty();
+  loaded = applyAccounts(loaded, await loadAccountRows());
+  cache = loaded;
+  if (!remoteConfigured() && !remote) {
+    try {
+      await writeFileSafe(cache);
+    } catch (error) {
+      console.error("[lbpay] could not initialize the data file", error);
+    }
   }
   return cache;
 }
 
-async function writeDb(db: DbShape) {
-  cache = db;
-  const remoteOk = await saveRemote(db);
+async function writeFileSafe(db: DbShape) {
   const payload = JSON.stringify(db, null, 2);
   const targets = [filePath, ...candidateFiles().filter((item) => item !== filePath)];
   let lastError: unknown;
@@ -292,8 +405,21 @@ async function writeDb(db: DbShape) {
       lastError = error;
     }
   }
-  if (remoteOk) return;
   throw lastError instanceof Error ? lastError : new Error("Could not save account data.");
+}
+
+async function writeDb(db: DbShape) {
+  const remote = remoteConfigured() ? await loadRemote() : null;
+  const merged = remote ? mergeLedgers(remote, db) : db;
+  cache = merged;
+  await persistAllAccounts(merged);
+  const remoteOk = await saveRemote(merged);
+  if (remoteConfigured() && !remoteOk) {
+    throw new Error("Could not save the account. Try again.");
+  }
+  if (!remoteConfigured()) {
+    await writeFileSafe(merged);
+  }
 }
 
 export async function getDb() {
@@ -307,9 +433,14 @@ export async function saveDb(db: DbShape) {
 }
 
 export async function findUserByEmail(email: string) {
+  const needle = email.trim().toLowerCase();
   const db = await getDb();
-  const user = db.users.find((u) => u.email.toLowerCase() === email.toLowerCase()) ?? null;
-  return user ? normalizeUser(user) : null;
+  const user = db.users.find((u) => u.email.toLowerCase() === needle);
+  if (user) return normalizeUser(user);
+  const stored = await loadAccount(needle);
+  if (!stored?.user) return null;
+  if (cache) cache = applyAccounts(cache, [stored]);
+  return normalizeUser(stored.user);
 }
 
 export async function findUserByHandle(handle: string) {
@@ -332,12 +463,15 @@ export async function listUsers() {
 
 export async function upsertUser(user: StoredUser) {
   const db = await getDb();
-  const idx = db.users.findIndex((u) => u.id === user.id);
+  const idx = db.users.findIndex((u) => u.id === user.id || u.email.toLowerCase() === user.email.toLowerCase());
   if (idx >= 0) db.users[idx] = user;
   else db.users.push(user);
-  if (!db.wallets.some((w) => w.userId === user.id)) {
-    db.wallets.push({ userId: user.id, balance: 0 });
+  let wallet = db.wallets.find((w) => w.userId === user.id);
+  if (!wallet) {
+    wallet = { userId: user.id, balance: 0 };
+    db.wallets.push(wallet);
   }
+  await persistAccount(user, wallet);
   await saveDb(db);
   return user;
 }

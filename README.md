@@ -21,7 +21,7 @@ Public routes: `/`, `/products/wallet`, `/products/business`, `/products/develop
 - Nodemailer (signup OTP + admin OTP)
 - TanStack Query
 - PayUnit REST (`https://gateway.payunit.net`) when credentials are set
-- JSON ledger at `data/lbpay.json` (gitignored) until you switch the data layer to Supabase
+- JSON ledger in Supabase `app_ledger` (each account is also stored on its own row so it cannot vanish on deploy)
 
 ## Auth
 
