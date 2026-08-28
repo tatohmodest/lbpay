@@ -3,6 +3,7 @@ import path from "path";
 import { verifySecret } from "./crypto";
 import { isBootstrapAdmin } from "@/lib/roles";
 import { uid } from "@/lib/format";
+import { handleBase, isReservedHandle, normalizeHandle, numberedHandle } from "@/lib/handle";
 import { cameroonMsisdn } from "@/lib/phone";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import type {
@@ -313,6 +314,34 @@ function applyAccounts(db: DbShape, rows: AccountRow[]): DbShape {
   return next;
 }
 
+function handleRowId(handle: string) {
+  return `handle:${normalizeHandle(handle)}`;
+}
+
+async function claimHandle(handle: string, userId: string) {
+  const sb = supabaseAdmin();
+  if (!sb) return;
+  const id = handleRowId(handle);
+  const { data } = await sb.from("app_ledger").select("data").eq("id", id).maybeSingle();
+  const owner = (data?.data as { userId?: string } | undefined)?.userId;
+  if (owner && owner !== userId) {
+    throw new Error(`@${handle} is already taken.`);
+  }
+  if (owner === userId) return;
+  const { error } = await sb.from("app_ledger").insert({
+    id,
+    data: { userId },
+    updated_at: new Date().toISOString(),
+  });
+  if (error) {
+    if (error.code === "23505" || /duplicate|already exists/i.test(error.message)) {
+      throw new Error(`@${handle} is already taken.`);
+    }
+    console.error("[lbpay] could not reserve LBPay ID", handle, error.message);
+    throw new Error("Could not save the LBPay ID. Try again.");
+  }
+}
+
 async function persistAccount(user: StoredUser, wallet?: StoredWallet) {
   const sb = supabaseAdmin();
   if (!sb) {
@@ -445,9 +474,36 @@ export async function findUserByEmail(email: string) {
 
 export async function findUserByHandle(handle: string) {
   const db = await getDb();
-  const id = handle.replace(/^@/, "").toLowerCase();
+  const id = handle.replace(/^@/, "").trim().toLowerCase();
+  if (!id) return null;
   const user = db.users.find((u) => u.lbpayId.toLowerCase() === id) ?? null;
   return user ? normalizeUser(user) : null;
+}
+
+export async function isHandleTaken(handle: string, exceptUserId?: string) {
+  const user = await findUserByHandle(handle);
+  if (user && user.id !== exceptUserId) return true;
+  const sb = supabaseAdmin();
+  if (!sb) return false;
+  const { data } = await sb.from("app_ledger").select("data").eq("id", handleRowId(handle)).maybeSingle();
+  const owner = (data?.data as { userId?: string } | undefined)?.userId;
+  return Boolean(owner && owner !== exceptUserId);
+}
+
+export async function nextAvailableHandle(desired: string, exceptUserId?: string) {
+  const requested = normalizeHandle(desired);
+  const base = handleBase(requested) || "user";
+  const trailing = requested.match(/^(.*?)(\d+)$/);
+  let n = trailing?.[1] && handleBase(trailing[1]) === base ? Number(trailing[2]) || 1 : 1;
+  if (!Number.isFinite(n) || n < 1) n = 1;
+  for (let i = 0; i < 10000; i += 1) {
+    const candidate = numberedHandle(base, n);
+    if (!isReservedHandle(candidate) && !(await isHandleTaken(candidate, exceptUserId))) {
+      return candidate;
+    }
+    n += 1;
+  }
+  throw new Error("Could not create a unique LBPay ID.");
 }
 
 export async function findUserById(id: string) {
@@ -462,7 +518,18 @@ export async function listUsers() {
 }
 
 export async function upsertUser(user: StoredUser) {
+  const handle = normalizeHandle(user.lbpayId);
+  if (!handle || isReservedHandle(handle)) {
+    throw new Error("Choose a different LBPay ID.");
+  }
+  user.lbpayId = handle;
   const db = await getDb();
+  const clash = db.users.find(
+    (item) => item.lbpayId.toLowerCase() === handle && item.id !== user.id && item.email.toLowerCase() !== user.email.toLowerCase(),
+  );
+  if (clash) {
+    throw new Error(`@${handle} is already taken.`);
+  }
   const idx = db.users.findIndex((u) => u.id === user.id || u.email.toLowerCase() === user.email.toLowerCase());
   if (idx >= 0) db.users[idx] = user;
   else db.users.push(user);
@@ -472,6 +539,7 @@ export async function upsertUser(user: StoredUser) {
     db.wallets.push(wallet);
   }
   await persistAccount(user, wallet);
+  await claimHandle(user.lbpayId, user.id);
   await saveDb(db);
   return user;
 }

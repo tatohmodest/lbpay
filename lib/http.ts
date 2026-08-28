@@ -20,4 +20,6 @@ export type AuthApiResponse = {
   error?: string;
   step?: "otp" | "pin" | "pin-setup" | "reset";
   email?: string;
+  suggestion?: string;
+  lbpayId?: string;
 };

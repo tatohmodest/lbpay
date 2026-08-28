@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -15,6 +15,8 @@ import { useApp } from "@/lib/store";
 import { useQueryClient } from "@tanstack/react-query";
 import { cameroonMsisdn } from "@/lib/phone";
 import { secondsLeft, useNow } from "@/lib/use-now";
+import { normalizeHandle } from "@/lib/handle";
+import { slugify } from "@/lib/format";
 
 export function AuthForm({
   mode,
@@ -29,6 +31,9 @@ export function AuthForm({
   const { login, unlockPin } = useApp();
   const [step, setStep] = useState<"form" | "pin">("form");
   const [name, setName] = useState("");
+  const [handle, setHandle] = useState("");
+  const [handleEdited, setHandleEdited] = useState(false);
+  const [handleTaken, setHandleTaken] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
@@ -38,6 +43,20 @@ export function AuthForm({
   const [loading, setLoading] = useState(false);
   const now = useNow(lockedUntil > 0);
   const pinWait = secondsLeft(lockedUntil, now);
+
+  useEffect(() => {
+    if (mode !== "signup" || handle.length < 2) return;
+    const timer = window.setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/wallet/lookup?q=${encodeURIComponent(handle)}`);
+        const data = (await res.json()) as { found?: boolean };
+        setHandleTaken(data.found ? `@${handle} is already taken.` : "");
+      } catch {
+        setHandleTaken("");
+      }
+    }, 400);
+    return () => window.clearTimeout(timer);
+  }, [handle, mode]);
 
   async function finishSession() {
     await queryClient.invalidateQueries({ queryKey: ["me"] });
@@ -55,10 +74,13 @@ export function AuthForm({
       const res = await fetch(mode === "login" ? "/api/auth/login" : "/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, phone, password, lbpayId: name }),
+        body: JSON.stringify({ name, email, phone, password, lbpayId: handle || name }),
       });
       const data = await readApiJson<AuthApiResponse>(res);
-      if (!res.ok) throw new Error(data.error || "Could not continue");
+      if (!res.ok) {
+        if (data.suggestion) setHandle(data.suggestion);
+        throw new Error(data.error || "Could not continue");
+      }
       if (data.step === "otp") {
         notify.info("Check your email", "We sent a 6-digit code.");
         router.push(`/verify?email=${encodeURIComponent(email)}`);
@@ -132,10 +154,38 @@ export function AuthForm({
                         autoComplete="name"
                         placeholder="Amina Ngo"
                         value={name}
-                        onChange={(e) => setName(e.target.value)}
+                        onChange={(e) => {
+                          const next = e.target.value;
+                          setName(next);
+                          if (!handleEdited) setHandle(slugify(next));
+                        }}
                         required
                       />
                     </Field>
+                    <Field
+                      label="LBPay ID"
+                      hint="People send money to this ID. It has to be unique."
+                    >
+                      <div className="relative">
+                        <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 font-mono text-sm text-muted">
+                          @
+                        </span>
+                        <Input
+                          name="lbpayId"
+                          autoComplete="username"
+                          placeholder="modest-wilton"
+                          className="pl-8 font-mono"
+                          value={handle}
+                          onChange={(e) => {
+                            setHandleEdited(true);
+                            setHandleTaken("");
+                            setHandle(normalizeHandle(e.target.value));
+                          }}
+                          required
+                        />
+                      </div>
+                    </Field>
+                    {handleTaken ? <p className="text-sm font-medium text-danger">{handleTaken}</p> : null}
                     <Field label="Phone" hint="9-digit number, no +237">
                       <Input
                         name="tel"
@@ -184,7 +234,7 @@ export function AuthForm({
                   <p className="text-sm font-medium text-brand-deep">{notice}</p>
                 ) : null}
                 {error ? <p className="text-sm font-medium text-danger">{error}</p> : null}
-                <Button type="submit" disabled={loading}>
+                <Button type="submit" disabled={loading || (mode === "signup" && (handle.length < 2 || Boolean(handleTaken)))}>
                   {loading ? "Please wait…" : mode === "login" ? "Continue" : "Create account"}
                 </Button>
               </form>
