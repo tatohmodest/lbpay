@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -31,9 +31,6 @@ export function AuthForm({
   const { login, unlockPin } = useApp();
   const [step, setStep] = useState<"form" | "pin">("form");
   const [name, setName] = useState("");
-  const [handle, setHandle] = useState("");
-  const [handleEdited, setHandleEdited] = useState(false);
-  const [handleTaken, setHandleTaken] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
@@ -41,22 +38,19 @@ export function AuthForm({
   const [error, setError] = useState("");
   const [lockedUntil, setLockedUntil] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [idChoice, setIdChoice] = useState("");
+  const [idConflict, setIdConflict] = useState<{ taken: string; suggestion: string } | null>(null);
+  const [showHandleChange, setShowHandleChange] = useState(false);
   const now = useNow(lockedUntil > 0);
   const pinWait = secondsLeft(lockedUntil, now);
+  const autoId = slugify(name);
+  const previewId = idChoice || autoId;
 
-  useEffect(() => {
-    if (mode !== "signup" || handle.length < 2) return;
-    const timer = window.setTimeout(async () => {
-      try {
-        const res = await fetch(`/api/wallet/lookup?q=${encodeURIComponent(handle)}`);
-        const data = (await res.json()) as { found?: boolean };
-        setHandleTaken(data.found ? `@${handle} is already taken.` : "");
-      } catch {
-        setHandleTaken("");
-      }
-    }, 400);
-    return () => window.clearTimeout(timer);
-  }, [handle, mode]);
+  function resetHandleConflict() {
+    setIdChoice("");
+    setIdConflict(null);
+    setShowHandleChange(false);
+  }
 
   async function finishSession() {
     await queryClient.invalidateQueries({ queryKey: ["me"] });
@@ -66,21 +60,83 @@ export function AuthForm({
     router.push("/wallet");
   }
 
+  async function submitSignup(chosenId?: string) {
+    const handleToSend = normalizeHandle(chosenId || idChoice || autoId);
+    const res = await fetch("/api/auth/signup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, email, phone, password, lbpayId: handleToSend }),
+    });
+    const data = await readApiJson<AuthApiResponse>(res);
+    if (!res.ok) {
+      if (data.suggestion) {
+        setIdConflict({
+          taken: handleToSend,
+          suggestion: data.suggestion,
+        });
+        setIdChoice(data.suggestion);
+        setShowHandleChange(false);
+        setError("");
+        return null;
+      }
+      throw new Error(data.error || "Could not continue");
+    }
+    resetHandleConflict();
+    return data;
+  }
+
   async function submitForm(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError("");
     try {
-      const res = await fetch(mode === "login" ? "/api/auth/login" : "/api/auth/signup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, phone, password, lbpayId: handle || name }),
-      });
-      const data = await readApiJson<AuthApiResponse>(res);
-      if (!res.ok) {
-        if (data.suggestion) setHandle(data.suggestion);
-        throw new Error(data.error || "Could not continue");
+      if (mode === "login") {
+        const res = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        });
+        const data = await readApiJson<AuthApiResponse>(res);
+        if (!res.ok) throw new Error(data.error || "Could not continue");
+        if (data.step === "otp") {
+          notify.info("Check your email", "We sent a 6-digit code.");
+          router.push(`/verify?email=${encodeURIComponent(email)}`);
+          return;
+        }
+        if (data.step === "pin-setup") {
+          router.push("/pin/setup");
+          return;
+        }
+        setStep("pin");
+        return;
       }
+
+      const data = await submitSignup();
+      if (!data) return;
+      if (data.step === "otp") {
+        notify.info("Check your email", "We sent a 6-digit code.");
+        router.push(`/verify?email=${encodeURIComponent(email)}`);
+        return;
+      }
+      if (data.step === "pin-setup") {
+        router.push("/pin/setup");
+        return;
+      }
+      setStep("pin");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function useSuggestedId() {
+    if (!idConflict?.suggestion) return;
+    setLoading(true);
+    setError("");
+    try {
+      const data = await submitSignup(idConflict.suggestion);
+      if (!data) return;
       if (data.step === "otp") {
         notify.info("Check your email", "We sent a 6-digit code.");
         router.push(`/verify?email=${encodeURIComponent(email)}`);
@@ -155,37 +211,64 @@ export function AuthForm({
                         placeholder="Amina Ngo"
                         value={name}
                         onChange={(e) => {
-                          const next = e.target.value;
-                          setName(next);
-                          if (!handleEdited) setHandle(slugify(next));
+                          setName(e.target.value);
+                          resetHandleConflict();
                         }}
                         required
                       />
                     </Field>
-                    <Field
-                      label="LBPay ID"
-                      hint="People send money to this ID. It has to be unique."
-                    >
-                      <div className="relative">
-                        <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 font-mono text-sm text-muted">
-                          @
-                        </span>
-                        <Input
-                          name="lbpayId"
-                          autoComplete="username"
-                          placeholder="modest-wilton"
-                          className="pl-8 font-mono"
-                          value={handle}
-                          onChange={(e) => {
-                            setHandleEdited(true);
-                            setHandleTaken("");
-                            setHandle(normalizeHandle(e.target.value));
-                          }}
-                          required
-                        />
+                    {previewId ? (
+                      <div className="rounded-2xl bg-paper px-4 py-3">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">
+                          Your LBPay ID
+                        </p>
+                        <p className="mt-1 font-mono text-base font-semibold text-ink">@{previewId}</p>
+                        {!idConflict ? (
+                          <p className="mt-1 text-sm text-muted">
+                            Created from your name. You do not type it.
+                          </p>
+                        ) : null}
                       </div>
-                    </Field>
-                    {handleTaken ? <p className="text-sm font-medium text-danger">{handleTaken}</p> : null}
+                    ) : null}
+                    {idConflict ? (
+                      <div className="space-y-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                        <p className="text-sm font-medium text-ink">
+                          @{idConflict.taken} is already taken. @{idConflict.suggestion} is free.
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          <Button type="button" disabled={loading} onClick={() => void useSuggestedId()}>
+                            Use @{idConflict.suggestion}
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            disabled={loading}
+                            onClick={() => {
+                              setShowHandleChange(true);
+                              setIdChoice(idConflict.suggestion);
+                            }}
+                          >
+                            Change ID
+                          </Button>
+                        </div>
+                        {showHandleChange ? (
+                          <Field label="Choose another ID" hint="This one must not already exist.">
+                            <div className="relative">
+                              <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 font-mono text-sm text-muted">
+                                @
+                              </span>
+                              <Input
+                                name="lbpayId"
+                                className="pl-8 font-mono"
+                                placeholder={idConflict.suggestion}
+                                value={idChoice}
+                                onChange={(e) => setIdChoice(normalizeHandle(e.target.value))}
+                              />
+                            </div>
+                          </Field>
+                        ) : null}
+                      </div>
+                    ) : null}
                     <Field label="Phone" hint="9-digit number, no +237">
                       <Input
                         name="tel"
@@ -234,7 +317,7 @@ export function AuthForm({
                   <p className="text-sm font-medium text-brand-deep">{notice}</p>
                 ) : null}
                 {error ? <p className="text-sm font-medium text-danger">{error}</p> : null}
-                <Button type="submit" disabled={loading || (mode === "signup" && (handle.length < 2 || Boolean(handleTaken)))}>
+                <Button type="submit" disabled={loading}>
                   {loading ? "Please wait…" : mode === "login" ? "Continue" : "Create account"}
                 </Button>
               </form>

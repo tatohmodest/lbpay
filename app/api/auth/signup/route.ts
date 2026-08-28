@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { catchRoute, jsonError } from "@/lib/server/api";
 import {
   findUserByEmail,
-  findUserByHandle,
+  isHandleTaken,
   nextAvailableHandle,
   saveOtp,
   upsertUser,
@@ -31,17 +31,12 @@ export async function POST(request: Request) {
     if (!requested || requested.length < 2) {
       return jsonError("Choose an LBPay ID of at least 2 characters.");
     }
-    if (isReservedHandle(requested)) {
-      return jsonError("That LBPay ID is reserved. Choose another.");
-    }
-
     const existing = await findUserByEmail(email);
     if (existing?.emailVerified) {
       return jsonError("An account already exists for this email.", 409);
     }
 
-    const taken = await findUserByHandle(requested);
-    if (taken && taken.email !== email) {
+    if (isReservedHandle(requested) || (await isHandleTaken(requested, existing?.id))) {
       const suggestion = await nextAvailableHandle(requested, existing?.id);
       return NextResponse.json(
         {
@@ -73,7 +68,22 @@ export async function POST(request: Request) {
     user.phone = phone;
     user.lbpayId = handle;
     user.passwordHash = await hashSecret(password);
-    await upsertUser(user);
+    try {
+      await upsertUser(user);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "";
+      if (/already taken/i.test(message)) {
+        const suggestion = await nextAvailableHandle(handle, user.id);
+        return NextResponse.json(
+          {
+            error: `@${handle} is already taken. @${suggestion} is free.`,
+            suggestion,
+          },
+          { status: 409 },
+        );
+      }
+      throw err;
+    }
 
     const otp = randomOtp();
     await saveOtp({
