@@ -8,6 +8,7 @@ import { SessionGuard } from "@/components/auth/session-guard";
 import { InstallPrompt } from "@/components/pwa/install-prompt";
 import { PushPrompt } from "@/components/pwa/push-prompt";
 import { RegisterServiceWorker } from "@/components/pwa/register-sw";
+import { NotificationInbox } from "@/components/notification-inbox";
 
 export function AppProviders({ children }: { children: ReactNode }) {
   const [client] = useState(
@@ -27,6 +28,7 @@ export function AppProviders({ children }: { children: ReactNode }) {
           <SessionGuard>{children}</SessionGuard>
           <InstallPrompt />
           <PushPrompt />
+          <NotificationInbox />
         </AppProvider>
       </NotifyProvider>
     </QueryClientProvider>

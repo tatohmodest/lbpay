@@ -269,8 +269,7 @@ export function CheckoutPay({
             />
           </div>
         ) : null}
-        <Card className="relative overflow-hidden p-6">
-          <div className="absolute left-0 top-0 h-1 w-full bg-brand" />
+        <Card className="relative p-6">
           {slug ? (
             <>
               <p className="text-center text-[11px] font-bold uppercase tracking-wide text-muted">Pay this</p>

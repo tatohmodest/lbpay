@@ -7,6 +7,7 @@ import { Code2, Store, Wallet } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { Logo } from "@/components/logo";
 import { RightDrawer } from "@/components/ui/right-drawer";
+import { NotificationsButton } from "@/components/notifications-button";
 import { useMe } from "@/lib/hooks/wallet";
 import { productUnlocked } from "@/lib/roles";
 
@@ -123,10 +124,13 @@ export function ConsoleSidebar({
   return (
     <>
       <aside className="fixed bottom-0 left-0 top-0 z-40 hidden w-64 flex-col border-r border-line bg-white p-3 lg:flex">
-        <div className="mb-6 px-2 pt-3">
-          <Logo href="/" markClassName="h-8 w-8" />
-          <p className="mt-3 text-sm font-semibold text-ink">{title}</p>
-          <p className="text-xs text-muted">{subtitle}</p>
+        <div className="mb-6 flex items-start justify-between gap-2 px-2 pt-3">
+          <div>
+            <Logo href="/" markClassName="h-8 w-8" />
+            <p className="mt-3 text-sm font-semibold text-ink">{title}</p>
+            <p className="text-xs text-muted">{subtitle}</p>
+          </div>
+          <NotificationsButton className="mt-1" />
         </div>
         {cta ? (
           <Link

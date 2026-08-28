@@ -3,15 +3,15 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, Code2, Download, Menu, Shield, Store, Wallet, UserRound } from "lucide-react";
+import { Code2, Download, Menu, Shield, Store, Wallet, UserRound } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { RightDrawer } from "@/components/ui/right-drawer";
+import { NotificationsButton } from "@/components/notifications-button";
 import { useApp } from "@/lib/store";
 import { useMe } from "@/lib/hooks/wallet";
 import { cn } from "@/lib/cn";
 import { isAdmin, productUnlocked } from "@/lib/roles";
 import { openInstallPrompt, useStandaloneDisplay } from "@/lib/pwa";
-import { openPushPrompt } from "@/lib/push-client";
 import Image from "next/image";
 
 export function AppHeader({ onOpenMenu }: { onOpenMenu?: () => void }) {
@@ -90,14 +90,7 @@ export function AppHeader({ onOpenMenu }: { onOpenMenu?: () => void }) {
               <Download className="h-5 w-5" />
             </button>
           ) : null}
-          <button
-            type="button"
-            className="rounded-full p-2 text-muted hover:bg-brand-soft hover:text-brand"
-            aria-label="Transaction alerts"
-            onClick={() => openPushPrompt()}
-          >
-            <Bell className="h-5 w-5" />
-          </button>
+          <NotificationsButton />
           <Link
             href="/wallet/profile"
             className="hidden h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-line sm:flex"

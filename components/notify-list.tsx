@@ -5,7 +5,7 @@ import { formatXAF } from "@/lib/format";
 import { cn } from "@/lib/cn";
 import type { Notice } from "@/lib/notify";
 
-const icons = {
+export const NOTICE_ICONS = {
   success: CheckCircle2,
   error: XCircle,
   pending: LoaderCircle,
@@ -13,6 +13,15 @@ const icons = {
   "money-in": ArrowDownLeft,
   "money-out": ArrowUpRight,
 };
+
+export function noticeIconClass(kind: Notice["kind"]) {
+  if (kind === "error") return "bg-red-50 text-danger";
+  if (kind === "success") return "bg-brand-soft text-brand-dark";
+  if (kind === "money-in") return "bg-brand text-white";
+  if (kind === "money-out") return "bg-navy text-white";
+  if (kind === "pending") return "bg-amber-50 text-amber-700";
+  return "bg-paper text-brand";
+}
 
 export function AnimatePresence({
   notices,
@@ -24,29 +33,17 @@ export function AnimatePresence({
   return (
     <div className="pointer-events-none fixed inset-x-0 top-4 z-[90] flex flex-col items-center gap-2 px-4 md:inset-x-auto md:right-4 md:items-end">
       {notices.map((notice) => {
-        const Icon = icons[notice.kind];
+        const Icon = NOTICE_ICONS[notice.kind];
         return (
           <div
             key={notice.id}
-            className={cn(
-              "pointer-events-auto lb-notice w-full max-w-sm overflow-hidden rounded-2xl border bg-white shadow-[0_18px_50px_rgba(15,31,23,0.16)]",
-              notice.kind === "error" && "border-red-200",
-              notice.kind === "success" && "border-brand/30",
-              notice.kind === "money-in" && "border-brand/40",
-              notice.kind === "money-out" && "border-navy/20",
-              notice.kind === "pending" && "border-amber-200",
-            )}
+            className="pointer-events-auto lb-notice w-full max-w-sm rounded-2xl border border-line bg-white shadow-[0_18px_50px_rgba(15,31,23,0.16)]"
           >
             <div className="flex gap-3 p-4">
               <div
                 className={cn(
                   "mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl",
-                  notice.kind === "error" && "bg-red-50 text-danger",
-                  notice.kind === "success" && "bg-brand-soft text-brand-dark",
-                  notice.kind === "money-in" && "bg-brand text-white",
-                  notice.kind === "money-out" && "bg-navy text-white",
-                  notice.kind === "pending" && "bg-amber-50 text-amber-700",
-                  notice.kind === "info" && "bg-paper text-brand",
+                  noticeIconClass(notice.kind),
                 )}
               >
                 <Icon className={cn("h-5 w-5", notice.kind === "pending" && "animate-spin")} />
@@ -70,12 +67,6 @@ export function AnimatePresence({
                 ) : null}
               </div>
             </div>
-            <div
-              className={cn(
-                "h-1 w-full",
-                notice.kind === "error" ? "bg-danger" : "bg-brand",
-              )}
-            />
           </div>
         );
       })}

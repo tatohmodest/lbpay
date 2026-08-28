@@ -1,4 +1,4 @@
-const CACHE = "lbpay-shell-v4";
+const CACHE = "lbpay-shell-v5";
 const PRECACHE = [
   "/icons/icon-192.png",
   "/icons/icon-512.png",
@@ -58,15 +58,27 @@ self.addEventListener("push", (event) => {
     }
   }
   event.waitUntil(
-    self.registration.showNotification(data.title || "LBPay", {
-      body: data.body || "You have a new update.",
-      icon: "/icons/icon-192.png",
-      badge: "/icons/icon-192.png",
-      data: { url: data.url || "/wallet" },
-      tag: data.tag || "lbpay",
-      renotify: true,
-      vibrate: [80, 40, 80],
-    }),
+    Promise.all([
+      self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
+        clients.forEach((client) => {
+          client.postMessage({
+            type: "LB_NOTIFY",
+            title: data.title,
+            body: data.body,
+            url: data.url,
+          });
+        });
+      }),
+      self.registration.showNotification(data.title || "LBPay", {
+        body: data.body || "You have a new update.",
+        icon: "/icons/icon-192.png",
+        badge: "/icons/icon-192.png",
+        data: { url: data.url || "/wallet" },
+        tag: data.tag || "lbpay",
+        renotify: true,
+        vibrate: [80, 40, 80],
+      }),
+    ]),
   );
 });
 
