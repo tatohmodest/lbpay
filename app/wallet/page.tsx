@@ -20,6 +20,7 @@ import { formatDate, formatXAF, isMoneyOut } from "@/lib/format";
 import { useApp } from "@/lib/store";
 import { useMe } from "@/lib/hooks/wallet";
 import { VerifyPrompt } from "@/components/verify-prompt";
+import { CopyHandle } from "@/components/copy-handle";
 import type { Transaction } from "@/lib/types";
 
 const actions = [
@@ -82,9 +83,10 @@ export default function WalletPage() {
                 <span className="text-2xl font-semibold opacity-80">XAF</span>
               </h1>
             </div>
-            <div className="flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-sm font-mono">
-              @{state.user.lbpayId}
-            </div>
+            <CopyHandle
+              handle={me.data?.user?.lbpayId || state.user.lbpayId}
+              className="rounded-full bg-white/15 px-3 py-1 text-sm text-white hover:bg-white/25"
+            />
           </div>
           <div className="relative z-10 mt-8 grid grid-cols-2 gap-3">
             <Link href="/wallet/deposit">

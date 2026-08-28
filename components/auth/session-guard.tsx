@@ -31,6 +31,10 @@ function isPublic(path: string) {
   return PUBLIC.some((item) => (item === "/" ? path === "/" : path === item || path.startsWith(`${item}/`)));
 }
 
+function skipPinLock(path: string) {
+  return isPublic(path) || path === "/admin/otp" || path.startsWith("/admin/otp/");
+}
+
 export function SessionGuard({ children }: { children: React.ReactNode }) {
   const path = usePathname();
   const router = useRouter();
@@ -75,6 +79,7 @@ export function SessionGuard({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!me.data?.session) return;
+    if (skipPinLock(path)) return;
     let timer: number;
     const bump = () => {
       window.clearTimeout(timer);
@@ -91,10 +96,11 @@ export function SessionGuard({ children }: { children: React.ReactNode }) {
       window.clearTimeout(timer);
       events.forEach((event) => window.removeEventListener(event, bump));
     };
-  }, [me.data?.session, lockPin]);
+  }, [me.data?.session, lockPin, path]);
 
   useEffect(() => {
     if (!me.data?.session) return;
+    if (skipPinLock(path)) return;
     const lockIfAway = () => {
       if (hiddenAt.current && Date.now() - hiddenAt.current > HIDDEN_LOCK_MS) {
         lockPin();
@@ -118,7 +124,7 @@ export function SessionGuard({ children }: { children: React.ReactNode }) {
       window.removeEventListener("pagehide", onHide);
       window.removeEventListener("pageshow", onShow);
     };
-  }, [me.data?.session, lockPin]);
+  }, [me.data?.session, lockPin, path]);
 
   const submitPin = useCallback(
     async (value: string) => {
@@ -147,7 +153,7 @@ export function SessionGuard({ children }: { children: React.ReactNode }) {
 
   const now = useNow(lockedUntil > 0);
   const pinWait = secondsLeft(lockedUntil, now);
-  const showLock = Boolean(me.data?.session && !state.pinUnlocked && !isPublic(path));
+  const showLock = Boolean(me.data?.session && !state.pinUnlocked && !skipPinLock(path));
 
   return (
     <>

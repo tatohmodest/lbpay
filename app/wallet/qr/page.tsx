@@ -7,6 +7,7 @@ import { PayQR } from "@/components/qr";
 import { useApp } from "@/lib/store";
 import { payHandleUrl } from "@/lib/origin";
 import { useBrowserOrigin } from "@/lib/use-origin";
+import { CopyHandle } from "@/components/copy-handle";
 
 export default function WalletQrPage() {
   const { state } = useApp();
@@ -28,7 +29,7 @@ export default function WalletQrPage() {
       <p className="mt-1 text-sm text-muted">Let anyone scan and pay you instantly.</p>
       <Card className="mt-6 flex flex-col items-center bg-navy p-8 text-white">
         {payUrl ? <PayQR value={payUrl} /> : <div className="h-[180px] w-[180px] rounded-2xl bg-white/10" />}
-        <p className="mt-4 font-mono">@{handle}</p>
+        <CopyHandle handle={handle} className="mt-4 text-white hover:text-white/80" />
         <p className="mt-2 break-all font-mono text-xs text-white/70">{payUrl || "Preparing your pay link…"}</p>
         <Button className="mt-4" variant="secondary" onClick={() => void copyUrl()} disabled={!payUrl}>
           {copied ? "Copied" : "Copy pay link"}

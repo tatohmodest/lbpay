@@ -76,7 +76,7 @@ export async function readSession() {
   return parsed;
 }
 
-export async function createAdminSession(userId: string, maxAgeSec = 20 * 60) {
+export async function createAdminSession(userId: string, maxAgeSec = 8 * 60 * 60) {
   const exp = Date.now() + maxAgeSec * 1000;
   const token = signValue(JSON.stringify({ userId, exp, scope: "admin" }), secret());
   const jar = await cookies();

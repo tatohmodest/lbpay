@@ -49,6 +49,9 @@ export function AdminLayoutClient({ children }: { children: React.ReactNode }) {
       </div>
     );
   }
+  if (session.data?.needOtp && path !== "/admin/otp") {
+    return <p className="grid min-h-screen place-items-center text-sm text-muted">Opening admin…</p>;
+  }
   if (path === "/admin/otp") return <>{children}</>;
 
   return (

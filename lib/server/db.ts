@@ -499,37 +499,48 @@ export async function recordLedgerMove(params: {
 }
 
 export function resetOtpKey(email: string) {
-  return `reset:${email.trim().toLowerCase()}`;
+  return `reset:${normalizeOtpKey(email)}`;
 }
 
 export function pinResetOtpKey(email: string) {
-  return `pinreset:${email.trim().toLowerCase()}`;
+  return `pinreset:${normalizeOtpKey(email)}`;
+}
+
+export function adminOtpKey(email: string) {
+  return `admin:${normalizeOtpKey(email)}`;
+}
+
+function normalizeOtpKey(email: string) {
+  return email.trim().toLowerCase();
 }
 
 export async function saveOtp(otp: StoredOtp) {
+  const email = normalizeOtpKey(otp.email);
   const db = await getDb();
-  db.otps = db.otps.filter((item) => item.email !== otp.email && item.exp > Date.now());
-  db.otps.push(otp);
+  db.otps = db.otps.filter((item) => normalizeOtpKey(item.email) !== email && item.exp > Date.now());
+  db.otps.push({ ...otp, email });
   await saveDb(db);
 }
 
 export async function takeOtp(email: string) {
+  const key = normalizeOtpKey(email);
   const db = await getDb();
-  const otp = db.otps.find((item) => item.email === email.toLowerCase());
-  return otp ?? null;
+  return db.otps.find((item) => normalizeOtpKey(item.email) === key) ?? null;
 }
 
 export async function bumpOtpAttempt(email: string) {
+  const key = normalizeOtpKey(email);
   const db = await getDb();
-  const otp = db.otps.find((item) => item.email === email.toLowerCase());
+  const otp = db.otps.find((item) => normalizeOtpKey(item.email) === key);
   if (otp) otp.attempts += 1;
   await saveDb(db);
   return otp;
 }
 
 export async function clearOtp(email: string) {
+  const key = normalizeOtpKey(email);
   const db = await getDb();
-  db.otps = db.otps.filter((item) => item.email !== email.toLowerCase());
+  db.otps = db.otps.filter((item) => normalizeOtpKey(item.email) !== key);
   await saveDb(db);
 }
 

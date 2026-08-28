@@ -50,7 +50,7 @@ export function DocsContent() {
           <li>Personal: wallet. Verify your account from Profile when you want business benefits.</li>
           <li>Business: merchant console. Available after your account is verified.</li>
           <li>Developer: apply from Profile. Portal, sandbox keys, and live keys unlock after approval.</li>
-          <li>Admin: platform operators. Entering /admin always requires a fresh email OTP.</li>
+          <li>Admin: platform operators. Entering /admin asks for an email OTP. That operator session lasts about 8 hours.</li>
         </ul>
         <h2 className="text-xl font-semibold">Authentication</h2>
         <p>Send your secret key as a Bearer token.</p>

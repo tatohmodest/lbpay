@@ -12,6 +12,7 @@ import { useApp } from "@/lib/store";
 import { useMe } from "@/lib/hooks/wallet";
 import { useNotify } from "@/lib/notify";
 import { isAdmin, productUnlocked } from "@/lib/roles";
+import { CopyHandle } from "@/components/copy-handle";
 import { disablePush, enablePush, openPushPrompt, pushPermission, pushSupported } from "@/lib/push-client";
 
 export default function ProfilePage() {
@@ -34,7 +35,7 @@ export default function ProfilePage() {
           className="mx-auto h-24 w-24 rounded-full object-cover"
         />
         <h1 className="mt-4 text-2xl font-black">{state.user.name}</h1>
-        <p className="font-mono text-brand">@{state.user.lbpayId}</p>
+        <CopyHandle handle={me.data?.user?.lbpayId || state.user.lbpayId} className="mt-1 text-brand hover:text-brand-dark" />
         <p className="mt-1 text-sm text-muted">
           {state.user.phone} · {user?.status || "active"}
         </p>

@@ -16,20 +16,26 @@ export default function AdminOtpPage() {
   const [otp, setOtp] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [sending, setSending] = useState(false);
 
   async function requestCode() {
+    setSending(true);
+    setError("");
     const res = await fetch("/api/admin/otp/request", { method: "POST" });
     const data = await res.json().catch(() => ({}));
+    setSending(false);
     if (!res.ok) {
       notify.error("Could not send code", data.error || "Try again");
+      setError(data.error || "Could not send the code");
       return;
     }
-    notify.success("Code sent", "Check the admin email inbox.");
+    notify.success("Check your email", data.message || "We sent a 6-digit admin code.");
   }
 
   async function verify(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
+    setError("");
     const res = await fetch("/api/admin/otp/verify", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -42,7 +48,7 @@ export default function AdminOtpPage() {
       return;
     }
     await client.invalidateQueries({ queryKey: ["admin-session"] });
-    notify.success("Admin unlocked", "You have a 20 minute operator session.");
+    notify.success("Admin unlocked", "You can work in the console.");
     router.replace("/admin");
   }
 
@@ -51,13 +57,15 @@ export default function AdminOtpPage() {
       <Logo href="/wallet" />
       <h1 className="mt-10 text-3xl font-black">Admin verification</h1>
       <p className="mt-2 text-sm text-muted">
-        Operator access needs a fresh email OTP every time you enter this console.
+        Send a code to the admin email, then enter it here. Checking that inbox will not lock you out
+        with a PIN screen.
       </p>
       <Card className="mt-8 p-6">
         <form className="flex flex-col gap-4" onSubmit={verify}>
           <Field label="6-digit code">
             <Input
               inputMode="numeric"
+              autoComplete="one-time-code"
               className="text-center font-mono text-2xl tracking-[0.4em]"
               value={otp}
               onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
@@ -68,8 +76,8 @@ export default function AdminOtpPage() {
           <Button type="submit" disabled={loading || otp.length !== 6}>
             Open admin
           </Button>
-          <Button type="button" variant="ghost" onClick={requestCode}>
-            Send code to my email
+          <Button type="button" variant="ghost" disabled={sending} onClick={() => void requestCode()}>
+            {sending ? "Sending…" : "Send code to my email"}
           </Button>
         </form>
       </Card>
