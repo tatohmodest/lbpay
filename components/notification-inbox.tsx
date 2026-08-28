@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { Bell, X } from "lucide-react";
+import { Bell, X, Trash } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NOTICE_ICONS, noticeIconClass } from "@/components/notify-list";
 import { formatXAF } from "@/lib/format";
@@ -18,7 +18,7 @@ function timeAgo(createdAt: number) {
 }
 
 export function NotificationInbox() {
-  const { inbox, inboxOpen, closeInbox } = useNotify();
+  const { inbox, inboxOpen, closeInbox, removeFromInbox } = useNotify();
 
   useEffect(() => {
     if (!inboxOpen) return;
@@ -100,9 +100,19 @@ export function NotificationInbox() {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-start justify-between gap-2">
                         <p className="font-semibold text-ink">{item.title}</p>
-                        {!item.read ? (
-                          <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-navy" />
-                        ) : null}
+                        <div className="flex items-center gap-2">
+                          {!item.read ? (
+                            <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-navy" />
+                          ) : null}
+                          <button
+                            type="button"
+                            aria-label="Delete"
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-full text-rose-600"
+                            onClick={() => removeFromInbox(item.id)}
+                          >
+                            <Trash className="h-4 w-4" />
+                          </button>
+                        </div>
                       </div>
                       <p className="mt-0.5 text-sm leading-5 text-muted">{item.message}</p>
                       {item.amount != null ? (

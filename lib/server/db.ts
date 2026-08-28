@@ -1035,6 +1035,29 @@ export async function listLinks(userId: string) {
   return db.links.filter((item) => item.userId === userId).map(normalizeStoredLink);
 }
 
+export async function updateLink(userId: string, idOrSlug: string, changes: Partial<StoredLink>) {
+  const db = await getDb();
+  const idx = db.links.findIndex((item) => item.id === idOrSlug || item.slug === idOrSlug);
+  if (idx === -1) return null;
+  const link = db.links[idx];
+  if (link.userId !== userId) throw new Error("Not authorized");
+  const patched: StoredLink = normalizeStoredLink({ ...link, ...changes });
+  db.links[idx] = patched;
+  await saveDb(db);
+  return normalizeStoredLink(patched);
+}
+
+export async function deleteLink(userId: string, idOrSlug: string) {
+  const db = await getDb();
+  const idx = db.links.findIndex((item) => item.id === idOrSlug || item.slug === idOrSlug);
+  if (idx === -1) return false;
+  const link = db.links[idx];
+  if (link.userId !== userId) throw new Error("Not authorized");
+  db.links.splice(idx, 1);
+  await saveDb(db);
+  return true;
+}
+
 export async function findLinkBySlug(slug: string) {
   const db = await getDb();
   const link = db.links.find((item) => item.slug === slug) ?? null;

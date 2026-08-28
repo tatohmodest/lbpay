@@ -5,8 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
     id: "/",
     name: "LBPay",
     short_name: "LBPay",
-    description:
-      "Send, receive, and collect XAF across MTN Mobile Money, Orange Money, cards, and the LBPay wallet.",
+    description: "Send, receive, and collect XAF across MTN Mobile Money, Orange Money, and the LBPay wallet. (Cards coming soon)",
     start_url: "/wallet",
     scope: "/",
     display: "standalone",

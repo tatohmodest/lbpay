@@ -50,7 +50,7 @@ export default function RequestPage() {
       <div>
         <h1 className="text-2xl font-black">Request money</h1>
         <p className="mt-1 text-sm text-muted">
-          Share a link. They pay with Mobile Money, wallet, or card.
+          Share a link. They pay with Mobile Money or wallet (cards coming soon).
         </p>
         <Card className="mt-6 p-6">
           <form

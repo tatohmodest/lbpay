@@ -110,6 +110,52 @@ export default function WalletLinksPage() {
                   <Link href={payLinkPath(link.slug)} className="text-sm font-bold text-brand">
                     Open checkout
                   </Link>
+                  <button
+                    type="button"
+                    className="text-sm text-rose-600"
+                    onClick={async () => {
+                      if (!confirm('Delete this payment link?')) return;
+                      try {
+                        const res = await fetch('/api/wallet/links', {
+                          method: 'DELETE',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ id: link.id }),
+                        });
+                        const json = await res.json();
+                        if (!res.ok) throw new Error(json.error || 'Failed to delete');
+                        client.invalidateQueries({ queryKey: ['wallet-links'] });
+                        notify.success('Deleted', 'Payment link removed.');
+                      } catch (err: unknown) {
+                        notify.error('Could not delete', err instanceof Error ? err.message : 'Failed');
+                      }
+                    }}
+                  >
+                    Delete
+                  </button>
+                  <button
+                    type="button"
+                    className="text-sm text-brand"
+                    onClick={async () => {
+                      const newTitle = prompt('New title', link.title) || link.title;
+                      const newAmountStr = prompt('New amount (leave empty for open)', link.amount ? String(link.amount) : '') ?? '';
+                      const newAmount = newAmountStr.trim() === '' ? null : Number(newAmountStr);
+                      try {
+                        const res = await fetch('/api/wallet/links', {
+                          method: 'PATCH',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ id: link.id, title: newTitle, amount: newAmount }),
+                        });
+                        const json = await res.json();
+                        if (!res.ok) throw new Error(json.error || 'Failed to update');
+                        client.invalidateQueries({ queryKey: ['wallet-links'] });
+                        notify.success('Updated', 'Payment link updated.');
+                      } catch (err: unknown) {
+                        notify.error('Could not update', err instanceof Error ? err.message : 'Failed');
+                      }
+                    }}
+                  >
+                    Edit
+                  </button>
                 </div>
               </div>
             </Card>

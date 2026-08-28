@@ -25,6 +25,7 @@ type NotifyApi = {
   inboxOpen: boolean;
   openInbox: () => void;
   closeInbox: () => void;
+  removeFromInbox: (id: string) => void;
   push: (notice: Omit<Notice, "id">) => void;
   dismiss: (id: string) => void;
   success: (title: string, message: string) => void;
@@ -94,6 +95,14 @@ export function NotifyProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const removeFromInbox = useCallback((id: string) => {
+    setInbox((prev) => {
+      const next = prev.filter((item) => item.id !== id);
+      saveInbox(next);
+      return next;
+    });
+  }, []);
+
   const push = useCallback(
     (notice: Omit<Notice, "id">) => {
       const id = `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
@@ -148,6 +157,7 @@ export function NotifyProvider({ children }: { children: ReactNode }) {
       inboxOpen,
       openInbox,
       closeInbox,
+      removeFromInbox,
       push,
       dismiss,
       success: (title, message) => push({ kind: "success", title, message }),

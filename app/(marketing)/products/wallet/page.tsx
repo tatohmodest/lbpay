@@ -15,7 +15,7 @@ export default function WalletProductPage() {
       image="/illustrations/hero-send-money.png"
       alt="LBPay personal wallet for sending money in Cameroon"
       points={[
-        "Deposits from MTN, Orange, or card",
+        "Deposits from MTN or Orange (card coming soon)",
         "Withdrawals to Mobile Money",
         "QR receive, payment links, and bill split",
       ]}

@@ -71,7 +71,7 @@ export function RoleGate({
         </h1>
         <p className="mt-2 text-sm text-muted">
           {kind === "developer"
-            ? "Accept payments in your app or website with MTN, Orange, cards, and wallet."
+            ? "Accept payments in your app or website with MTN, Orange, and wallet. (Cards coming soon)"
             : "WhatsApp sellers and branded shops can both collect. You do not need a tax ID."}
         </p>
         {kind === "developer" ? (

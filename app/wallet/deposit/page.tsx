@@ -21,7 +21,6 @@ import type { PaymentMethod } from "@/lib/types";
 const methods: { id: PaymentMethod; label: string }[] = [
   { id: "mtn", label: "MTN" },
   { id: "orange", label: "Orange" },
-  { id: "card", label: "Card" },
 ];
 
 export default function DepositPage() {
@@ -44,12 +43,12 @@ export default function DepositPage() {
   const clean = cameroonMsisdn(phone);
   const fee = depositFee(value);
   const payAmount = value + fee;
-  const ready = !amountIssue(value, "deposit") && value > 0 && (method === "card" || isCameroonMsisdn(clean));
+  const ready = !amountIssue(value, "deposit") && value > 0 && isCameroonMsisdn(clean);
   const ussdCode = method === "orange" ? "#150#" : "*126#";
 
   const details = [
-    { label: "From", value: method === "mtn" ? "MTN" : method === "orange" ? "Orange" : "Card" },
-    { label: "Number", value: method === "card" ? "Card" : clean },
+    { label: "From", value: method === "mtn" ? "MTN" : "Orange" },
+    { label: "Number", value: clean },
     { label: "Wallet receives", value: formatXAF(value) },
     ...(fee ? [{ label: "Charge", value: formatXAF(fee) }] : []),
     { label: "You pay", value: formatXAF(payAmount) },
@@ -120,12 +119,12 @@ export default function DepositPage() {
     try {
       const result = (await collect.mutateAsync({
         amount: value,
-        method: method === "orange" ? "orange" : method === "card" ? "card" : "mtn",
+        method: method === "orange" ? "orange" : "mtn",
         phone: clean,
         pin,
       })) as { hostedUrl?: string; status?: string; transactionId?: string };
       if (result.hostedUrl) {
-        notify.pending("Continue on checkout", "Complete the card payment to credit your wallet.");
+        notify.pending("Continue on checkout", "Complete the payment to credit your wallet.");
         window.location.assign(result.hostedUrl);
         return;
       }
@@ -151,8 +150,8 @@ export default function DepositPage() {
 
   return (
     <div className="mx-auto max-w-xl">
-      <h1 className="text-2xl font-black">Add money</h1>
-      <p className="mt-1 text-sm text-muted">Add money from MTN, Orange, or your card.</p>
+        <h1 className="text-2xl font-black">Add money</h1>
+          <p className="mt-1 text-sm text-muted">Add money from MTN or Orange. (Card coming soon)</p>
       {waiting ? (
         <Card className="mt-6 p-6 text-center">
           <p className="text-sm font-bold uppercase tracking-wide text-brand">Waiting for payment</p>
