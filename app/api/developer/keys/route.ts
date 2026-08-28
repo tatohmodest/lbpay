@@ -1,16 +1,18 @@
 import { NextResponse } from "next/server";
 import { listKeys, listLogs, listWebhooks, revokeApiKey } from "@/lib/server/db";
 import { requireKind } from "@/lib/server/guard";
-import { issueLiveKey, issueSandboxKey } from "@/lib/server/apikey";
+import { issueKeyForEnv } from "@/lib/server/apikey";
+import { isAdmin } from "@/lib/roles";
 
 export async function GET() {
   const auth = await requireKind("developer");
   if (auth.error || !auth.user) return auth.error!;
+  const liveReady = auth.user.kyc.developer === "verified" || isAdmin(auth.user);
   return NextResponse.json({
     keys: await listKeys(auth.user.id),
     logs: await listLogs(auth.user.id),
     webhooks: await listWebhooks(auth.user.id),
-    liveReady: auth.user.kyc.developer === "verified",
+    liveReady,
     kyc: auth.user.kyc.developer,
   });
 }
@@ -20,15 +22,10 @@ export async function POST(request: Request) {
   if (auth.error || !auth.user) return auth.error!;
   const body = await request.json().catch(() => ({}));
   const env = body.env === "live" ? "live" : "sandbox";
-  if (env === "live" && auth.user.kyc.developer !== "verified") {
-    return NextResponse.json(
-      { error: "Live keys are issued after developer KYC is approved." },
-      { status: 403 },
-    );
-  }
-  const issued = env === "live" ? await issueLiveKey(auth.user) : await issueSandboxKey(auth.user);
+  const issued = await issueKeyForEnv(auth.user, env);
   return NextResponse.json({
     ok: true,
+    id: issued.id,
     env,
     publicKey: issued.publicKey,
     secret: issued.secret,

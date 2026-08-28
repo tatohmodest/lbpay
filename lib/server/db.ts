@@ -958,6 +958,39 @@ export async function addApiKey(key: StoredApiKey) {
   return key;
 }
 
+export async function regenerateApiKey(
+  userId: string,
+  env: "sandbox" | "live",
+  issued: { publicKey: string; secretHash: string; secretMasked: string },
+) {
+  const db = await getDb();
+  const owned = db.keys.filter((item) => item.userId === userId && item.env === env);
+  const current =
+    owned.find((item) => !item.revokedAt) ||
+    [...owned].sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))[0];
+  if (current) {
+    current.publicKey = issued.publicKey;
+    current.secretHash = issued.secretHash;
+    current.secretMasked = issued.secretMasked;
+    current.createdAt = new Date().toISOString();
+    delete current.revokedAt;
+    await saveDb(db);
+    return current;
+  }
+  const created: StoredApiKey = {
+    id: uid("key"),
+    userId,
+    env,
+    publicKey: issued.publicKey,
+    secretHash: issued.secretHash,
+    secretMasked: issued.secretMasked,
+    createdAt: new Date().toISOString(),
+  };
+  db.keys.unshift(created);
+  await saveDb(db);
+  return created;
+}
+
 export async function revokeApiKey(id: string, userId: string) {
   const db = await getDb();
   const key = db.keys.find((item) => item.id === id && item.userId === userId);

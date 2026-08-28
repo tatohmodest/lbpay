@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
-import { addApiKey, addLog, findKeyBySecret, findUserById, getWallet } from "@/lib/server/db";
+import { addLog, findKeyBySecret, findUserById, getWallet, regenerateApiKey } from "@/lib/server/db";
 import { issueApiKey } from "@/lib/server/crypto";
 import { uid } from "@/lib/format";
 import type { StoredUser } from "@/lib/server/db";
 import { getPaymentRail } from "@/lib/providers";
 import type { PaymentRail } from "@/lib/providers/types";
+import { isAdmin } from "@/lib/roles";
 
 export async function authenticateApiKey(request: Request): Promise<
   | { ok: true; user: StoredUser; env: "sandbox" | "live" }
@@ -23,7 +24,7 @@ export async function authenticateApiKey(request: Request): Promise<
   if (!user || user.status === "frozen") {
     return { ok: false, error: NextResponse.json({ error: "Account unavailable" }, { status: 403 }) };
   }
-  if (key.env === "live" && user.kyc.developer !== "verified") {
+  if (key.env === "live" && user.kyc.developer !== "verified" && !isAdmin(user)) {
     return {
       ok: false,
       error: NextResponse.json({ error: "Live keys need approved developer KYC." }, { status: 403 }),
@@ -36,32 +37,22 @@ export function railForEnv(env: "sandbox" | "live"): PaymentRail {
   return getPaymentRail(env);
 }
 
-export async function issueSandboxKey(user: StoredUser) {
-  const issued = await issueApiKey("sandbox");
-  await addApiKey({
-    id: uid("key"),
-    userId: user.id,
-    env: "sandbox",
+export async function issueKeyForEnv(user: StoredUser, env: "sandbox" | "live") {
+  const issued = await issueApiKey(env);
+  const row = await regenerateApiKey(user.id, env, {
     publicKey: issued.publicKey,
     secretHash: issued.secretHash,
     secretMasked: issued.secretMasked,
-    createdAt: new Date().toISOString(),
   });
-  return issued;
+  return { ...issued, id: row.id, env };
+}
+
+export async function issueSandboxKey(user: StoredUser) {
+  return issueKeyForEnv(user, "sandbox");
 }
 
 export async function issueLiveKey(user: StoredUser) {
-  const issued = await issueApiKey("live");
-  await addApiKey({
-    id: uid("key"),
-    userId: user.id,
-    env: "live",
-    publicKey: issued.publicKey,
-    secretHash: issued.secretHash,
-    secretMasked: issued.secretMasked,
-    createdAt: new Date().toISOString(),
-  });
-  return issued;
+  return issueKeyForEnv(user, "live");
 }
 
 export async function logApi(userId: string, method: "GET" | "POST" | "PUT" | "DELETE", path: string, status: number) {
