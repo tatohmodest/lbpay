@@ -4,12 +4,14 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { PaymentLinkForm } from "@/components/payment-link-form";
+import { ProductLinkFrame } from "@/components/product-link-frame";
 import { formatXAF } from "@/lib/format";
 import { useNotify } from "@/lib/notify";
 import { copyText } from "@/lib/clipboard";
 import { payLinkPath, payLinkUrl } from "@/lib/origin";
 import { useBrowserOrigin } from "@/lib/use-origin";
 import { useMe } from "@/lib/hooks/wallet";
+import { linkTemplateMeta } from "@/lib/link-templates";
 
 type LinkRow = {
   id: string;
@@ -54,31 +56,41 @@ export default function WalletLinksPage() {
   });
 
   return (
-    <div className="mx-auto max-w-4xl">
+    <div className="mx-auto max-w-5xl">
       <h1 className="text-2xl font-black">Payment links</h1>
       <p className="mt-1 text-sm text-muted">A checkout anyone can open and pay.</p>
       <Card className="mt-6 p-6">
-        <PaymentLinkForm
-          merchantName={me.data?.user?.businessName || me.data?.user?.name}
-          submitting={create.isPending}
-          onSubmit={(input) => create.mutateAsync(input)}
-        />
+        <h2 className="text-lg font-black">New product link</h2>
+        <p className="mt-1 text-sm text-muted">
+          Add a photo and pick a finance template before you share the checkout.
+        </p>
+        <div className="mt-5">
+          <PaymentLinkForm
+            merchantName={me.data?.user?.businessName || me.data?.user?.name}
+            submitting={create.isPending}
+            onSubmit={(input) => create.mutateAsync(input)}
+          />
+        </div>
       </Card>
       <div className="mt-4 space-y-3">
         {(data.data?.links || []).map((link) => {
           const url = payLinkUrl(link.slug, origin);
+          const template = linkTemplateMeta(link.template);
           return (
             <Card key={link.id} className="flex items-center gap-4 p-4">
-              {link.imageUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={link.imageUrl} alt="" className="h-16 w-16 rounded-2xl object-cover" />
-              ) : (
-                <div className="grid h-16 w-16 place-items-center rounded-2xl bg-brand-soft text-xs font-semibold text-brand-deep">
-                  LBPay
-                </div>
-              )}
+              <div className="w-28 shrink-0">
+                <ProductLinkFrame
+                  compact
+                  template={link.template}
+                  title={link.title}
+                  amount={link.amount}
+                  merchantName={me.data?.user?.businessName || me.data?.user?.name}
+                  imageUrl={link.imageUrl}
+                />
+              </div>
               <div className="min-w-0 flex-1">
                 <p className="font-semibold">{link.title}</p>
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted">{template.name}</p>
                 <p className="truncate font-mono text-xs text-muted">{url}</p>
               </div>
               <div className="text-right">

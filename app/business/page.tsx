@@ -1,15 +1,19 @@
 "use client";
 
+import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { MethodDot, StatusBadge } from "@/components/ui/badge";
 import { PayQR } from "@/components/qr";
 import { PaymentLinkForm } from "@/components/payment-link-form";
+import { ProductLinkFrame } from "@/components/product-link-frame";
 import { formatDate, formatXAF } from "@/lib/format";
+import { copyText } from "@/lib/clipboard";
 import { useNotify } from "@/lib/notify";
 import { useMe } from "@/lib/hooks/wallet";
-import { payHandleUrl } from "@/lib/origin";
+import { payHandleUrl, payLinkPath, payLinkUrl } from "@/lib/origin";
 import { useBrowserOrigin } from "@/lib/use-origin";
+import { linkTemplateMeta } from "@/lib/link-templates";
 
 export default function BusinessPage() {
   const notify = useNotify();
@@ -25,7 +29,14 @@ export default function BusinessPage() {
       return json as {
         businessName: string;
         revenue: number;
-        links: Array<{ id: string; slug: string; title: string; amount: number | null }>;
+        links: Array<{
+          id: string;
+          slug: string;
+          title: string;
+          amount: number | null;
+          imageUrl?: string;
+          template?: string;
+        }>;
         collections: Array<{
           id: string;
           createdAt: string;
@@ -83,16 +94,64 @@ export default function BusinessPage() {
           <p className="mt-3 font-mono text-3xl font-bold">{links.length}</p>
         </Card>
       </div>
-      <div className="mb-6 grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <Card className="p-5">
-          <h2 className="mb-4 text-xs font-bold uppercase tracking-wide">Generate payment link</h2>
-          <PaymentLinkForm
-            preview={false}
-            merchantName={data.data?.businessName}
-            submitting={create.isPending}
-            onSubmit={(input) => create.mutateAsync(input)}
-          />
+      <div className="mb-6">
+        <Card className="p-5 md:p-6">
+          <h2 className="text-lg font-black">Product payment link</h2>
+          <p className="mt-1 text-sm text-muted">
+            Add a photo, pick a finance template, then share the checkout link.
+          </p>
+          <div className="mt-5">
+            <PaymentLinkForm
+              merchantName={data.data?.businessName}
+              submitting={create.isPending}
+              onSubmit={(input) => create.mutateAsync(input)}
+            />
+          </div>
         </Card>
+      </div>
+      {links.length > 0 ? (
+        <div className="mb-6">
+          <h2 className="mb-3 text-lg font-black">Your product links</h2>
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {links.map((link) => {
+              const url = payLinkUrl(link.slug, origin);
+              const template = linkTemplateMeta(link.template);
+              return (
+                <Card key={link.id} className="overflow-hidden p-3">
+                  <ProductLinkFrame
+                    template={link.template}
+                    title={link.title}
+                    amount={link.amount}
+                    merchantName={data.data?.businessName}
+                    imageUrl={link.imageUrl}
+                  />
+                  <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-muted">
+                    {template.name}
+                  </p>
+                  <p className="mt-1 truncate font-mono text-xs text-muted">{url}</p>
+                  <div className="mt-3 flex gap-3">
+                    <button
+                      type="button"
+                      className="text-sm font-bold text-brand"
+                      onClick={() =>
+                        copyText(url)
+                          .then(() => notify.success("Copied", "Share this link."))
+                          .catch((err: Error) => notify.error("Could not copy", err.message))
+                      }
+                    >
+                      Copy link
+                    </button>
+                    <Link href={payLinkPath(link.slug)} className="text-sm font-bold text-brand">
+                      Open checkout
+                    </Link>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
+      <div className="mb-6">
         <Card className="flex flex-col items-center bg-navy p-6 text-white">
           <h2 className="text-2xl font-bold">Scan to pay</h2>
           <div className="mt-4">
