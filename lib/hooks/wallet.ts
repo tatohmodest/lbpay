@@ -20,6 +20,7 @@ export type MeResponse = {
     status: "active" | "frozen";
     kyc: { personal: string; business: string; developer: string };
     businessName?: string;
+    businessKind?: "small" | "branded";
   };
   balance?: number;
   adminStep?: boolean;

@@ -11,6 +11,7 @@ export async function GET() {
   const revenue = txs.filter((tx) => tx.status === "success").reduce((sum, tx) => sum + tx.amount, 0);
   return NextResponse.json({
     businessName: auth.user.businessName || auth.user.name,
+    businessKind: auth.user.businessKind || null,
     links,
     collections: txs,
     revenue,

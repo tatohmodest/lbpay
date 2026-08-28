@@ -65,6 +65,7 @@ export function SessionGuard({ children }: { children: React.ReactNode }) {
           developer: "unverified",
         },
         businessName: me.data.user.businessName,
+        businessKind: me.data.user.businessKind,
       },
       balance: me.data.balance ?? 0,
       transactions: (me.data.transactions as Transaction[]) || [],

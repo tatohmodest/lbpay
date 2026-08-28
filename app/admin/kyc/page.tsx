@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Field, Input } from "@/components/ui/input";
 import { useNotify } from "@/lib/notify";
+import { businessKindLabel } from "@/lib/kyc";
 import { useState } from "react";
 
 type KycApp = {
@@ -14,6 +15,9 @@ type KycApp = {
   legalName: string;
   idNumber: string;
   businessName?: string;
+  businessKind?: string;
+  taxId?: string;
+  note?: string;
   documentType?: string;
   website?: string;
   documents?: {
@@ -73,7 +77,7 @@ export default function AdminKycPage() {
     <div>
       <h1 className="text-2xl font-black">KYC review</h1>
       <p className="text-sm text-muted">
-        Check ID photos, then approve personal, business, or live developer access.
+        Check personal ID photos. For business, approve small or branded shops. Tax ID is optional.
       </p>
       <div className="mt-6 space-y-3">
         {(apps.data?.applications || []).map((app: KycApp) => (
@@ -82,17 +86,40 @@ export default function AdminKycPage() {
               <div>
                 <p className="text-xs font-bold uppercase text-brand">
                   {app.track} · {app.status}
-                  {app.documentType ? ` · ${app.documentType.replace("_", " ")}` : ""}
+                  {app.track === "business" && app.businessKind
+                    ? ` · ${app.businessKind}`
+                    : app.documentType
+                      ? ` · ${app.documentType.replace("_", " ")}`
+                      : ""}
                 </p>
                 <p className="mt-1 font-bold">
                   {app.user?.name} · @{app.user?.lbpayId}
                 </p>
                 <p className="text-xs text-muted">{app.user?.email}</p>
-                <p className="mt-2 text-sm">
-                  ID {app.idNumber} · {app.legalName}
-                </p>
-                {app.businessName ? <p className="text-sm text-muted">{app.businessName}</p> : null}
-                {app.website ? <p className="text-sm text-muted">{app.website}</p> : null}
+                {app.track === "business" ? (
+                  <>
+                    <p className="mt-2 text-sm font-semibold">
+                      {businessKindLabel(app.businessKind)}
+                      {app.businessName ? ` · ${app.businessName}` : ""}
+                    </p>
+                    {app.note ? <p className="text-sm text-muted">{app.note}</p> : null}
+                    {app.taxId ? (
+                      <p className="text-sm text-muted">Tax ID {app.taxId}</p>
+                    ) : app.businessKind === "branded" ? (
+                      <p className="text-sm text-muted">No tax ID given</p>
+                    ) : null}
+                    {app.website ? <p className="text-sm text-muted">{app.website}</p> : null}
+                    <p className="mt-1 text-xs text-muted">Person already verified · {app.legalName}</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="mt-2 text-sm">
+                      ID {app.idNumber} · {app.legalName}
+                    </p>
+                    {app.businessName ? <p className="text-sm text-muted">{app.businessName}</p> : null}
+                    {app.website ? <p className="text-sm text-muted">{app.website}</p> : null}
+                  </>
+                )}
               </div>
             </div>
             {app.documents ? (
@@ -101,6 +128,8 @@ export default function AdminKycPage() {
                 <DocThumb url={app.documents.idBackUrl} label="Back" />
                 <DocThumb url={app.documents.selfieUrl} label="Holding ID" />
               </div>
+            ) : app.track === "business" ? (
+              <p className="mt-3 text-sm text-muted">Uses the personal ID already on file.</p>
             ) : (
               <p className="mt-3 text-sm text-muted">No identity photos on this application.</p>
             )}

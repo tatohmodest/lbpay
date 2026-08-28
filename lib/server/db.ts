@@ -7,6 +7,7 @@ import { handleBase, isReservedHandle, normalizeHandle, numberedHandle } from "@
 import { cameroonMsisdn } from "@/lib/phone";
 import { normalizeLinkTemplate } from "@/lib/link-templates";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import type { BusinessKind } from "@/lib/kyc";
 import type {
   AccountKind,
   AccountStatus,
@@ -38,6 +39,7 @@ export type StoredUser = {
   status: AccountStatus;
   kyc: Record<KycTrack, KycState>;
   businessName?: string;
+  businessKind?: BusinessKind;
   createdAt: string;
 };
 
@@ -79,6 +81,7 @@ export type KycApplication = {
   idNumber: string;
   phone: string;
   businessName?: string;
+  businessKind?: BusinessKind;
   taxId?: string;
   website?: string;
   documentType?: "national_id" | "passport";
@@ -324,6 +327,7 @@ function mergePrivileges(base: StoredUser, next: StoredUser): StoredUser {
     kyc,
     kycStatus: kyc.personal,
     businessName: newer.businessName || older.businessName,
+    businessKind: newer.businessKind || older.businessKind,
   };
 }
 
@@ -923,6 +927,7 @@ export async function reviewKycApplication(input: {
     if (reviewed.track === "business") {
       if (!user.roles.includes("business")) user.roles.push("business");
       user.businessName = reviewed.businessName || user.businessName;
+      user.businessKind = reviewed.businessKind || user.businessKind;
     }
     if (reviewed.track === "developer" && !user.roles.includes("developer")) {
       user.roles.push("developer");
@@ -1104,6 +1109,7 @@ export function publicUser(user: StoredUser) {
     status: normalized.status,
     kyc: normalized.kyc,
     businessName: normalized.businessName || "",
+    businessKind: normalized.businessKind,
   };
 }
 

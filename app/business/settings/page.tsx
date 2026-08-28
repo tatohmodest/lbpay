@@ -2,6 +2,7 @@
 
 import { Card } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
+import { businessKindLabel } from "@/lib/kyc";
 
 export default function BusinessSettingsPage() {
   const data = useQuery({
@@ -17,6 +18,12 @@ export default function BusinessSettingsPage() {
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-muted">Business name</p>
           <p className="mt-1 font-semibold">{data.data?.businessName || "n/a"}</p>
+        </div>
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted">Type</p>
+          <p className="mt-1 font-semibold">
+            {data.data?.businessKind ? businessKindLabel(data.data.businessKind) : "Business"}
+          </p>
         </div>
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-muted">Status</p>

@@ -3,6 +3,30 @@ export const KYC_IMAGE_KINDS = ["idFront", "idBack", "selfie"] as const;
 
 export type KycImageKind = (typeof KYC_IMAGE_KINDS)[number];
 export type KycDocumentType = "national_id" | "passport";
+export type BusinessKind = "small" | "branded";
+
+export const BUSINESS_KINDS = [
+  {
+    id: "small" as const,
+    name: "Small business",
+    blurb: "WhatsApp, a stall, or selling a few things online. No company papers.",
+    image: "/illustrations/small-business.png",
+  },
+  {
+    id: "branded" as const,
+    name: "Branded business",
+    blurb: "A named shop or registered company. Tax ID is optional.",
+    image: "/illustrations/branded-business.png",
+  },
+];
+
+export function isBusinessKind(value: unknown): value is BusinessKind {
+  return value === "small" || value === "branded";
+}
+
+export function businessKindLabel(value: unknown) {
+  return BUSINESS_KINDS.find((item) => item.id === value)?.name || "Business";
+}
 
 export type KycDocuments = {
   idFrontUrl: string;

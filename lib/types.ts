@@ -39,6 +39,7 @@ export type UserProfile = {
   status: AccountStatus;
   kyc: Record<KycTrack, KycState>;
   businessName?: string;
+  businessKind?: "small" | "branded";
 };
 
 export type Transaction = {

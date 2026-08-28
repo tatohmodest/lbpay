@@ -8,6 +8,7 @@ import { KycApplyForm } from "@/components/kyc-apply-form";
 import { useMe } from "@/lib/hooks/wallet";
 import { isAdmin, productUnlocked } from "@/lib/roles";
 import type { AccountKind, KycTrack } from "@/lib/types";
+import { cn } from "@/lib/cn";
 
 export function RoleGate({
   kind,
@@ -38,7 +39,7 @@ export function RoleGate({
           <p className="mt-2 text-sm leading-6 text-muted">
             {personal === "pending"
               ? "We are still looking this over. Business tools open after that."
-              : "A verified account is all you need to start collecting as a business."}
+              : "Verify yourself first. After that, a WhatsApp seller or a branded shop can both collect."}
           </p>
           <Link href="/wallet/kyc" className="mt-6 inline-block">
             <Button>{personal === "pending" ? "See status" : "Verify account"}</Button>
@@ -64,14 +65,14 @@ export function RoleGate({
     }
 
     return (
-      <div className="mx-auto max-w-lg py-8">
+      <div className={cn("mx-auto py-8", kind === "business" ? "max-w-2xl" : "max-w-lg")}>
         <h1 className="text-3xl font-semibold tracking-tight">
-          {kind === "business" ? "Start collecting as a business" : "Add payments to your product"}
+          {kind === "business" ? "Register your business" : "Add payments to your product"}
         </h1>
         <p className="mt-2 text-sm text-muted">
           {kind === "developer"
             ? "Accept payments in your app or website with MTN, Orange, cards, and wallet."
-            : "Get paid by your customers with MTN, Orange, cards, and wallet."}
+            : "WhatsApp sellers and branded shops can both collect. You do not need a tax ID."}
         </p>
         {kind === "developer" ? (
           <Link href="/docs" className="mt-3 inline-block text-sm font-bold text-brand">
@@ -85,7 +86,7 @@ export function RoleGate({
             subtitle={
               kind === "developer"
                 ? "Tell us about your product so we can open developer tools."
-                : "A few details so customers can pay you with confidence."
+                : "Choose small business or branded business. We only ask what that path needs."
             }
           />
         </div>
