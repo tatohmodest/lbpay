@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { MediaSplit } from "@/components/marketing/media-split";
 import { Button } from "@/components/ui/button";
+import { SITE_OG_IMAGE } from "@/lib/site";
 
 type Props = {
   title: string;
@@ -60,5 +61,17 @@ export function productMetadata(title: string, description: string, path: string
     title,
     description,
     alternates: { canonical: path },
+    openGraph: {
+      title,
+      description,
+      url: path,
+      images: [SITE_OG_IMAGE],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [SITE_OG_IMAGE.url],
+    },
   };
 }

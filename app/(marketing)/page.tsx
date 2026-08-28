@@ -7,12 +7,24 @@ import { Container } from "@/components/marketing/container";
 import { MediaSplit } from "@/components/marketing/media-split";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { SITE_DESCRIPTION, SITE_FAQS, SITE_TITLE, SITE_URL } from "@/lib/site";
+import { SITE_DESCRIPTION, SITE_FAQS, SITE_OG_IMAGE, SITE_TITLE, SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: SITE_TITLE,
   description: SITE_DESCRIPTION,
   alternates: { canonical: SITE_URL },
+  openGraph: {
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    url: SITE_URL,
+    images: [SITE_OG_IMAGE],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    images: [SITE_OG_IMAGE.url],
+  },
 };
 
 const products = [

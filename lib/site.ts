@@ -67,6 +67,14 @@ export function payunitGatewayUrl(raw: string | undefined) {
   }
 }
 
+export const SITE_OG_IMAGE = {
+  url: "/og.png",
+  width: 1200,
+  height: 630,
+  alt: "LBPay",
+  type: "image/png",
+} as const;
+
 export const SITE_TITLE = "LBPay | Send money in Cameroon, MTN, Orange Money, XAF wallet";
 
 export const SITE_DESCRIPTION =

@@ -22,6 +22,7 @@ export function SiteJsonLd() {
         name: SITE_NAME,
         url: SITE_URL,
         logo: `${SITE_URL}/illustrations/lbpay-mark.png`,
+        image: `${SITE_URL}/og.png`,
         description: SITE_DESCRIPTION,
         areaServed: { "@type": "Country", name: "Cameroon" },
         knowsAbout: [
@@ -38,6 +39,7 @@ export function SiteJsonLd() {
         url: SITE_URL,
         name: SITE_NAME,
         description: SITE_DESCRIPTION,
+        image: `${SITE_URL}/og.png`,
         publisher: { "@id": orgId },
         inLanguage: "en",
       },

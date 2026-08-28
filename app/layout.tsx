@@ -7,6 +7,7 @@ import {
   SITE_KEYWORDS,
   SITE_NAME,
   SITE_ORIGIN,
+  SITE_OG_IMAGE,
   SITE_TITLE,
   SITE_URL,
 } from "@/lib/site";
@@ -62,20 +63,13 @@ export const metadata: Metadata = {
     siteName: SITE_NAME,
     title: SITE_TITLE,
     description: SITE_DESCRIPTION,
-    images: [
-      {
-        url: "/illustrations/hero-send-money.png",
-        width: 1536,
-        height: 1024,
-        alt: "Send money in Cameroon with LBPay across MTN Mobile Money and Orange Money",
-      },
-    ],
+    images: [SITE_OG_IMAGE],
   },
   twitter: {
     card: "summary_large_image",
     title: SITE_TITLE,
     description: SITE_DESCRIPTION,
-    images: ["/illustrations/hero-send-money.png"],
+    images: [SITE_OG_IMAGE.url],
   },
   icons: {
     icon: [

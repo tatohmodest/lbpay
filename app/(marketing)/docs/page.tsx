@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { DocsContent } from "@/components/docs-content";
 import { Container } from "@/components/marketing/container";
+import { SITE_OG_IMAGE } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Payments API for Cameroon: sandbox, webhooks, XAF",
@@ -12,6 +13,12 @@ export const metadata: Metadata = {
     description:
       "Integrate collections and disbursements in XAF. Apply from Profile; sandbox and live keys unlock after approval.",
     url: "/docs",
+    images: [SITE_OG_IMAGE],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "LBPay Payments API for Cameroon",
+    images: [SITE_OG_IMAGE.url],
   },
 };
 
