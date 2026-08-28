@@ -132,3 +132,23 @@ export async function uploadProductImage(input: {
     bytes: compressed?.bytes || uploaded.bytes,
   };
 }
+
+export async function deleteCloudinaryImage(urlOrPublicId: string | null | undefined) {
+  if (!urlOrPublicId) return false;
+  if (!cloudinaryConfigured()) return false;
+
+  try {
+    const publicId = urlOrPublicId.includes("/upload/")
+      ? decodeURIComponent(urlOrPublicId).split("/upload/")[1].replace(/^v\d+\//, "").replace(/\.[^./]+$/, "")
+      : urlOrPublicId;
+
+    if (!publicId || publicId.includes("://") || !publicId.includes("/")) {
+      return false;
+    }
+
+    const result = await client().uploader.destroy(publicId, { resource_type: "image" });
+    return result?.result === "ok" || result?.result === "not_found";
+  } catch {
+    return false;
+  }
+}

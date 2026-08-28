@@ -1053,6 +1053,14 @@ export async function deleteLink(userId: string, idOrSlug: string) {
   if (idx === -1) return false;
   const link = db.links[idx];
   if (link.userId !== userId) throw new Error("Not authorized");
+
+  try {
+    const { deleteCloudinaryImage } = await import("@/lib/server/cloudinary");
+    if (link.imageUrl) await deleteCloudinaryImage(link.imageUrl);
+  } catch {
+    // ignore image cleanup failures so the DB delete still succeeds
+  }
+
   db.links.splice(idx, 1);
   await saveDb(db);
   return true;

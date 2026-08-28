@@ -22,7 +22,6 @@ type Method = PaymentMethod;
 const methods: { id: Method; label: string }[] = [
   { id: "mtn", label: "MTN" },
   { id: "orange", label: "Orange" },
-  { id: "card", label: "Card" },
   { id: "wallet", label: "LBPay wallet" },
 ];
 
@@ -83,7 +82,7 @@ export function CheckoutPay({
   const ready =
     !amountIssue(value, amountKind) &&
     value > 0 &&
-    (method === "card" || method === "wallet" || isCameroonMsisdn(clean)) &&
+    (method === "wallet" || isCameroonMsisdn(clean)) &&
     (method !== "wallet" || signedIn);
 
   const startedTx = useRef("");
@@ -232,14 +231,10 @@ export function CheckoutPay({
         <Card className="w-full max-w-md p-6 text-center">
           <p className="text-sm font-bold uppercase tracking-wide text-brand">Waiting for payment</p>
           <h2 className="mt-2 text-2xl font-black">Approve on your phone</h2>
-          {method !== "card" ? (
-            <p className="mt-4 rounded-2xl bg-paper px-4 py-3 text-sm leading-6 text-ink">
-              If you have not seen a popup, dial <span className="font-mono font-semibold">{ussdCode}</span>{" "}
-              and confirm pay.
-            </p>
-          ) : (
-            <p className="mt-4 text-sm text-muted">Finish the card payment, then this page will update.</p>
-          )}
+          <p className="mt-4 rounded-2xl bg-paper px-4 py-3 text-sm leading-6 text-ink">
+            If you have not seen a popup, dial <span className="font-mono font-semibold">{ussdCode}</span>{" "}
+            and confirm pay.
+          </p>
           <p className="mt-6 font-mono text-4xl font-black">{waiting.seconds}s</p>
           <div className="mt-6 grid gap-2">
             <Button onClick={() => void verifyNow()} disabled={checking}>

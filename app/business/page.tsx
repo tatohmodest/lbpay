@@ -129,21 +129,71 @@ export default function BusinessPage() {
                     {template.name}
                   </p>
                   <p className="mt-1 truncate font-mono text-xs text-muted">{url}</p>
-                  <div className="mt-3 flex gap-3">
-                    <button
-                      type="button"
-                      className="text-sm font-bold text-brand"
-                      onClick={() =>
-                        copyText(url)
-                          .then(() => notify.success("Copied", "Share this link."))
-                          .catch((err: Error) => notify.error("Could not copy", err.message))
-                      }
-                    >
-                      Copy link
-                    </button>
-                    <Link href={payLinkPath(link.slug)} className="text-sm font-bold text-brand">
-                      Open checkout
-                    </Link>
+                  <div className="mt-3 flex flex-col items-start gap-2">
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        className="text-sm font-bold text-brand"
+                        onClick={() =>
+                          copyText(url)
+                            .then(() => notify.success("Copied", "Share this link."))
+                            .catch((err: Error) => notify.error("Could not copy", err.message))
+                        }
+                      >
+                        Copy link
+                      </button>
+                      <Link href={payLinkPath(link.slug)} className="text-sm font-bold text-brand">
+                        Open checkout
+                      </Link>
+                    </div>
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        className="text-sm text-rose-600"
+                        onClick={async () => {
+                          if (!confirm("Delete this payment link?")) return;
+                          try {
+                            const res = await fetch("/api/business", {
+                              method: "DELETE",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ id: link.id }),
+                            });
+                            const json = await res.json();
+                            if (!res.ok) throw new Error(json.error || "Failed to delete");
+                            client.invalidateQueries({ queryKey: ["business"] });
+                            notify.success("Deleted", "Payment link removed.");
+                          } catch (err) {
+                            notify.error("Could not delete", err instanceof Error ? err.message : "Failed");
+                          }
+                        }}
+                      >
+                        Delete
+                      </button>
+                      <button
+                        type="button"
+                        className="text-sm text-brand"
+                        onClick={async () => {
+                          const newTitle = prompt("New title", link.title) || link.title;
+                          const newAmountStr = prompt("New amount (leave empty for open)", link.amount ? String(link.amount) : "") ?? "";
+                          const newAmount = newAmountStr.trim() === "" ? null : Number(newAmountStr);
+                          try {
+                            const res = await fetch("/api/business", {
+                              method: "PATCH",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ id: link.id, title: newTitle, amount: newAmount }),
+                            });
+                            const json = await res.json();
+                            if (!res.ok) throw new Error(json.error || "Failed to update");
+                            client.invalidateQueries({ queryKey: ["business"] });
+                            notify.success("Updated", "Payment link updated.");
+                          } catch (err) {
+                            notify.error("Could not update", err instanceof Error ? err.message : "Failed");
+                          }
+                        }}
+                      >
+                        Edit
+                      </button>
+                    </div>
                   </div>
                 </Card>
               );

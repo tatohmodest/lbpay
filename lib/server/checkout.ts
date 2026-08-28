@@ -52,15 +52,17 @@ export async function startCheckoutPayment(input: {
   const target = await resolveCheckoutTarget(input);
   if ("error" in target) return { error: target.error, status: 404 as const };
 
+  if (input.method === "card") {
+    return { error: "Card payments are not available yet. Please use MTN, Orange, or your wallet.", status: 400 as const };
+  }
+
   const { merchant, link } = target;
   const method: PaymentMethod =
     input.method === "orange"
       ? "orange"
-      : input.method === "card"
-        ? "card"
-        : input.method === "wallet"
-          ? "wallet"
-          : "mtn";
+      : input.method === "wallet"
+        ? "wallet"
+        : "mtn";
   const amount = link?.amount && link.amount > 0 ? link.amount : Number(input.amount);
 
   if (!amount) return { error: "Enter an amount.", status: 400 as const };

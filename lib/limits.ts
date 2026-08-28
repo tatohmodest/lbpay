@@ -3,7 +3,7 @@ import { formatXAF } from "@/lib/format";
 export const LIMITS = {
   walletTransferMin: 100,
   depositMin: 100,
-  momoOutMin: 100,
+  momoOutMin: 1000,
   momoOutMax: 500_000,
   kycLevel1Daily: 500_000,
 } as const;
