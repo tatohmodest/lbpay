@@ -123,13 +123,13 @@ export async function startCheckoutPayment(input: {
   }
 
   const phone = cameroonMsisdn(input.phone);
-  if (method !== "card" && !isCameroonMsisdn(phone)) {
+  if (!isCameroonMsisdn(phone)) {
     return { error: "Enter the Mobile Money number that will pay.", status: 400 as const };
   }
 
   const fee = depositFee(amount);
   const payAmount = amount + fee;
-  const reference = payunitReference(method === "orange" ? "OM" : method === "card" ? "CD" : "MT");
+  const reference = payunitReference(method === "orange" ? "OM" : "MT");
   let returnUrl = input.returnUrl;
   try {
     const next = new URL(input.returnUrl);
@@ -170,8 +170,7 @@ export async function startCheckoutPayment(input: {
       direction: "credit",
       kind: "collection",
       method,
-      counterparty:
-        method === "card" ? "Card" : method === "orange" ? `Orange ${phone}` : `MTN ${phone}`,
+      counterparty: method === "orange" ? `Orange ${phone}` : `MTN ${phone}`,
       note: link?.title || `QR pay · @${merchant.lbpayId}`,
       status: result.status === "success" ? "success" : "pending",
       rail: result.provider,
