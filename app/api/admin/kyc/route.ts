@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
-import { findKycById, findUserById, grantRole, listKyc, listKeys, saveKyc, upsertUser, writeAudit } from "@/lib/server/db";
+import { findKycById, findUserById, listKyc, listKeys, publicUser, reviewKycApplication, writeAudit } from "@/lib/server/db";
 import { requireAdmin } from "@/lib/server/guard";
 import { issueLiveKey, issueSandboxKey } from "@/lib/server/apikey";
-import { publicUser } from "@/lib/server/db";
 import { pushAccount } from "@/lib/server/push";
 
 export async function GET() {
@@ -28,32 +27,25 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => ({}));
   const app = await findKycById(String(body.id || ""));
   if (!app) return NextResponse.json({ error: "Application not found." }, { status: 404 });
-  const user = await findUserById(app.userId);
-  if (!user) return NextResponse.json({ error: "User missing." }, { status: 404 });
   const decision = body.decision === "reject" ? "rejected" : "approved";
-  app.status = decision;
-  app.reviewNote = String(body.note || "");
-  app.reviewedAt = new Date().toISOString();
-  app.reviewedBy = auth.user.id;
-  await saveKyc(app);
 
-  if (decision === "approved") {
-    user.kyc = { ...user.kyc, [app.track]: "verified" };
-    if (app.track === "personal") user.kycStatus = "verified";
-    if (app.track === "business") {
-      await grantRole(user, "business");
-      user.businessName = app.businessName || user.businessName;
-    }
-    if (app.track === "developer") {
-      await grantRole(user, "developer");
-      const keys = await listKeys(user.id);
-      if (!keys.some((key) => key.env === "sandbox" && !key.revokedAt)) await issueSandboxKey(user);
-      if (!keys.some((key) => key.env === "live" && !key.revokedAt)) await issueLiveKey(user);
-    }
-    await upsertUser(user);
-  } else {
-    user.kyc = { ...user.kyc, [app.track]: "rejected" };
-    await upsertUser(user);
+  let reviewed;
+  try {
+    reviewed = await reviewKycApplication({
+      app,
+      decision,
+      note: String(body.note || ""),
+      reviewerId: auth.user.id,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Could not update KYC.";
+    return NextResponse.json({ error: message }, { status: 400 });
+  }
+
+  if (decision === "approved" && app.track === "developer") {
+    const keys = await listKeys(reviewed.user.id);
+    if (!keys.some((key) => key.env === "sandbox" && !key.revokedAt)) await issueSandboxKey(reviewed.user);
+    if (!keys.some((key) => key.env === "live" && !key.revokedAt)) await issueLiveKey(reviewed.user);
   }
 
   await writeAudit({
@@ -61,15 +53,19 @@ export async function POST(request: Request) {
     action: `kyc.${decision}`,
     targetType: "kyc",
     targetId: app.id,
-    note: `${app.track} · ${user.lbpayId}`,
+    note: `${app.track} · ${reviewed.user.lbpayId}`,
   });
   void pushAccount(
-    user.id,
+    reviewed.user.id,
     decision === "approved" ? "KYC approved" : "KYC update",
     decision === "approved"
       ? `Your ${app.track} verification is approved.`
       : `Your ${app.track} verification was not approved.`,
     app.track === "business" ? "/business" : app.track === "developer" ? "/developers" : "/wallet/profile",
   );
-  return NextResponse.json({ ok: true, application: app });
+  return NextResponse.json({
+    ok: true,
+    application: reviewed.application,
+    user: publicUser(reviewed.user),
+  });
 }

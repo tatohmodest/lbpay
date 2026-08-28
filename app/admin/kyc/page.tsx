@@ -104,7 +104,7 @@ export default function AdminKycPage() {
             ) : (
               <p className="mt-3 text-sm text-muted">No identity photos on this application.</p>
             )}
-            {app.status === "pending" ? (
+            {app.status === "pending" || app.status === "approved" ? (
               <div className="mt-4 flex flex-col gap-2 md:flex-row">
                 <Field label="Review note">
                   <Input
@@ -114,14 +114,16 @@ export default function AdminKycPage() {
                 </Field>
                 <div className="flex items-end gap-2">
                   <Button onClick={() => mutate.mutate({ id: app.id, decision: "approve", note: notes[app.id] || "" })}>
-                    Approve
+                    {app.status === "approved" ? "Give access" : "Approve"}
                   </Button>
-                  <Button
-                    variant="secondary"
-                    onClick={() => mutate.mutate({ id: app.id, decision: "reject", note: notes[app.id] || "" })}
-                  >
-                    Reject
-                  </Button>
+                  {app.status === "pending" ? (
+                    <Button
+                      variant="secondary"
+                      onClick={() => mutate.mutate({ id: app.id, decision: "reject", note: notes[app.id] || "" })}
+                    >
+                      Reject
+                    </Button>
+                  ) : null}
                 </div>
               </div>
             ) : null}

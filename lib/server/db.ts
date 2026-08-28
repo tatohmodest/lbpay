@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from "fs/promises";
 import path from "path";
 import { verifySecret } from "./crypto";
-import { isBootstrapAdmin } from "@/lib/roles";
+import { defaultKyc, isBootstrapAdmin } from "@/lib/roles";
 import { uid } from "@/lib/format";
 import { handleBase, isReservedHandle, normalizeHandle, numberedHandle } from "@/lib/handle";
 import { cameroonMsisdn } from "@/lib/phone";
@@ -178,7 +178,9 @@ function mergeById<T extends { id: string }>(base: T[] = [], next: T[] = []) {
 function mergeLedgers(base: DbShape, next: DbShape): DbShape {
   const users = new Map<string, StoredUser>();
   for (const user of [...(base.users || []), ...(next.users || [])]) {
-    users.set(user.email.trim().toLowerCase(), user);
+    const key = user.email.trim().toLowerCase();
+    const prev = users.get(key);
+    users.set(key, prev ? mergePrivileges(prev, user) : normalizeUser(user));
   }
   const wallets = new Map<string, StoredWallet>();
   for (const wallet of [...(base.wallets || []), ...(next.wallets || [])]) {
@@ -206,12 +208,14 @@ function mergeLedgers(base: DbShape, next: DbShape): DbShape {
 }
 
 function normalizeUser(user: StoredUser): StoredUser {
-  const kyc = user.kyc ?? {
-    personal: user.kycStatus ?? "unverified",
-    business: "unverified",
-    developer: "unverified",
+  const kyc = {
+    ...defaultKyc(),
+    ...(user.kyc || {}),
   };
-  const roles = user.roles?.length ? user.roles : (["personal"] as AccountKind[]);
+  if (!user.kyc && user.kycStatus) kyc.personal = user.kycStatus;
+  const roles = [...(user.roles?.length ? user.roles : (["personal"] as AccountKind[]))];
+  if (kyc.business === "verified" && !roles.includes("business")) roles.push("business");
+  if (kyc.developer === "verified" && !roles.includes("developer")) roles.push("developer");
   if (isBootstrapAdmin(user.email) && !roles.includes("admin")) roles.push("admin");
   return {
     ...user,
@@ -295,6 +299,34 @@ async function loadAccount(email: string): Promise<AccountRow | null> {
   return row?.user?.id ? row : null;
 }
 
+function pickKycState(left: string | undefined, right: string | undefined): KycState {
+  if (left === "verified" || right === "verified") return "verified";
+  if (right === "pending" || right === "rejected" || right === "unverified") return right;
+  if (left === "pending" || left === "rejected" || left === "unverified") return left;
+  return "unverified";
+}
+
+function mergePrivileges(base: StoredUser, next: StoredUser): StoredUser {
+  const older = normalizeUser(base);
+  const newer = normalizeUser(next);
+  const roles = [...new Set([...older.roles, ...newer.roles])] as AccountKind[];
+  const kyc = {
+    personal: pickKycState(older.kyc.personal, newer.kyc.personal),
+    business: pickKycState(older.kyc.business, newer.kyc.business),
+    developer: pickKycState(older.kyc.developer, newer.kyc.developer),
+  };
+  if (kyc.business === "verified" && !roles.includes("business")) roles.push("business");
+  if (kyc.developer === "verified" && !roles.includes("developer")) roles.push("developer");
+  return {
+    ...older,
+    ...newer,
+    roles,
+    kyc,
+    kycStatus: kyc.personal,
+    businessName: newer.businessName || older.businessName,
+  };
+}
+
 function applyAccounts(db: DbShape, rows: AccountRow[]): DbShape {
   const next = { ...db, users: [...db.users], wallets: [...db.wallets] };
   for (const row of rows) {
@@ -302,7 +334,7 @@ function applyAccounts(db: DbShape, rows: AccountRow[]): DbShape {
     const idx = next.users.findIndex(
       (item) => item.id === user.id || item.email.toLowerCase() === user.email.toLowerCase(),
     );
-    if (idx >= 0) next.users[idx] = { ...next.users[idx], ...user, roles: user.roles };
+    if (idx >= 0) next.users[idx] = mergePrivileges(next.users[idx], user);
     else next.users.push(user);
     if (row.wallet) {
       const widx = next.wallets.findIndex((item) => item.userId === user.id);
@@ -351,9 +383,12 @@ async function persistAccount(user: StoredUser, wallet?: StoredWallet) {
     }
     return;
   }
+  const existing = await loadAccount(user.email);
+  const storedUser = existing?.user ? mergePrivileges(existing.user, user) : normalizeUser(user);
+  const storedWallet = wallet || existing?.wallet || { userId: user.id, balance: 0 };
   const { error } = await sb.from("app_ledger").upsert({
     id: accountRowId(user.email),
-    data: { user, wallet: wallet || { userId: user.id, balance: 0 } },
+    data: { user: storedUser, wallet: storedWallet },
     updated_at: new Date().toISOString(),
   });
   if (error) {
@@ -510,7 +545,12 @@ export async function nextAvailableHandle(desired: string, exceptUserId?: string
 export async function findUserById(id: string) {
   const db = await getDb();
   const user = db.users.find((u) => u.id === id) ?? null;
-  return user ? normalizeUser(user) : null;
+  if (user) return normalizeUser(user);
+  const rows = await loadAccountRows();
+  const row = rows.find((item) => item.user.id === id);
+  if (!row?.user) return null;
+  if (cache) cache = applyAccounts(cache, [row]);
+  return normalizeUser(row.user);
 }
 
 export async function listUsers() {
@@ -532,8 +572,8 @@ export async function upsertUser(user: StoredUser) {
     throw new Error(`@${handle} is already taken.`);
   }
   const idx = db.users.findIndex((u) => u.id === user.id || u.email.toLowerCase() === user.email.toLowerCase());
-  if (idx >= 0) db.users[idx] = user;
-  else db.users.push(user);
+  if (idx >= 0) db.users[idx] = mergePrivileges(db.users[idx], user);
+  else db.users.push(normalizeUser(user));
   let wallet = db.wallets.find((w) => w.userId === user.id);
   if (!wallet) {
     wallet = { userId: user.id, balance: 0 };
@@ -852,6 +892,53 @@ export async function saveKyc(app: KycApplication) {
   else db.kyc.unshift(app);
   await saveDb(db);
   return app;
+}
+
+export async function reviewKycApplication(input: {
+  app: KycApplication;
+  decision: "approved" | "rejected";
+  note: string;
+  reviewerId: string;
+}) {
+  const db = await getDb();
+  const reviewed: KycApplication = {
+    ...input.app,
+    status: input.decision,
+    reviewNote: input.note,
+    reviewedAt: new Date().toISOString(),
+    reviewedBy: input.reviewerId,
+  };
+  const appIdx = db.kyc.findIndex((item) => item.id === reviewed.id);
+  if (appIdx >= 0) db.kyc[appIdx] = reviewed;
+  else db.kyc.unshift(reviewed);
+
+  const userIdx = db.users.findIndex((item) => item.id === reviewed.userId);
+  let user = userIdx >= 0 ? normalizeUser(db.users[userIdx]) : await findUserById(reviewed.userId);
+  if (!user) throw new Error("User missing.");
+
+  user.kyc = { ...defaultKyc(), ...user.kyc };
+  if (input.decision === "approved") {
+    user.kyc = { ...user.kyc, [reviewed.track]: "verified" };
+    if (reviewed.track === "personal") user.kycStatus = "verified";
+    if (reviewed.track === "business") {
+      if (!user.roles.includes("business")) user.roles.push("business");
+      user.businessName = reviewed.businessName || user.businessName;
+    }
+    if (reviewed.track === "developer" && !user.roles.includes("developer")) {
+      user.roles.push("developer");
+    }
+  } else {
+    user.kyc = { ...user.kyc, [reviewed.track]: "rejected" };
+  }
+  user = normalizeUser(user);
+
+  if (userIdx >= 0) db.users[userIdx] = user;
+  else db.users.push(user);
+
+  const wallet = db.wallets.find((item) => item.userId === user.id);
+  await persistAccount(user, wallet);
+  await saveDb(db);
+  return { application: reviewed, user };
 }
 
 export async function findKycById(id: string) {

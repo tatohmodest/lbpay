@@ -14,10 +14,15 @@ export function isBootstrapAdmin(email: string) {
   return bootstrapAdminEmails().includes(email.trim().toLowerCase());
 }
 
-export function hasKind(user: { roles?: AccountKind[] } | null | undefined, kind: AccountKind) {
+export function hasKind(
+  user: { roles?: AccountKind[]; kyc?: { business?: string; developer?: string } } | null | undefined,
+  kind: AccountKind,
+) {
   if (!user?.roles?.length) return kind === "personal";
   if (user.roles.includes("admin")) return true;
-  return user.roles.includes(kind);
+  if (user.roles.includes(kind)) return true;
+  if ((kind === "business" || kind === "developer") && user.kyc?.[kind] === "verified") return true;
+  return false;
 }
 
 export function isAdmin(user: { roles?: AccountKind[] } | null | undefined) {
@@ -35,7 +40,7 @@ export function productUnlocked(
   kind: "business" | "developer",
 ) {
   if (isAdmin(user)) return true;
-  return Boolean(user?.roles?.includes(kind) && user?.kyc?.[kind] === "verified");
+  return user?.kyc?.[kind] === "verified";
 }
 
 export function defaultKyc() {
