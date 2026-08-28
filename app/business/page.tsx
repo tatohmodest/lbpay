@@ -80,20 +80,8 @@ export default function BusinessPage() {
     <div>
       <header className="mb-8">
         <h1 className="text-3xl font-black">Business overview</h1>
-        <p className="text-muted">See how your shop is doing today.</p>
+        <p className="text-muted">Create a product link, pick a template, and get paid.</p>
       </header>
-      <div className="mb-6 grid gap-4 md:grid-cols-2">
-        <Card className="p-5">
-          <p className="text-xs font-bold uppercase tracking-wide text-muted">Revenue (XAF)</p>
-          <p className="mt-3 font-mono text-3xl font-bold">
-            {formatXAF(data.data?.revenue || 0, { withCurrency: false })}
-          </p>
-        </Card>
-        <Card className="p-5">
-          <p className="text-xs font-bold uppercase tracking-wide text-muted">Active links</p>
-          <p className="mt-3 font-mono text-3xl font-bold">{links.length}</p>
-        </Card>
-      </div>
       <div className="mb-6">
         <Card className="p-5 md:p-6">
           <h2 className="text-lg font-black">Product payment link</h2>
@@ -107,6 +95,18 @@ export default function BusinessPage() {
               onSubmit={(input) => create.mutateAsync(input)}
             />
           </div>
+        </Card>
+      </div>
+      <div className="mb-6 grid gap-4 md:grid-cols-2">
+        <Card className="p-5">
+          <p className="text-xs font-bold uppercase tracking-wide text-muted">Revenue (XAF)</p>
+          <p className="mt-3 font-mono text-3xl font-bold">
+            {formatXAF(data.data?.revenue || 0, { withCurrency: false })}
+          </p>
+        </Card>
+        <Card className="p-5">
+          <p className="text-xs font-bold uppercase tracking-wide text-muted">Active links</p>
+          <p className="mt-3 font-mono text-3xl font-bold">{links.length}</p>
         </Card>
       </div>
       {links.length > 0 ? (
