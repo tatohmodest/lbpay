@@ -23,9 +23,17 @@ export default function BusinessInvoicesPage() {
         {links.length === 0 ? (
           <p className="p-6 text-sm text-muted">No invoices yet. Create a payment link to get started.</p>
         ) : (
-          links.map((link: { id: string; title: string; slug: string; amount: number | null; collected: number }) => (
-            <div key={link.id} className="flex items-center justify-between p-4">
-              <div>
+          links.map((link: { id: string; title: string; slug: string; amount: number | null; collected: number; imageUrl?: string }) => (
+            <div key={link.id} className="flex items-center gap-4 p-4">
+              {link.imageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={link.imageUrl} alt="" className="h-14 w-14 rounded-2xl object-cover" />
+              ) : (
+                <div className="grid h-14 w-14 place-items-center rounded-2xl bg-brand-soft text-[10px] font-semibold text-brand-deep">
+                  LBPay
+                </div>
+              )}
+              <div className="min-w-0 flex-1">
                 <p className="font-semibold">{link.title}</p>
                 <p className="text-xs text-muted">{payLinkUrl(link.slug, origin)}</p>
                 <Link href={payLinkPath(link.slug)} className="mt-1 inline-block text-sm font-bold text-brand">

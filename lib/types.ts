@@ -71,6 +71,8 @@ export type PaymentLink = {
   collected: number;
   payments: number;
   createdAt: string;
+  imageUrl?: string;
+  template?: string;
 };
 
 export type MoneyRequest = {

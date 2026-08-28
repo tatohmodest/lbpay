@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { slugify, uid } from "@/lib/format";
 import { addLink } from "@/lib/server/db";
 import { authenticateApiKey, logApi } from "@/lib/server/apikey";
 import { payLinkUrl, requestOrigin } from "@/lib/origin";
+import { buildPaymentLink, parsePaymentLinkInput } from "@/lib/server/payment-links";
 
 export async function POST(request: Request) {
   const auth = await authenticateApiKey(request);
@@ -12,20 +12,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Business role required." }, { status: 403 });
   }
 
-  const body = await request.json().catch(() => ({}));
-  const title = String(body.title || "Payment");
-  const slug = `${slugify(title) || "pay"}-${uid("s").slice(-4)}`;
-  const link = await addLink({
-    id: uid("lnk"),
-    userId: auth.user.id,
-    slug,
-    title,
-    amount: body.amount ? Number(body.amount) : null,
-    status: "active",
-    collected: 0,
-    payments: 0,
-    createdAt: new Date().toISOString(),
-  });
+  const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
+  if (!body.title) body.title = "Payment";
+  const parsed = parsePaymentLinkInput(body);
+  if (!parsed.ok) {
+    await logApi(auth.user.id, "POST", "/v1/payment-links", 400);
+    return NextResponse.json({ error: parsed.error }, { status: 400 });
+  }
+  const link = await addLink(buildPaymentLink(auth.user.id, parsed.value));
   await logApi(auth.user.id, "POST", "/v1/payment-links", 200);
   return NextResponse.json({
     id: link.id,
@@ -34,6 +28,8 @@ export async function POST(request: Request) {
     amount: link.amount,
     currency: "XAF",
     url: payLinkUrl(link.slug, requestOrigin(request)),
+    imageUrl: link.imageUrl || null,
+    template: link.template,
     status: "active",
     environment: auth.env,
   });

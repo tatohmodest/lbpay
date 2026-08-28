@@ -1,7 +1,10 @@
 import { MAX_KYC_UPLOAD_BYTES } from "@/lib/kyc";
 
-const TARGET_BYTES = 900_000;
-const MAX_EDGE = 1600;
+export const MAX_IMAGE_UPLOAD_BYTES = MAX_KYC_UPLOAD_BYTES;
+const KYC_TARGET_BYTES = 900_000;
+const KYC_MAX_EDGE = 1600;
+const PRODUCT_TARGET_BYTES = 380_000;
+const PRODUCT_MAX_EDGE = 1280;
 
 function canvasToBlob(canvas: HTMLCanvasElement, quality: number) {
   return new Promise<Blob>((resolve, reject) => {
@@ -34,17 +37,20 @@ async function loadBitmap(file: File) {
   }
 }
 
-export async function compressKycImage(file: File) {
+async function compressImage(
+  file: File,
+  options: { targetBytes: number; maxEdge: number; filename: string; emptyError: string },
+) {
   if (!file.type.startsWith("image/")) {
-    throw new Error("Upload a photo of your document.");
+    throw new Error(options.emptyError);
   }
-  if (file.size > MAX_KYC_UPLOAD_BYTES) {
+  if (file.size > MAX_IMAGE_UPLOAD_BYTES) {
     throw new Error("Maximum upload is 10MB.");
   }
 
   try {
     const bitmap = await loadBitmap(file);
-    const scale = Math.min(1, MAX_EDGE / Math.max(bitmap.width, bitmap.height));
+    const scale = Math.min(1, options.maxEdge / Math.max(bitmap.width, bitmap.height));
     const width = Math.max(1, Math.round(bitmap.width * scale));
     const height = Math.max(1, Math.round(bitmap.height * scale));
     const canvas = document.createElement("canvas");
@@ -55,18 +61,36 @@ export async function compressKycImage(file: File) {
     ctx.drawImage(bitmap, 0, 0, width, height);
     if ("close" in bitmap && typeof bitmap.close === "function") bitmap.close();
 
-    let quality = 0.76;
+    let quality = 0.74;
     let blob = await canvasToBlob(canvas, quality);
-    while (blob.size > TARGET_BYTES && quality > 0.42) {
+    while (blob.size > options.targetBytes && quality > 0.38) {
       quality -= 0.1;
       blob = await canvasToBlob(canvas, quality);
     }
-    if (blob.size > MAX_KYC_UPLOAD_BYTES) {
+    if (blob.size > MAX_IMAGE_UPLOAD_BYTES) {
       throw new Error("That photo is still too large after compression. Try a smaller image.");
     }
-    return new File([blob], "kyc.jpg", { type: "image/jpeg" });
+    return new File([blob], options.filename, { type: "image/jpeg" });
   } catch (error) {
-    if (file.size <= MAX_KYC_UPLOAD_BYTES && file.type.startsWith("image/")) return file;
+    if (file.size <= MAX_IMAGE_UPLOAD_BYTES && file.type.startsWith("image/")) return file;
     throw error instanceof Error ? error : new Error("Could not compress that photo.");
   }
+}
+
+export async function compressKycImage(file: File) {
+  return compressImage(file, {
+    targetBytes: KYC_TARGET_BYTES,
+    maxEdge: KYC_MAX_EDGE,
+    filename: "kyc.jpg",
+    emptyError: "Upload a photo of your document.",
+  });
+}
+
+export async function compressProductImage(file: File) {
+  return compressImage(file, {
+    targetBytes: PRODUCT_TARGET_BYTES,
+    maxEdge: PRODUCT_MAX_EDGE,
+    filename: "product.jpg",
+    emptyError: "Upload a photo of the product.",
+  });
 }

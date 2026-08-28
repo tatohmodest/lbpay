@@ -5,6 +5,7 @@ import { isBootstrapAdmin } from "@/lib/roles";
 import { uid } from "@/lib/format";
 import { handleBase, isReservedHandle, normalizeHandle, numberedHandle } from "@/lib/handle";
 import { cameroonMsisdn } from "@/lib/phone";
+import { normalizeLinkTemplate } from "@/lib/link-templates";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import type {
   AccountKind,
@@ -887,26 +888,38 @@ export async function findKeyBySecret(secret: string) {
   return null;
 }
 
+function normalizeStoredLink(link: StoredLink): StoredLink {
+  const imageUrl = typeof link.imageUrl === "string" ? link.imageUrl.trim() : "";
+  return {
+    ...link,
+    template: normalizeLinkTemplate(link.template),
+    imageUrl: imageUrl.startsWith("https://") ? imageUrl : undefined,
+  };
+}
+
 export async function addLink(link: StoredLink) {
   const db = await getDb();
-  db.links.unshift(link);
+  const stored = normalizeStoredLink(link);
+  db.links.unshift(stored);
   await saveDb(db);
-  return link;
+  return stored;
 }
 
 export async function listLinks(userId: string) {
   const db = await getDb();
-  return db.links.filter((item) => item.userId === userId);
+  return db.links.filter((item) => item.userId === userId).map(normalizeStoredLink);
 }
 
 export async function findLinkBySlug(slug: string) {
   const db = await getDb();
-  return db.links.find((item) => item.slug === slug) ?? null;
+  const link = db.links.find((item) => item.slug === slug) ?? null;
+  return link ? normalizeStoredLink(link) : null;
 }
 
 export async function findLinkByIdOrSlug(value: string) {
   const db = await getDb();
-  return db.links.find((item) => item.id === value || item.slug === value) ?? null;
+  const link = db.links.find((item) => item.id === value || item.slug === value) ?? null;
+  return link ? normalizeStoredLink(link) : null;
 }
 
 export async function recordLinkPayment(slug: string | undefined, amount: number) {

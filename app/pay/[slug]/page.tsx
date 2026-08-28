@@ -1,65 +1,44 @@
-"use client";
-
-import { use } from "react";
+import type { Metadata } from "next";
 import { Suspense } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { CheckoutPay } from "@/components/checkout-pay";
-import { Card } from "@/components/ui/card";
+import { formatXAF } from "@/lib/format";
+import { findLinkBySlug, findUserById } from "@/lib/server/db";
+import { PayLinkClient } from "./pay-client";
 
-function PayLinkInner({ slug }: { slug: string }) {
-  const link = useQuery({
-    queryKey: ["pay", slug],
-    queryFn: async () => {
-      const res = await fetch(`/api/pay/${slug}`);
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Not found");
-      return data as {
-        link: { title: string; amount: number | null };
-        merchant: { name: string; lbpayId: string } | null;
-      };
+type Props = { params: Promise<{ slug: string }> };
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params;
+  const link = await findLinkBySlug(slug);
+  if (!link) {
+    return { title: "Payment", robots: { index: false, follow: false } };
+  }
+  const owner = await findUserById(link.userId);
+  const merchant = owner?.businessName || owner?.name || "LBPay";
+  const amount = link.amount ? ` · ${formatXAF(link.amount)}` : "";
+  const title = `${link.title}${amount}`;
+  const description = `Pay ${merchant} on LBPay.`;
+  return {
+    title,
+    description,
+    robots: { index: false, follow: false },
+    openGraph: {
+      title,
+      description,
+      type: "website",
     },
-  });
-
-  if (link.isError) {
-    return (
-      <main className="grid min-h-screen place-items-center bg-paper p-4">
-        <Card className="max-w-sm p-8 text-center">
-          <h1 className="text-xl font-black">Link not found</h1>
-          <p className="mt-2 text-sm text-muted">This payment link is missing or inactive.</p>
-        </Card>
-      </main>
-    );
-  }
-
-  if (!link.data) {
-    return (
-      <main className="grid min-h-screen place-items-center bg-paper p-4">
-        <p className="text-sm text-muted">Opening checkout…</p>
-      </main>
-    );
-  }
-
-  return (
-    <CheckoutPay
-      slug={slug}
-      handle={link.data.merchant?.lbpayId}
-      title={link.data.link.title}
-      merchantName={link.data.merchant?.name || "Payment request"}
-      merchantHandle={link.data.merchant?.lbpayId || ""}
-      fixedAmount={link.data.link.amount}
-    />
-  );
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+    },
+  };
 }
 
-export default function CheckoutPage({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
-  const { slug } = use(params);
+export default async function CheckoutPage({ params }: Props) {
+  const { slug } = await params;
   return (
     <Suspense fallback={<p className="grid min-h-screen place-items-center text-sm text-muted">Opening checkout…</p>}>
-      <PayLinkInner slug={slug} />
+      <PayLinkClient slug={slug} />
     </Suspense>
   );
 }

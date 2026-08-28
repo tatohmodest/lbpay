@@ -18,6 +18,7 @@ export default function robots(): MetadataRoute.Robots {
           "/twitter-image",
           "/illustrations/",
           "/icons/",
+          "/pay/",
         ],
         disallow: [
           "/wallet",
@@ -27,7 +28,6 @@ export default function robots(): MetadataRoute.Robots {
           "/api/",
           "/pin",
           "/verify",
-          "/pay/",
           "/p/",
           "/r/",
         ],

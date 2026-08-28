@@ -1,12 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Field, Input } from "@/components/ui/input";
 import { MethodDot, StatusBadge } from "@/components/ui/badge";
 import { PayQR } from "@/components/qr";
+import { PaymentLinkForm } from "@/components/payment-link-form";
 import { formatDate, formatXAF } from "@/lib/format";
 import { useNotify } from "@/lib/notify";
 import { useMe } from "@/lib/hooks/wallet";
@@ -18,8 +16,6 @@ export default function BusinessPage() {
   const client = useQueryClient();
   const me = useMe();
   const origin = useBrowserOrigin();
-  const [title, setTitle] = useState("");
-  const [amount, setAmount] = useState("");
   const data = useQuery({
     queryKey: ["business"],
     queryFn: async () => {
@@ -42,11 +38,16 @@ export default function BusinessPage() {
     },
   });
   const create = useMutation({
-    mutationFn: () =>
+    mutationFn: (input: { title: string; amount: string; imageUrl?: string; template: string }) =>
       fetch("/api/business", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, amount: amount ? Number(amount) : null }),
+        body: JSON.stringify({
+          title: input.title,
+          amount: input.amount ? Number(input.amount) : null,
+          imageUrl: input.imageUrl,
+          template: input.template,
+        }),
       }).then(async (res) => {
         const json = await res.json();
         if (!res.ok) throw new Error(json.error || "Failed");
@@ -55,8 +56,6 @@ export default function BusinessPage() {
     onSuccess: () => {
       client.invalidateQueries({ queryKey: ["business"] });
       notify.success("Link created", "Share the checkout URL.");
-      setTitle("");
-      setAmount("");
     },
     onError: (err: Error) => notify.error("Failed", err.message),
   });
@@ -84,24 +83,15 @@ export default function BusinessPage() {
           <p className="mt-3 font-mono text-3xl font-bold">{links.length}</p>
         </Card>
       </div>
-      <div className="mb-6 grid gap-4 lg:grid-cols-2">
+      <div className="mb-6 grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
         <Card className="p-5">
           <h2 className="mb-4 text-xs font-bold uppercase tracking-wide">Generate payment link</h2>
-          <form
-            className="flex flex-col gap-3"
-            onSubmit={(e) => {
-              e.preventDefault();
-              create.mutate();
-            }}
-          >
-            <Field label="Product / service title">
-              <Input value={title} onChange={(e) => setTitle(e.target.value)} required />
-            </Field>
-            <Field label="Amount (XAF)">
-              <Input type="number" className="font-mono" value={amount} onChange={(e) => setAmount(e.target.value)} />
-            </Field>
-            <Button type="submit">Create link</Button>
-          </form>
+          <PaymentLinkForm
+            preview={false}
+            merchantName={data.data?.businessName}
+            submitting={create.isPending}
+            onSubmit={(input) => create.mutateAsync(input)}
+          />
         </Card>
         <Card className="flex flex-col items-center bg-navy p-6 text-white">
           <h2 className="text-2xl font-bold">Scan to pay</h2>

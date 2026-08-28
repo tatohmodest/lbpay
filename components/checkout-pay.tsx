@@ -15,6 +15,7 @@ import { amountIssue } from "@/lib/limits";
 import { depositFee } from "@/lib/fees";
 import { cameroonMsisdn, isCameroonMsisdn } from "@/lib/phone";
 import type { PaymentMethod } from "@/lib/types";
+import { ProductLinkFrame } from "@/components/product-link-frame";
 
 type Method = PaymentMethod;
 
@@ -46,6 +47,8 @@ export function CheckoutPay({
   merchantName,
   merchantHandle,
   fixedAmount,
+  imageUrl,
+  template,
 }: {
   handle?: string;
   slug?: string;
@@ -53,6 +56,8 @@ export function CheckoutPay({
   merchantName: string;
   merchantHandle: string;
   fixedAmount?: number | null;
+  imageUrl?: string;
+  template?: string;
 }) {
   const me = useMe();
   const search = useSearchParams();
@@ -253,17 +258,39 @@ export function CheckoutPay({
     <main className="flex min-h-screen items-center justify-center bg-paper p-4">
       <div className="w-full max-w-md">
         <p className="mb-6 text-center text-2xl font-black text-brand">LBPay</p>
+        {slug ? (
+          <div className="mb-4">
+            <ProductLinkFrame
+              template={template}
+              title={title}
+              amount={fixedAmount}
+              merchantName={merchantName}
+              imageUrl={imageUrl}
+            />
+          </div>
+        ) : null}
         <Card className="relative overflow-hidden p-6">
           <div className="absolute left-0 top-0 h-1 w-full bg-brand" />
-          <p className="text-center text-[11px] font-bold uppercase tracking-wide text-muted">{merchantName}</p>
-          <h1 className="mt-2 text-center text-xl font-bold">{title}</h1>
-          <p className="mt-1 text-center font-mono text-sm text-brand">@{merchantHandle}</p>
+          {slug ? (
+            <>
+              <p className="text-center text-[11px] font-bold uppercase tracking-wide text-muted">Pay this</p>
+              <p className="mt-1 text-center font-mono text-sm text-brand">@{merchantHandle}</p>
+            </>
+          ) : (
+            <>
+              <p className="text-center text-[11px] font-bold uppercase tracking-wide text-muted">{merchantName}</p>
+              <h1 className="mt-2 text-center text-xl font-bold">{title}</h1>
+              <p className="mt-1 text-center font-mono text-sm text-brand">@{merchantHandle}</p>
+            </>
+          )}
           {fixedAmount && fixedAmount > 0 ? (
             <>
-              <p className="mt-3 text-center font-mono text-4xl font-black text-brand">
-                {formatXAF(fixedAmount, { withCurrency: false })}
-                <span className="ml-1 align-super text-sm font-semibold text-muted">XAF</span>
-              </p>
+              {slug ? null : (
+                <p className="mt-3 text-center font-mono text-4xl font-black text-brand">
+                  {formatXAF(fixedAmount, { withCurrency: false })}
+                  <span className="ml-1 align-super text-sm font-semibold text-muted">XAF</span>
+                </p>
+              )}
               {method !== "wallet" && value > 0 ? (
                 <div className="mt-3 space-y-1.5 rounded-2xl bg-paper px-4 py-3 text-sm">
                   <div className="flex justify-between gap-3">
