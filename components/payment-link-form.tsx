@@ -8,12 +8,12 @@ import { ProductLinkFrame } from "@/components/product-link-frame";
 import { DEFAULT_LINK_TEMPLATE, LINK_TEMPLATES, type LinkTemplateId } from "@/lib/link-templates";
 import { cn } from "@/lib/cn";
 
-const SWATCH: Record<LinkTemplateId, { bar: string; label: string }> = {
-  statement: { bar: "bg-navy text-white", label: "Payment statement" },
-  invoice: { bar: "bg-brand text-white", label: "Invoice" },
-  receipt: { bar: "border border-dashed border-line bg-[#fbfaf6] text-ink", label: "Till receipt" },
-  voucher: { bar: "bg-brand-dark text-white", label: "Voucher" },
-  display: { bar: "bg-[#07140f] text-white", label: "Display" },
+const BOX: Record<LinkTemplateId, { head: string; body: string }> = {
+  statement: { head: "bg-navy text-white", body: "bg-white" },
+  invoice: { head: "bg-brand text-white", body: "bg-white" },
+  receipt: { head: "bg-[#fbfaf6] text-ink", body: "bg-[#fbfaf6]" },
+  voucher: { head: "bg-brand-dark text-white", body: "bg-brand" },
+  display: { head: "bg-[#07140f] text-white", body: "bg-navy" },
 };
 
 export function PaymentLinkForm({
@@ -35,16 +35,6 @@ export function PaymentLinkForm({
   const [imageUrl, setImageUrl] = useState("");
   const [template, setTemplate] = useState<LinkTemplateId>(DEFAULT_LINK_TEMPLATE);
 
-  const preview = (
-    <ProductLinkFrame
-      template={template}
-      title={title || "Your product"}
-      amount={amount ? Number(amount) : null}
-      merchantName={merchantName}
-      imageUrl={imageUrl}
-    />
-  );
-
   return (
     <form
       className="flex flex-col gap-6"
@@ -62,8 +52,8 @@ export function PaymentLinkForm({
           .catch(() => undefined);
       }}
     >
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(280px,340px)] lg:items-start">
-        <div className="flex flex-col gap-4">
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] lg:items-start">
+        <div className="flex min-w-0 flex-col gap-4">
           <Field label="Product / service title">
             <Input value={title} onChange={(e) => setTitle(e.target.value)} required />
           </Field>
@@ -76,45 +66,70 @@ export function PaymentLinkForm({
             />
           </Field>
           <ProductPhotoField url={imageUrl} onUploaded={setImageUrl} />
-          <div>
+          <div className="min-w-0">
             <p className="mb-1 text-sm font-semibold text-ink">Finance template</p>
-            <p className="mb-3 text-sm text-muted">
-              Pick how this product looks on the payment page and when someone shares the link.
-            </p>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              {LINK_TEMPLATES.map((item) => {
-                const swatch = SWATCH[item.id];
-                const selected = template === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => setTemplate(item.id)}
-                    className={cn(
-                      "rounded-2xl border p-2 text-left transition",
-                      selected ? "border-brand ring-2 ring-brand/25" : "border-line hover:border-brand/40",
-                    )}
-                  >
-                    <div
+            <p className="mb-3 text-sm text-muted">Pick a wrap. Slide the row if you need more.</p>
+            <div className="relative -mx-5 md:mx-0">
+              <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 pb-2 [scrollbar-width:thin] overscroll-x-contain md:px-0">
+                {LINK_TEMPLATES.map((item) => {
+                  const box = BOX[item.id];
+                  const selected = template === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => setTemplate(item.id)}
                       className={cn(
-                        "flex h-11 items-center rounded-xl px-3 text-[11px] font-semibold uppercase tracking-[0.14em]",
-                        swatch.bar,
+                        "w-[8.5rem] shrink-0 snap-start overflow-hidden rounded-2xl border text-left shadow-[0_8px_24px_rgba(7,20,15,0.06)] transition",
+                        selected ? "border-brand ring-2 ring-brand/30" : "border-line hover:border-brand/40",
                       )}
                     >
-                      {swatch.label}
-                    </div>
-                    <span className="mt-2 block text-sm font-semibold">{item.name}</span>
-                    <span className="mt-0.5 block text-xs text-muted">{item.blurb}</span>
-                  </button>
-                );
-              })}
+                      <div
+                        className={cn(
+                          "flex h-8 items-center px-2.5 text-[10px] font-semibold uppercase tracking-[0.12em]",
+                          box.head,
+                        )}
+                      >
+                        {item.name}
+                      </div>
+                      {imageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={imageUrl} alt="" className="h-20 w-full object-cover" />
+                      ) : (
+                        <div className={cn("grid h-20 place-items-center", box.body)}>
+                          <span
+                            className={cn(
+                              "text-[11px] font-semibold",
+                              item.id === "voucher" || item.id === "display" ? "text-white/80" : "text-brand-deep",
+                            )}
+                          >
+                            LBPay
+                          </span>
+                        </div>
+                      )}
+                      <span className="block bg-white px-2.5 py-2">
+                        <span className="block text-xs font-semibold text-ink">{item.name}</span>
+                        <span className="mt-0.5 block truncate text-[11px] text-muted">{item.blurb}</span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-card to-transparent sm:hidden" />
             </div>
           </div>
         </div>
-        <div>
-          <p className="mb-2 text-sm font-semibold text-ink">Preview</p>
+        <div className="min-w-0 lg:sticky lg:top-8">
+          <p className="mb-1 text-sm font-semibold text-ink">Preview</p>
           <p className="mb-3 text-sm text-muted">This is the wrap customers see.</p>
-          {preview}
+          <ProductLinkFrame
+            size="hero"
+            template={template}
+            title={title || "Your product"}
+            amount={amount ? Number(amount) : null}
+            merchantName={merchantName}
+            imageUrl={imageUrl}
+          />
         </div>
       </div>
       <Button type="submit" disabled={submitting} className="w-full sm:w-auto">

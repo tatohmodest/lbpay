@@ -9,6 +9,7 @@ export function ProductLinkFrame({
   imageUrl,
   template,
   compact = false,
+  size,
 }: {
   title: string;
   amount?: number | null;
@@ -16,42 +17,49 @@ export function ProductLinkFrame({
   imageUrl?: string;
   template?: string;
   compact?: boolean;
+  size?: "compact" | "default" | "hero";
 }) {
   const kind = normalizeLinkTemplate(template);
+  const scale = size ?? (compact ? "compact" : "default");
   const name = title.trim() || "Product";
   const shop = merchantName?.trim() || "LBPay";
   const price = amount && amount > 0 ? formatXAF(amount) : "Open amount";
+  const hero = scale === "hero";
+  const mini = scale === "compact";
 
   return (
     <div
       className={cn(
         "overflow-hidden text-left shadow-[0_18px_50px_rgba(7,20,15,0.12)]",
-        compact ? "rounded-2xl" : "rounded-[28px]",
+        mini ? "rounded-2xl" : hero ? "rounded-[32px]" : "rounded-[28px]",
         frameShell(kind),
       )}
     >
-      <FrameChrome kind={kind} shop={shop} compact={compact} />
+      <FrameChrome kind={kind} shop={shop} compact={mini} />
       {imageUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={imageUrl}
           alt=""
-          className={cn("w-full object-cover", compact ? "h-24" : "h-56 sm:h-64")}
+          className={cn(
+            "w-full object-cover",
+            mini ? "h-24" : hero ? "h-[22rem] sm:h-[26rem] md:h-[28rem]" : "h-56 sm:h-64",
+          )}
         />
       ) : (
         <div
           className={cn(
             "grid place-items-center bg-gradient-to-br from-brand-soft to-paper",
-            compact ? "h-24" : "h-40",
+            mini ? "h-24" : hero ? "h-64 sm:h-80" : "h-48 sm:h-56",
           )}
         >
-          <span className={cn("font-semibold text-brand-deep", compact ? "text-lg" : "text-3xl")}>
+          <span className={cn("font-semibold text-brand-deep", mini ? "text-lg" : hero ? "text-4xl" : "text-3xl")}>
             LBPay
           </span>
         </div>
       )}
-      <div className={cn(compact ? "px-3 py-2.5" : "px-5 py-4", lightText(kind) && "text-white")}>
-        {!compact ? (
+      <div className={cn(mini ? "px-3 py-2.5" : hero ? "px-6 py-5" : "px-5 py-4", lightText(kind) && "text-white")}>
+        {!mini ? (
           <p
             className={cn(
               "text-[11px] font-semibold uppercase tracking-[0.14em]",
@@ -61,19 +69,25 @@ export function ProductLinkFrame({
             {shop}
           </p>
         ) : null}
-        <p className={cn("font-semibold", compact ? "truncate text-sm" : "text-lg", lightText(kind) ? "text-white" : "text-ink")}>
+        <p
+          className={cn(
+            "font-semibold",
+            mini ? "truncate text-sm" : hero ? "text-2xl" : "text-lg",
+            lightText(kind) ? "text-white" : "text-ink",
+          )}
+        >
           {name}
         </p>
         <p
           className={cn(
             "font-mono font-bold",
-            compact ? "mt-0.5 text-sm" : "mt-1 text-2xl",
+            mini ? "mt-0.5 text-sm" : hero ? "mt-2 text-3xl" : "mt-1 text-2xl",
             lightText(kind) ? "text-white" : "text-brand",
           )}
         >
           {price}
         </p>
-        {!compact ? <FrameFooter kind={kind} /> : null}
+        {!mini ? <FrameFooter kind={kind} /> : null}
       </div>
     </div>
   );
