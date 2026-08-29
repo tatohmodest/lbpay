@@ -5,8 +5,11 @@
   "compatibility_date": "2025-10-01",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "minify": true,
+  "upload_source_maps": false,
+  // Dashboard Build command is typically `npm run build`. wrangler deploy still
+  // runs this so a Next-only compile still produces .open-next/worker.js.
   "build": {
-    "command": "node scripts/strip-og-wasm.mjs"
+    "command": "bash scripts/cf-build.sh"
   },
   "alias": {
     "next/dist/compiled/@vercel/og/index.edge.js": "./lib/og-stub.js",

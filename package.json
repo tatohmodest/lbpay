@@ -4,12 +4,14 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "node scripts/npm-build.mjs",
     "start": "next start",
     "lint": "eslint",
-    "preview": "opennextjs-cloudflare build && node scripts/strip-og-wasm.mjs && opennextjs-cloudflare preview",
-    "deploy": "opennextjs-cloudflare build && node scripts/strip-og-wasm.mjs && opennextjs-cloudflare deploy",
-    "cf-build": "opennextjs-cloudflare build && node scripts/strip-og-wasm.mjs"
+    "postinstall": "node scripts/strip-og-wasm.mjs",
+    "preview": "bash scripts/cf-build.sh && wrangler dev",
+    "deploy": "bash scripts/cf-build.sh && wrangler deploy",
+    "upload": "bash scripts/cf-build.sh && wrangler versions upload",
+    "cf-build": "bash scripts/cf-build.sh"
   },
   "dependencies": {
     "@opennextjs/cloudflare": "^1.20.4",
