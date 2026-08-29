@@ -27,8 +27,13 @@ export type RailResult = {
   hostedUrl?: string;
 };
 
+export type RailStatusOptions = {
+  payToken?: string;
+  kind?: "collect" | "disburse";
+};
+
 export interface PaymentRail {
   collect(input: RailCollectInput): Promise<RailResult>;
   disburse(input: RailDisburseInput): Promise<RailResult>;
-  getStatus?(reference: string): Promise<RailResult>;
+  getStatus?(reference: string, options?: RailStatusOptions): Promise<RailResult>;
 }

@@ -50,7 +50,7 @@ export default function DepositPage() {
     { label: "From", value: method === "mtn" ? "MTN" : "Orange" },
     { label: "Number", value: clean },
     { label: "Wallet receives", value: formatXAF(value) },
-    ...(fee ? [{ label: "Charge", value: formatXAF(fee) }] : []),
+    ...(fee ? [{ label: "Charge (2%)", value: formatXAF(fee) }] : []),
     { label: "You pay", value: formatXAF(payAmount) },
   ];
 
@@ -221,6 +221,7 @@ export default function DepositPage() {
               fee={fee}
               pay={payAmount}
               receiveLabel="Wallet receives"
+              feeLabel="Charge (2%)"
             />
             <Button type="submit" disabled={!ready}>
               Review deposit

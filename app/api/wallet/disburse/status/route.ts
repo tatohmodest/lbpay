@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { settleRailTx } from "@/lib/server/db";
+import { findTxByRailRef, settleRailTx } from "@/lib/server/db";
 import { getPaymentRail } from "@/lib/providers";
 import { requireActiveUser } from "@/lib/server/guard";
 import { publicPaymentError } from "@/lib/public-error";
@@ -8,15 +8,19 @@ export async function GET(request: Request) {
   try {
     const auth = await requireActiveUser();
     if (auth.error || !auth.user) return auth.error!;
-    const tx = new URL(request.url).searchParams.get("tx") || "";
-    if (!tx) return NextResponse.json({ error: "Transaction id is required." }, { status: 400 });
+    const txId = new URL(request.url).searchParams.get("tx") || "";
+    if (!txId) return NextResponse.json({ error: "Transaction id is required." }, { status: 400 });
 
+    const existing = await findTxByRailRef(txId);
     const rail = getPaymentRail();
     const result = rail.getStatus
-      ? await rail.getStatus(tx, { kind: "collect" })
-      : { status: "pending" as const, reference: tx, message: undefined };
+      ? await rail.getStatus(existing?.railRef || txId, {
+          kind: "disburse",
+          payToken: existing?.meta?.payToken,
+        })
+      : { status: "pending" as const, reference: txId, message: undefined };
     if (result.status === "success" || result.status === "failed") {
-      await settleRailTx(tx, result.status).catch(() => null);
+      await settleRailTx(existing?.railRef || txId, result.status).catch(() => null);
     }
     return NextResponse.json({
       ok: true,

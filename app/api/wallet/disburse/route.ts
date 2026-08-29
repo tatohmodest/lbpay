@@ -84,9 +84,10 @@ export async function POST(request: Request) {
       note: fee
         ? `Disbursement to ${network.toUpperCase()} · ${fee} XAF fee`
         : `Disbursement to ${network.toUpperCase()}`,
-      status: result.status,
+      status: result.status === "success" ? "success" : "pending",
       rail: result.provider,
       railRef: result.reference,
+      meta: result.providerRef ? { payToken: result.providerRef } : undefined,
     });
     return NextResponse.json({
       ok: true,
@@ -95,6 +96,7 @@ export async function POST(request: Request) {
       balance: moved.balance,
       fee,
       debitAmount: amount + fee,
+      transactionId: result.reference,
       transaction: moved.tx,
     });
   } catch (error) {

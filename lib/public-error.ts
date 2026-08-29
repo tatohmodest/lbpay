@@ -3,6 +3,9 @@ const AUTH =
 const COLLECTION_OFF =
   /activate collection|can't process operation|cannot process operation|collection (is )?not (active|enabled)/i;
 const INSUFFICIENT_MOMO = /momo|mobile money|orange money|insufficient (float|account)/i;
+const DISBURSE_OFF =
+  /disbursement (is )?not (active|enabled)|activate disbursement|deposit (service )?not (active|enabled)|can't process (the )?deposit|cannot process (the )?deposit/i;
+const INVALID_ACCOUNT = /invalid (account|phone|msisdn)|account(_| )number|beneficiary/i;
 const INSUFFICIENT_WALLET = /insufficient wallet|insufficient (wallet )?balance/i;
 const TIMEOUT = /timeout|timed out|etimedout|network.*slow/i;
 const DUPLICATE = /duplicate|already (been )?(submitted|processed|exists)/i;
@@ -20,10 +23,16 @@ export function mapRailError(raw: unknown): PublicError {
       user: "Payment service is temporarily unavailable. Please try again later or contact support if the problem continues.",
     };
   }
-  if (COLLECTION_OFF.test(text)) {
+  if (COLLECTION_OFF.test(text) || DISBURSE_OFF.test(text)) {
     return {
       code: "COLLECTION_SERVICE_NOT_ACTIVE",
       user: "This payment service is currently unavailable. We're working to restore it. Please try again later.",
+    };
+  }
+  if (INVALID_ACCOUNT.test(text)) {
+    return {
+      code: "INVALID_ACCOUNT",
+      user: "That Mobile Money number could not be paid. Check the number and network, then try again.",
     };
   }
   if (INSUFFICIENT_WALLET.test(text)) {

@@ -60,9 +60,10 @@ export async function POST(request: Request) {
     method: network,
     counterparty: phone,
     note: fee ? `API disbursement · ${fee} XAF fee` : "API disbursement",
-    status: result.status,
+    status: result.status === "success" ? "success" : "pending",
     rail: result.provider,
-    railRef: reference,
+    railRef: result.reference || reference,
+    meta: result.providerRef ? { payToken: result.providerRef } : undefined,
   });
   await logApi(user.id, "POST", "/v1/payouts", 200);
   return NextResponse.json({

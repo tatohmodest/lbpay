@@ -71,7 +71,7 @@ export default function PayoutsPage() {
               setOpen(true);
             }}
           >
-            <AmountField value={amount} onChange={setAmount} kind="withdraw" receive={value} fee={fee} pay={debit} />
+            <AmountField value={amount} onChange={setAmount} kind="withdraw" receive={value} fee={fee} feeLabel="Charge (3%)" pay={debit} />
             <Field label="Number">
               <Input
                 inputMode="numeric"

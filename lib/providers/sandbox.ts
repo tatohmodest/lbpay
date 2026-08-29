@@ -25,7 +25,7 @@ export class SandboxRail implements PaymentRail {
     };
   }
 
-  async getStatus(reference: string): Promise<RailResult> {
+  async getStatus(reference: string, _options?: { payToken?: string; kind?: "collect" | "disburse" }): Promise<RailResult> {
     return {
       provider: "sandbox",
       reference,

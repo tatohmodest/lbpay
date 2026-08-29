@@ -66,6 +66,7 @@ export type StoredTx = Transaction & {
     toNetwork?: "mtn" | "orange";
     stage?: "collecting" | "paying" | "done";
     payoutRef?: string;
+    payToken?: string;
     linkSlug?: string;
     handle?: string;
     refunded?: boolean;
@@ -793,7 +794,12 @@ export async function clearOtp(email: string) {
 
 export async function settleRailTx(railRef: string, status: TransactionStatus) {
   const db = await getDb();
-  const tx = db.transactions.find((item) => item.railRef === railRef);
+  const tx = db.transactions.find(
+    (item) =>
+      item.railRef === railRef ||
+      item.meta?.payoutRef === railRef ||
+      item.meta?.payToken === railRef,
+  );
   if (!tx) return { ok: false as const, reason: "not_found" };
   if (tx.status === "success" || tx.status === "failed" || tx.status === "cancelled") {
     return { ok: true as const, noop: true, tx };
@@ -832,7 +838,14 @@ export async function findTxById(id: string) {
 
 export async function findTxByRailRef(railRef: string) {
   const db = await getDb();
-  return db.transactions.find((tx) => tx.railRef === railRef) ?? null;
+  return (
+    db.transactions.find(
+      (tx) =>
+        tx.railRef === railRef ||
+        tx.meta?.payoutRef === railRef ||
+        tx.meta?.payToken === railRef,
+    ) ?? null
+  );
 }
 
 export async function patchTx(id: string, patch: Partial<StoredTx>) {

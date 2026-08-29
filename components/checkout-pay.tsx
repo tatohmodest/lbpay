@@ -293,7 +293,7 @@ export function CheckoutPay({
                   </div>
                   {fee ? (
                     <div className="flex justify-between gap-3">
-                      <span className="text-muted">Charge</span>
+                      <span className="text-muted">Charge (2%)</span>
                       <span className="font-mono font-semibold">{formatXAF(fee)}</span>
                     </div>
                   ) : null}
@@ -312,6 +312,7 @@ export function CheckoutPay({
                 kind={amountKind}
                 receive={value}
                 fee={method === "wallet" ? 0 : fee}
+                feeLabel="Charge (2%)"
                 pay={method === "wallet" ? undefined : payAmount}
               />
             </div>

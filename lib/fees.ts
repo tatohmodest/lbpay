@@ -1,5 +1,5 @@
 export const FEE_RATES = {
-  deposit: 0.03,
+  deposit: 0.02,
   withdraw: 0.03,
   crossNetwork: 0.06,
   airtime: 0,
