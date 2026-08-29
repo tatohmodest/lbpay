@@ -11,13 +11,14 @@ import {
 } from "./providers/payunit-parse";
 import { parsePaymentLinkPatch } from "./server/payment-links";
 import { payunitGatewayUrl } from "./site";
+import { mapRailError } from "./public-error";
 
-test("deposit and withdrawal are 2 percent", () => {
+test("deposit is 2 percent and withdrawal is 3 percent", () => {
   assert.equal(FEE_RATES.deposit, 0.02);
-  assert.equal(FEE_RATES.withdraw, 0.02);
+  assert.equal(FEE_RATES.withdraw, 0.03);
   assert.equal(depositFee(10_000), 200);
-  assert.equal(momoOutFee(10_000), 200);
-  assert.equal(directTransferFee(10_000, "mtn", "mtn"), 200);
+  assert.equal(momoOutFee(10_000), 300);
+  assert.equal(directTransferFee(10_000, "mtn", "mtn"), 300);
   assert.equal(directTransferFee(10_000, "mtn", "orange"), 600);
 });
 
@@ -90,4 +91,16 @@ test("payment link patches can change title without wiping the photo", () => {
     assert.equal(parsed.value.imageUrl, undefined);
     assert.equal(parsed.value.template, undefined);
   }
+});
+
+test("PayUnit merchant float and approval errors are not hidden as temporarily unavailable", () => {
+  assert.equal(mapRailError("Insufficient float on merchant account").code, "INSUFFICIENT_MERCHANT_FLOAT");
+  assert.equal(mapRailError("Approval required for this disbursement").code, "DISBURSEMENT_APPROVAL");
+});
+
+test("PayUnit 401 activate-collection is not shown as a generic outage", () => {
+  const mapped = mapRailError(
+    "Authentication failed. Please check your credentials or authorisations needed. can't process operation, contact admin to activate collection",
+  );
+  assert.equal(mapped.code, "PAYUNIT_PRODUCT_NOT_ACTIVE");
 });

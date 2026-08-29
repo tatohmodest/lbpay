@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Field, Input } from "@/components/ui/input";
@@ -37,6 +37,7 @@ export default function DepositPage() {
   const [pinLockedUntil, setPinLockedUntil] = useState(0);
   const [waiting, setWaiting] = useState<{ tx: string; seconds: number } | null>(null);
   const [checking, setChecking] = useState(false);
+  const verifyLock = useRef(false);
 
   const balance = me.data?.balance ?? state.balance;
   const value = Number(amount) || 0;
@@ -88,7 +89,8 @@ export default function DepositPage() {
   );
 
   const verifyNow = useCallback(async () => {
-    if (!waiting?.tx) return;
+    if (!waiting?.tx || verifyLock.current) return;
+    verifyLock.current = true;
     setChecking(true);
     try {
       const res = await fetch(`/api/wallet/collect/status?tx=${encodeURIComponent(waiting.tx)}`);
@@ -108,6 +110,9 @@ export default function DepositPage() {
         return;
       }
       notify.info("Not confirmed yet", `If you have not seen a popup, dial ${ussdCode} and confirm pay.`);
+      verifyLock.current = false;
+    } catch {
+      verifyLock.current = false;
     } finally {
       setChecking(false);
     }

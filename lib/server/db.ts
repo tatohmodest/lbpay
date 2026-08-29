@@ -9,6 +9,8 @@ import { normalizeLinkTemplate } from "@/lib/link-templates";
 import { cloudinaryPublicId } from "@/lib/server/cloudinary";
 import { isDeletedLinkId, mergeById, mergePaymentLinks, uniqueIds } from "@/lib/server/ledger-merge";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { withLedgerLock } from "@/lib/server/ledger-lock";
+import { applyRailSettlement } from "@/lib/server/settle-rail";
 import type { BusinessKind } from "@/lib/kyc";
 import type {
   AccountKind,
@@ -72,6 +74,8 @@ export type StoredTx = Transaction & {
     linkSlug?: string;
     handle?: string;
     refunded?: boolean;
+    creditApplied?: boolean;
+    refundApplied?: boolean;
   };
 };
 
@@ -711,6 +715,30 @@ export async function recordLedgerMove(params: {
   fee?: number;
   meta?: StoredTx["meta"];
 }) {
+  return withLedgerLock(() => recordLedgerMoveUnlocked(params));
+}
+
+async function recordLedgerMoveUnlocked(params: {
+  userId: string;
+  amount: number;
+  direction: "credit" | "debit";
+  kind: TransactionKind;
+  method: PaymentMethod;
+  counterparty: string;
+  note?: string;
+  status?: TransactionStatus;
+  rail?: StoredTx["rail"];
+  railRef?: string;
+  fee?: number;
+  meta?: StoredTx["meta"];
+}) {
+  if (params.railRef) {
+    const existing = await findTxByRailRef(params.railRef);
+    if (existing && existing.userId === params.userId && existing.kind === params.kind) {
+      const wallet = (await getDb()).wallets.find((w) => w.userId === params.userId);
+      return { tx: existing, balance: wallet?.balance ?? 0 };
+    }
+  }
   const db = await getDb();
   const wallet = db.wallets.find((w) => w.userId === params.userId);
   if (!wallet) throw new Error("Wallet missing");
@@ -738,7 +766,10 @@ export async function recordLedgerMove(params: {
     createdAt: new Date().toISOString(),
     rail: params.rail,
     railRef: params.railRef,
-    meta: params.meta,
+    meta: {
+      ...params.meta,
+      ...(params.direction === "credit" && applyNow ? { creditApplied: true } : {}),
+    },
   };
   db.transactions.unshift(tx);
   await saveDb(db);
@@ -793,37 +824,35 @@ export async function clearOtp(email: string) {
 }
 
 export async function settleRailTx(railRef: string, status: TransactionStatus) {
+  return withLedgerLock(() => settleRailTxUnlocked(railRef, status));
+}
+
+async function settleRailTxUnlocked(railRef: string, status: TransactionStatus) {
   const db = await getDb();
   const tx = db.transactions.find(
     (item) =>
+      item.id === railRef ||
       item.railRef === railRef ||
       item.meta?.payoutRef === railRef ||
       item.meta?.payToken === railRef,
   );
   if (!tx) return { ok: false as const, reason: "not_found" };
-  if (tx.status === "success" || tx.status === "failed" || tx.status === "cancelled") {
-    return { ok: true as const, noop: true, tx };
-  }
   const wallet = db.wallets.find((item) => item.userId === tx.userId);
   if (!wallet) throw new Error("Wallet missing");
-  const isCredit = tx.kind === "deposit" || tx.kind === "receive" || tx.kind === "collection";
-  if (status === "success") {
-    if (isCredit && tx.status === "pending") wallet.balance += tx.amount;
-    tx.status = "success";
-    if (tx.kind === "collection" && tx.meta?.linkSlug) {
-      const link = db.links.find((item) => item.slug === tx.meta?.linkSlug);
-      if (link) {
-        link.collected += tx.amount;
-        link.payments += 1;
-      }
+  const applied = applyRailSettlement(tx, wallet, status);
+  if (applied.noop) {
+    return { ok: true as const, noop: true, tx, balance: wallet.balance };
+  }
+  if (applied.credited && tx.kind === "collection" && tx.meta?.linkSlug) {
+    const link = db.links.find((item) => item.slug === tx.meta?.linkSlug);
+    if (link) {
+      link.collected += tx.amount;
+      link.payments += 1;
     }
-  } else {
-    if (!isCredit && tx.status === "pending") wallet.balance += tx.amount + (tx.fee || 0);
-    tx.status = status === "cancelled" ? "cancelled" : "failed";
   }
   await saveDb(db);
   await emitPush((mod) => mod.pushForTransaction(tx));
-  return { ok: true as const, tx, balance: wallet.balance };
+  return { ok: true as const, tx, balance: wallet.balance, credited: applied.credited };
 }
 
 export async function listAllTx() {
@@ -841,6 +870,7 @@ export async function findTxByRailRef(railRef: string) {
   return (
     db.transactions.find(
       (tx) =>
+        tx.id === railRef ||
         tx.railRef === railRef ||
         tx.meta?.payoutRef === railRef ||
         tx.meta?.payToken === railRef,

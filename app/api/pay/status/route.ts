@@ -8,15 +8,28 @@ export async function GET(request: Request) {
     const tx = new URL(request.url).searchParams.get("tx") || "";
     if (!tx) return NextResponse.json({ error: "Transaction id is required." }, { status: 400 });
 
+    const existing = await findTxByRailRef(tx);
+    if (existing && (existing.status === "success" || existing.status === "failed" || existing.status === "cancelled")) {
+      return NextResponse.json({
+        ok: true,
+        status: existing.status === "cancelled" ? "failed" : existing.status,
+        transactionId: existing.railRef || tx,
+        message:
+          existing.status === "failed" || existing.status === "cancelled"
+            ? "Your transaction could not be completed. No money has been deducted. Please try again."
+            : undefined,
+      });
+    }
+
     const rail = getPaymentRail();
     const result = rail.getStatus
-      ? await rail.getStatus(tx)
+      ? await rail.getStatus(existing?.railRef || tx, { kind: "collect" })
       : { status: "pending" as const, reference: tx, message: undefined };
     if (result.status === "success" || result.status === "failed") {
-      await settleRailTx(tx, result.status).catch(() => null);
+      await settleRailTx(existing?.railRef || tx, result.status).catch(() => null);
     }
-    const latest = await findTxByRailRef(tx);
-    const status = latest?.status || result.status;
+    const latest = await findTxByRailRef(existing?.railRef || tx);
+    const status = latest?.status === "cancelled" ? "failed" : latest?.status || result.status;
     return NextResponse.json({
       ok: true,
       status,

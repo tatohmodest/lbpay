@@ -237,14 +237,18 @@ export class PayUnitRail implements PaymentRail {
       }
 
       const body = unwrapPayunitBody(confirmed);
-      const status = railStatus(pickStatusRaw(confirmed) || String(body.status || ""));
+      const approvalRequired = Boolean(body.is_approval_required) && body.is_approved !== true;
+      const status = approvalRequired
+        ? "pending"
+        : railStatus(pickStatusRaw(confirmed) || String(body.status || ""));
       return {
         provider: "payunit",
         reference: pickTransactionId(confirmed, input.reference),
         providerRef: payToken,
         status: status === "failed" ? "failed" : status === "success" ? "success" : "pending",
-        message:
-          status === "failed"
+        message: approvalRequired
+          ? "PayUnit created the withdrawal but it is waiting for approval in the PayUnit merchant dashboard."
+          : status === "failed"
             ? publicPaymentError(String(body.system_note || body.message || "failed"))
             : undefined,
         raw: { created, confirmed },

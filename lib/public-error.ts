@@ -2,7 +2,10 @@ const AUTH =
   /authentication failed|check your credentials|invalid api key|unauthorized|api username|api password/i;
 const COLLECTION_OFF =
   /activate collection|can't process operation|cannot process operation|collection (is )?not (active|enabled)/i;
-const INSUFFICIENT_MOMO = /momo|mobile money|orange money|insufficient (float|account)/i;
+const INSUFFICIENT_MOMO = /your (momo|mobile money|orange money).{0,40}insufficient|insufficient (momo|mobile money)/i;
+const MERCHANT_FLOAT =
+  /insufficient (float|merchant|disbursement|payout|account balance)|not enough (balance|funds|float)|low (float|balance)/i;
+const APPROVAL = /approval required|is_approval_required|awaiting approval|not approved/i;
 const DISBURSE_OFF =
   /disbursement (is )?not (active|enabled)|activate disbursement|deposit (service )?not (active|enabled)|can't process (the )?deposit|cannot process (the )?deposit/i;
 const INVALID_ACCOUNT = /invalid (account|phone|msisdn)|account(_| )number|beneficiary/i;
@@ -17,16 +20,16 @@ export type PublicError = { code: string; user: string };
 
 export function mapRailError(raw: unknown): PublicError {
   const text = raw instanceof Error ? raw.message : String(raw || "");
+  if (COLLECTION_OFF.test(text) || DISBURSE_OFF.test(text)) {
+    return {
+      code: "PAYUNIT_PRODUCT_NOT_ACTIVE",
+      user: "PayUnit has not activated Mobile Money disbursement on this merchant account. A PayUnit balance is not enough — ask PayUnit support to enable the deposit/disbursement product, then try again.",
+    };
+  }
   if (AUTH.test(text)) {
     return {
       code: "AUTHENTICATION_FAILED",
-      user: "Payment service is temporarily unavailable. Please try again later or contact support if the problem continues.",
-    };
-  }
-  if (COLLECTION_OFF.test(text) || DISBURSE_OFF.test(text)) {
-    return {
-      code: "COLLECTION_SERVICE_NOT_ACTIVE",
-      user: "This payment service is currently unavailable. We're working to restore it. Please try again later.",
+      user: "PayUnit rejected this request. Check that the live API keys are correct and that disbursement is enabled on the merchant account.",
     };
   }
   if (INVALID_ACCOUNT.test(text)) {
@@ -39,6 +42,18 @@ export function mapRailError(raw: unknown): PublicError {
     return {
       code: "INSUFFICIENT_WALLET",
       user: "Insufficient wallet balance. Deposit funds or enter a lower amount.",
+    };
+  }
+  if (MERCHANT_FLOAT.test(text)) {
+    return {
+      code: "INSUFFICIENT_MERCHANT_FLOAT",
+      user: "PayUnit does not have enough disbursement balance to send this payout. Top up the PayUnit merchant wallet, then try again.",
+    };
+  }
+  if (APPROVAL.test(text)) {
+    return {
+      code: "DISBURSEMENT_APPROVAL",
+      user: "PayUnit created the withdrawal but it is waiting for approval in the PayUnit merchant dashboard.",
     };
   }
   if (INSUFFICIENT_MOMO.test(text)) {

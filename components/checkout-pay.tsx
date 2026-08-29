@@ -86,6 +86,7 @@ export function CheckoutPay({
     (method !== "wallet" || signedIn);
 
   const startedTx = useRef("");
+  const verifyLock = useRef(false);
 
   const markPaid = useCallback(() => {
     setWaiting(null);
@@ -191,7 +192,8 @@ export function CheckoutPay({
   }
 
   async function verifyNow() {
-    if (!waiting?.tx) return;
+    if (!waiting?.tx || verifyLock.current) return;
+    verifyLock.current = true;
     setChecking(true);
     try {
       const res = await fetch(`/api/pay/status?tx=${encodeURIComponent(waiting.tx)}`);
@@ -208,6 +210,9 @@ export function CheckoutPay({
         return;
       }
       setError(`If you have not seen a popup, dial ${ussdCode} and confirm pay.`);
+      verifyLock.current = false;
+    } catch {
+      verifyLock.current = false;
     } finally {
       setChecking(false);
     }
