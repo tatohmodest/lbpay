@@ -73,6 +73,7 @@ export type PaymentLink = {
   payments: number;
   createdAt: string;
   imageUrl?: string;
+  imagePublicId?: string;
   template?: string;
 };
 

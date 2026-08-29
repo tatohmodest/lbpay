@@ -30,18 +30,21 @@ export function PaymentLinkForm({
     title?: string;
     amount?: number | null;
     imageUrl?: string;
+    imagePublicId?: string;
     template?: string;
   };
   onSubmit: (input: {
     title: string;
     amount: string;
     imageUrl?: string;
+    imagePublicId?: string;
     template: LinkTemplateId;
   }) => void | Promise<void>;
 }) {
   const [title, setTitle] = useState(initial?.title || "");
   const [amount, setAmount] = useState(initial?.amount ? String(initial.amount) : "");
   const [imageUrl, setImageUrl] = useState(initial?.imageUrl || "");
+  const [imagePublicId, setImagePublicId] = useState(initial?.imagePublicId || "");
   const [template, setTemplate] = useState<LinkTemplateId>(
     (initial?.template as LinkTemplateId) || DEFAULT_LINK_TEMPLATE,
   );
@@ -53,13 +56,20 @@ export function PaymentLinkForm({
       onSubmit={(e) => {
         e.preventDefault();
         void Promise.resolve(
-          onSubmit({ title, amount, imageUrl: imageUrl || undefined, template }),
+          onSubmit({
+            title,
+            amount,
+            imageUrl: imageUrl || undefined,
+            imagePublicId: imagePublicId || undefined,
+            template,
+          }),
         )
           .then(() => {
             if (editing) return;
             setTitle("");
             setAmount("");
             setImageUrl("");
+            setImagePublicId("");
             setTemplate(DEFAULT_LINK_TEMPLATE);
           })
           .catch(() => undefined);
@@ -78,7 +88,13 @@ export function PaymentLinkForm({
               onChange={(e) => setAmount(e.target.value)}
             />
           </Field>
-          <ProductPhotoField url={imageUrl} onUploaded={setImageUrl} />
+          <ProductPhotoField
+            url={imageUrl}
+            onUploaded={(url, publicId) => {
+              setImageUrl(url);
+              setImagePublicId(publicId || "");
+            }}
+          />
           <div className="min-w-0">
             <p className="mb-1 text-sm font-semibold text-ink">Finance template</p>
             <p className="mb-3 text-sm text-muted">Pick a wrap. Slide the row if you need more.</p>

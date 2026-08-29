@@ -1,7 +1,13 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { addLink, deleteLink, listLinks, listTx, updateLink } from "@/lib/server/db";
+import { deleteCloudinaryImage } from "@/lib/server/cloudinary";
 import { requireKind } from "@/lib/server/guard";
-import { buildPaymentLink, parsePaymentLinkInput, parsePaymentLinkPatch } from "@/lib/server/payment-links";
+import {
+  buildPaymentLink,
+  parsePaymentLinkInput,
+  parsePaymentLinkPatch,
+  paymentLinkIdFromRequest,
+} from "@/lib/server/payment-links";
 
 export async function GET() {
   const auth = await requireKind("business");
@@ -49,13 +55,17 @@ export async function PATCH(request: Request) {
 export async function DELETE(request: Request) {
   const auth = await requireKind("business");
   if (auth.error || !auth.user) return auth.error!;
-  const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
-  const id = String(body.id || body.slug || "").trim();
+  const id = await paymentLinkIdFromRequest(request);
   if (!id) return NextResponse.json({ error: "Missing id or slug" }, { status: 400 });
 
   try {
-    const ok = await deleteLink(auth.user.id, id);
-    return NextResponse.json({ ok });
+    const result = await deleteLink(auth.user.id, id);
+    if (result.imageRef) {
+      after(async () => {
+        await deleteCloudinaryImage(result.imageRef);
+      });
+    }
+    return NextResponse.json({ ok: true });
   } catch (err: unknown) {
     return NextResponse.json({ error: err instanceof Error ? err.message : "Failed" }, { status: 400 });
   }

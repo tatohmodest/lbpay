@@ -46,7 +46,13 @@ export default function BusinessPage() {
     },
   });
   const create = useMutation({
-    mutationFn: (input: { title: string; amount: string; imageUrl?: string; template: string }) =>
+    mutationFn: (input: {
+      title: string;
+      amount: string;
+      imageUrl?: string;
+      imagePublicId?: string;
+      template: string;
+    }) =>
       fetch("/api/business", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -54,6 +60,7 @@ export default function BusinessPage() {
           title: input.title,
           amount: input.amount ? Number(input.amount) : null,
           imageUrl: input.imageUrl,
+          imagePublicId: input.imagePublicId,
           template: input.template,
         }),
       }).then(async (res) => {

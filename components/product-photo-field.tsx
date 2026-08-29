@@ -10,7 +10,7 @@ export function ProductPhotoField({
   onUploaded,
 }: {
   url?: string;
-  onUploaded: (url: string) => void;
+  onUploaded: (url: string, publicId?: string) => void;
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -28,9 +28,9 @@ export function ProductPhotoField({
       const body = new FormData();
       body.set("file", compressed);
       const res = await fetch("/api/links/upload", { method: "POST", body });
-      const data = (await res.json().catch(() => ({}))) as { error?: string; url?: string };
+      const data = (await res.json().catch(() => ({}))) as { error?: string; url?: string; publicId?: string };
       if (!res.ok || !data.url) throw new Error(data.error || "Could not upload that photo.");
-      onUploaded(data.url);
+      onUploaded(data.url, data.publicId);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not upload that photo.");
     } finally {

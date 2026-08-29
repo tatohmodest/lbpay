@@ -57,6 +57,7 @@ export function PaymentLinkManageList({
     title: string;
     amount: string;
     imageUrl?: string;
+    imagePublicId?: string;
     template: string;
   }) {
     if (!editing) return;
@@ -71,6 +72,7 @@ export function PaymentLinkManageList({
             title: input.title,
             amount: input.amount ? Number(input.amount) : null,
             imageUrl: input.imageUrl,
+            imagePublicId: input.imagePublicId,
             template: input.template,
           }),
         }),
@@ -89,20 +91,26 @@ export function PaymentLinkManageList({
   async function remove(link: ManagedPaymentLink) {
     if (!confirm(`Delete “${link.title}”? Customers will no longer be able to pay this link.`)) return;
     setDeletingId(link.id);
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), 20000);
     try {
       await readJson(
-        await fetch(apiPath, {
+        await fetch(`${apiPath}?id=${encodeURIComponent(link.id)}`, {
           method: "DELETE",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id: link.id }),
+          signal: controller.signal,
         }),
       );
       if (editing?.id === link.id) setEditing(null);
-      notify.success("Deleted", "Payment link removed.");
+      notify.success("Deleted", "Payment link and photo removed.");
       refresh();
     } catch (err) {
-      notify.error("Could not delete", err instanceof Error ? err.message : "Failed");
+      const timedOut = err instanceof DOMException && err.name === "AbortError";
+      notify.error(
+        "Could not delete",
+        timedOut ? "The request timed out. Refresh and try again." : err instanceof Error ? err.message : "Failed",
+      );
     } finally {
+      window.clearTimeout(timer);
       setDeletingId(null);
     }
   }

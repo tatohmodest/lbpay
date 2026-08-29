@@ -22,6 +22,16 @@ function client() {
   return cloudinary;
 }
 
+function inferCloudName(url: string) {
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname !== "res.cloudinary.com") return "";
+    return decodeURIComponent(parsed.pathname).split("/").filter(Boolean)[0] || "";
+  } catch {
+    return "";
+  }
+}
+
 export function isOurCloudinaryUrl(url: string) {
   const name = cloudName();
   if (!name || !url) return false;
@@ -30,6 +40,73 @@ export function isOurCloudinaryUrl(url: string) {
     return parsed.protocol === "https:" && parsed.hostname === "res.cloudinary.com" && parsed.pathname.startsWith(`/${name}/`);
   } catch {
     return false;
+  }
+}
+
+function isTransformSegment(part: string) {
+  if (!part) return true;
+  if (part.startsWith("s--") && part.endsWith("--")) return true;
+  if (/^v\d+$/.test(part)) return true;
+  return /[,=]/.test(part) || /^(c_|w_|h_|q_|f_|e_|g_|x_|y_|r_|b_|l_|o_|dpr_|ar_)/.test(part);
+}
+
+/** Public id from a Cloudinary URL, including transformed delivery URLs. */
+export function cloudinaryPublicId(urlOrPublicId: string | null | undefined): string | null {
+  const raw = String(urlOrPublicId || "").trim();
+  if (!raw) return null;
+  if (!raw.includes("://") && !raw.includes("/upload/")) {
+    const id = raw.replace(/\.[^./]+$/, "");
+    return id && !id.includes("://") ? id : null;
+  }
+
+  let path = raw;
+  try {
+    if (raw.includes("://")) path = decodeURIComponent(new URL(raw).pathname);
+  } catch {
+    return null;
+  }
+
+  const marker = "/upload/";
+  const idx = path.indexOf(marker);
+  if (idx === -1) return null;
+  const rest = path.slice(idx + marker.length);
+  const versioned = rest.match(/^(?:.*\/)?v\d+\/(.+)$/);
+  let withExt = versioned?.[1] || "";
+  if (!withExt) {
+    const parts = rest.split("/").filter(Boolean);
+    const start = parts.findIndex((part) => !isTransformSegment(part));
+    if (start === -1) return null;
+    withExt = parts.slice(start).join("/");
+  }
+  const publicId = withExt.replace(/\.[^./]+$/, "");
+  return publicId && !publicId.includes("://") ? publicId : null;
+}
+
+function deleteClient(urlOrPublicId?: string) {
+  const name = cloudName() || (urlOrPublicId && urlOrPublicId.includes("://") ? inferCloudName(urlOrPublicId) : "");
+  if (!name || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+    return null;
+  }
+  cloudinary.config({
+    cloud_name: name,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+    secure: true,
+  });
+  return cloudinary;
+}
+
+async function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T | undefined> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<undefined>((resolve) => {
+        timer = setTimeout(() => resolve(undefined), ms);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
   }
 }
 
@@ -133,20 +210,19 @@ export async function uploadProductImage(input: {
   };
 }
 
-export async function deleteCloudinaryImage(urlOrPublicId: string | null | undefined) {
+export async function deleteCloudinaryImage(urlOrPublicId: string | null | undefined, timeoutMs = 8000) {
   if (!urlOrPublicId) return false;
-  if (!cloudinaryConfigured()) return false;
+  const api = deleteClient(urlOrPublicId);
+  if (!api) return false;
+
+  const publicId = cloudinaryPublicId(urlOrPublicId);
+  if (!publicId) return false;
 
   try {
-    const publicId = urlOrPublicId.includes("/upload/")
-      ? decodeURIComponent(urlOrPublicId).split("/upload/")[1].replace(/^v\d+\//, "").replace(/\.[^./]+$/, "")
-      : urlOrPublicId;
-
-    if (!publicId || publicId.includes("://") || !publicId.includes("/")) {
-      return false;
-    }
-
-    const result = await client().uploader.destroy(publicId, { resource_type: "image" });
+    const result = await withTimeout(
+      api.uploader.destroy(publicId, { resource_type: "image", invalidate: true }),
+      timeoutMs,
+    );
     return result?.result === "ok" || result?.result === "not_found";
   } catch {
     return false;

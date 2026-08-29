@@ -25,7 +25,13 @@ export default function WalletLinksPage() {
     queryFn: async () => (await fetch("/api/wallet/links")).json() as Promise<{ links: LinkRow[] }>,
   });
   const create = useMutation({
-    mutationFn: (input: { title: string; amount: string; imageUrl?: string; template: string }) =>
+    mutationFn: (input: {
+      title: string;
+      amount: string;
+      imageUrl?: string;
+      imagePublicId?: string;
+      template: string;
+    }) =>
       fetch("/api/wallet/links", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -33,6 +39,7 @@ export default function WalletLinksPage() {
           title: input.title,
           amount: input.amount ? Number(input.amount) : null,
           imageUrl: input.imageUrl,
+          imagePublicId: input.imagePublicId,
           template: input.template,
         }),
       }).then(async (res) => {

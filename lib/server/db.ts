@@ -6,6 +6,8 @@ import { uid } from "@/lib/format";
 import { handleBase, isReservedHandle, normalizeHandle, numberedHandle } from "@/lib/handle";
 import { cameroonMsisdn } from "@/lib/phone";
 import { normalizeLinkTemplate } from "@/lib/link-templates";
+import { cloudinaryPublicId } from "@/lib/server/cloudinary";
+import { isDeletedLinkId, mergeById, mergePaymentLinks, uniqueIds } from "@/lib/server/ledger-merge";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import type { BusinessKind } from "@/lib/kyc";
 import type {
@@ -145,6 +147,7 @@ export type DbShape = {
   audit: AuditEntry[];
   webhooks: StoredWebhook[];
   links: StoredLink[];
+  deletedLinkIds?: string[];
   logs: StoredLog[];
   pushSubscriptions: StoredPushSubscription[];
   vapid?: { publicKey: string; privateKey: string };
@@ -172,13 +175,6 @@ function accountRowId(email: string) {
   return `user:${email.trim().toLowerCase()}`;
 }
 
-function mergeById<T extends { id: string }>(base: T[] = [], next: T[] = []) {
-  const map = new Map<string, T>();
-  for (const item of base) map.set(item.id, item);
-  for (const item of next) map.set(item.id, item);
-  return [...map.values()];
-}
-
 function mergeLedgers(base: DbShape, next: DbShape): DbShape {
   const users = new Map<string, StoredUser>();
   for (const user of [...(base.users || []), ...(next.users || [])]) {
@@ -190,6 +186,7 @@ function mergeLedgers(base: DbShape, next: DbShape): DbShape {
   for (const wallet of [...(base.wallets || []), ...(next.wallets || [])]) {
     wallets.set(wallet.userId, wallet);
   }
+  const deletedLinkIds = uniqueIds([base.deletedLinkIds, next.deletedLinkIds]);
   return {
     ...next,
     users: [...users.values()].map(normalizeUser),
@@ -199,7 +196,8 @@ function mergeLedgers(base: DbShape, next: DbShape): DbShape {
     keys: mergeById(base.keys, next.keys),
     audit: mergeById(base.audit, next.audit),
     webhooks: mergeById(base.webhooks, next.webhooks),
-    links: mergeById(base.links, next.links),
+    links: mergePaymentLinks(base.links, next.links, deletedLinkIds),
+    deletedLinkIds,
     logs: mergeById(base.logs, next.logs),
     pushSubscriptions: [
       ...new Map(
@@ -242,6 +240,7 @@ async function empty(): Promise<DbShape> {
     audit: [],
     webhooks: [],
     links: [],
+    deletedLinkIds: [],
     logs: [],
     pushSubscriptions: [],
   };
@@ -258,6 +257,7 @@ function withCollections(db: DbShape): DbShape {
     audit: db.audit || [],
     webhooks: db.webhooks || [],
     links: db.links || [],
+    deletedLinkIds: db.deletedLinkIds || [],
     logs: db.logs || [],
     pushSubscriptions: db.pushSubscriptions || [],
     vapid: db.vapid,
@@ -1028,11 +1028,45 @@ export async function findKeyBySecret(secret: string) {
 
 function normalizeStoredLink(link: StoredLink): StoredLink {
   const imageUrl = typeof link.imageUrl === "string" ? link.imageUrl.trim() : "";
+  const safeUrl = imageUrl.startsWith("https://") ? imageUrl : undefined;
+  const imagePublicId =
+    (typeof link.imagePublicId === "string" && link.imagePublicId.trim()) || cloudinaryPublicId(safeUrl) || undefined;
   return {
     ...link,
     template: normalizeLinkTemplate(link.template),
-    imageUrl: imageUrl.startsWith("https://") ? imageUrl : undefined,
+    imageUrl: safeUrl,
+    imagePublicId,
   };
+}
+
+function linkImageRef(link: Pick<StoredLink, "imagePublicId" | "imageUrl">) {
+  return link.imagePublicId || link.imageUrl || "";
+}
+
+async function removeLinkImage(ref: string | undefined) {
+  if (!ref) return;
+  try {
+    const { deleteCloudinaryImage } = await import("@/lib/server/cloudinary");
+    await deleteCloudinaryImage(ref);
+  } catch (error) {
+    console.error("[lbpay] could not delete payment-link image", error);
+  }
+}
+
+function activeLinks(db: DbShape) {
+  return (db.links || []).filter(
+    (item) => !isDeletedLinkId(db.deletedLinkIds, item.id) && !isDeletedLinkId(db.deletedLinkIds, item.slug),
+  );
+}
+
+function findLinkIndex(db: DbShape, idOrSlug: string) {
+  if (isDeletedLinkId(db.deletedLinkIds, idOrSlug)) return -1;
+  return db.links.findIndex(
+    (item) =>
+      (item.id === idOrSlug || item.slug === idOrSlug) &&
+      !isDeletedLinkId(db.deletedLinkIds, item.id) &&
+      !isDeletedLinkId(db.deletedLinkIds, item.slug),
+  );
 }
 
 export async function addLink(link: StoredLink) {
@@ -1045,63 +1079,68 @@ export async function addLink(link: StoredLink) {
 
 export async function listLinks(userId: string) {
   const db = await getDb();
-  return db.links.filter((item) => item.userId === userId).map(normalizeStoredLink);
+  return activeLinks(db)
+    .filter((item) => item.userId === userId)
+    .map(normalizeStoredLink);
 }
 
 export async function updateLink(userId: string, idOrSlug: string, changes: Partial<StoredLink>) {
   const db = await getDb();
-  const idx = db.links.findIndex((item) => item.id === idOrSlug || item.slug === idOrSlug);
+  const idx = findLinkIndex(db, idOrSlug);
   if (idx === -1) throw new Error("Payment link not found.");
   const link = db.links[idx];
   if (link.userId !== userId) throw new Error("Not authorized");
+  const previousImage = linkImageRef(link);
   const next: StoredLink = { ...link };
   if (typeof changes.title === "string") next.title = changes.title;
   if ("amount" in changes) next.amount = changes.amount ?? null;
   if ("imageUrl" in changes) next.imageUrl = changes.imageUrl;
+  if ("imagePublicId" in changes) next.imagePublicId = changes.imagePublicId;
+  else if ("imageUrl" in changes) next.imagePublicId = cloudinaryPublicId(changes.imageUrl) || undefined;
   if (changes.template) next.template = changes.template;
   if (changes.status) next.status = changes.status;
   const patched = normalizeStoredLink(next);
   db.links[idx] = patched;
   await saveDb(db);
+  const nextImage = linkImageRef(patched);
+  if (previousImage && previousImage !== nextImage && previousImage !== patched.imageUrl) {
+    await removeLinkImage(previousImage);
+  }
   return patched;
 }
 
 export async function deleteLink(userId: string, idOrSlug: string) {
   const db = await getDb();
-  const idx = db.links.findIndex((item) => item.id === idOrSlug || item.slug === idOrSlug);
+  const idx = findLinkIndex(db, idOrSlug);
   if (idx === -1) throw new Error("Payment link not found.");
   const link = db.links[idx];
   if (link.userId !== userId) throw new Error("Not authorized");
 
-  try {
-    const { deleteCloudinaryImage } = await import("@/lib/server/cloudinary");
-    if (link.imageUrl) await deleteCloudinaryImage(link.imageUrl);
-  } catch {
-    // ignore image cleanup failures so the DB delete still succeeds
-  }
-
+  const imageRef = linkImageRef(link);
   db.links.splice(idx, 1);
+  db.deletedLinkIds = uniqueIds([db.deletedLinkIds, [link.id, link.slug]]);
   await saveDb(db);
-  return true;
+  return { ok: true as const, imageRef };
 }
 
 export async function findLinkBySlug(slug: string) {
   const db = await getDb();
-  const link = db.links.find((item) => item.slug === slug) ?? null;
+  const link = activeLinks(db).find((item) => item.slug === slug) ?? null;
   return link ? normalizeStoredLink(link) : null;
 }
 
 export async function findLinkByIdOrSlug(value: string) {
   const db = await getDb();
-  const link = db.links.find((item) => item.id === value || item.slug === value) ?? null;
+  const link = activeLinks(db).find((item) => item.id === value || item.slug === value) ?? null;
   return link ? normalizeStoredLink(link) : null;
 }
 
 export async function recordLinkPayment(slug: string | undefined, amount: number) {
   if (!slug || !amount) return;
   const db = await getDb();
-  const link = db.links.find((item) => item.slug === slug);
-  if (!link) return;
+  const idx = findLinkIndex(db, slug);
+  if (idx === -1) return;
+  const link = db.links[idx];
   link.collected += amount;
   link.payments += 1;
   await saveDb(db);
