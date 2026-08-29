@@ -21,13 +21,13 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ["lucide-react"],
   },
-  webpack: (config) => {
-    config.resolve.alias = {
-      ...config.resolve.alias,
-      "next/og": false,
-      "@vercel/og": false,
-    };
-    return config;
+  turbopack: {
+    resolveAlias: {
+      "next/og": "./lib/og-stub.js",
+      "@vercel/og": "./lib/og-stub.js",
+      "next/dist/compiled/@vercel/og/index.edge.js": "./lib/og-stub.js",
+      "next/dist/compiled/@vercel/og/index.node.js": "./lib/og-stub.js",
+    },
   },
   images: {
     localPatterns: [

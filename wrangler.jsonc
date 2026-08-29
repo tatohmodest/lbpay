@@ -5,6 +5,15 @@
   "compatibility_date": "2025-10-01",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "minify": true,
+  "build": {
+    "command": "node scripts/strip-og-wasm.mjs"
+  },
+  "alias": {
+    "next/dist/compiled/@vercel/og/index.edge.js": "./lib/og-stub.js",
+    "next/dist/compiled/@vercel/og/index.node.js": "./lib/og-stub.js",
+    "next/og": "./lib/og-stub.js",
+    "@vercel/og": "./lib/og-stub.js"
+  },
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
