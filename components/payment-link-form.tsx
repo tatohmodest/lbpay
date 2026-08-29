@@ -19,10 +19,19 @@ const BOX: Record<LinkTemplateId, { head: string; body: string }> = {
 export function PaymentLinkForm({
   merchantName,
   submitting,
+  submitLabel,
+  initial,
   onSubmit,
 }: {
   merchantName?: string;
   submitting?: boolean;
+  submitLabel?: string;
+  initial?: {
+    title?: string;
+    amount?: number | null;
+    imageUrl?: string;
+    template?: string;
+  };
   onSubmit: (input: {
     title: string;
     amount: string;
@@ -30,10 +39,13 @@ export function PaymentLinkForm({
     template: LinkTemplateId;
   }) => void | Promise<void>;
 }) {
-  const [title, setTitle] = useState("");
-  const [amount, setAmount] = useState("");
-  const [imageUrl, setImageUrl] = useState("");
-  const [template, setTemplate] = useState<LinkTemplateId>(DEFAULT_LINK_TEMPLATE);
+  const [title, setTitle] = useState(initial?.title || "");
+  const [amount, setAmount] = useState(initial?.amount ? String(initial.amount) : "");
+  const [imageUrl, setImageUrl] = useState(initial?.imageUrl || "");
+  const [template, setTemplate] = useState<LinkTemplateId>(
+    (initial?.template as LinkTemplateId) || DEFAULT_LINK_TEMPLATE,
+  );
+  const editing = Boolean(initial);
 
   return (
     <form
@@ -44,6 +56,7 @@ export function PaymentLinkForm({
           onSubmit({ title, amount, imageUrl: imageUrl || undefined, template }),
         )
           .then(() => {
+            if (editing) return;
             setTitle("");
             setAmount("");
             setImageUrl("");
@@ -133,7 +146,7 @@ export function PaymentLinkForm({
         </div>
       </div>
       <Button type="submit" disabled={submitting} className="w-full sm:w-auto">
-        {submitting ? "Creating…" : "Create link"}
+        {submitting ? (editing ? "Saving…" : "Creating…") : submitLabel || (editing ? "Save changes" : "Create link")}
       </Button>
     </form>
   );

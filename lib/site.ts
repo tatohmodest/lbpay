@@ -61,6 +61,10 @@ export function payunitGatewayUrl(raw: string | undefined) {
   try {
     const url = new URL(value);
     if (!url.hostname.endsWith("payunit.net")) return "https://gateway.payunit.net";
+    // Merchant dashboard host is not the API. Collections and disbursements live on gateway.
+    if (url.hostname === "app.payunit.net" || url.hostname === "pu.payunit.net") {
+      return "https://gateway.payunit.net";
+    }
     return url.origin;
   } catch {
     return "https://gateway.payunit.net";

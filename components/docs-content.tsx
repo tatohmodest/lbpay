@@ -28,7 +28,7 @@ export function DocsContent() {
           PayUnit (<code>POST /api/gateway/deposit</code> then <code>/api/gateway/deposit/confirm</code>
           {" "}
           on <code>https://gateway.payunit.net</code>, account number <code>237</code> + 9-digit
-          MSISDN). Deposit is 2%. Withdrawal is 3%.
+          MSISDN). Deposit is 2%. Withdrawal is 2%. Minimum withdrawal is 1,000 XAF.
         </p>
         <pre className="overflow-x-auto rounded-2xl bg-navy p-4 font-mono text-xs text-emerald-100">
 {`POST /api/wallet/disburse

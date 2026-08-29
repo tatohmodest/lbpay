@@ -12,9 +12,9 @@ import { useDisburse, useMe } from "@/lib/hooks/wallet";
 import { useNotify } from "@/lib/notify";
 import { NetworkMark } from "@/components/network-mark";
 import { cameroonMsisdn, isCameroonMsisdn } from "@/lib/phone";
-import { momoOutFee } from "@/lib/fees";
+import { FEE_RATES, feePercentLabel, momoOutFee } from "@/lib/fees";
 import { AmountField } from "@/components/amount-field";
-import { amountIssue, cameroonDay, dailyOutboundCap, outboundKinds } from "@/lib/limits";
+import { LIMITS, amountIssue, cameroonDay, dailyOutboundCap, outboundKinds } from "@/lib/limits";
 import { readPinFail, isPinError } from "@/lib/pin-fail";
 
 async function pollWithdrawStatus(tx: string, onTick: () => void) {
@@ -72,7 +72,7 @@ export default function WithdrawPage() {
   const details = [
     { label: "To", value: `${network === "orange" ? "Orange" : "MTN"} ${clean}` },
     { label: "They receive", value: formatXAF(value) },
-    ...(fee ? [{ label: "Charge (3%)", value: formatXAF(fee) }] : []),
+    ...(fee ? [{ label: feePercentLabel(FEE_RATES.withdraw), value: formatXAF(fee) }] : []),
     { label: "You pay", value: formatXAF(debit) },
   ];
 
@@ -233,10 +233,11 @@ export default function WithdrawPage() {
               kind="withdraw"
               receive={value}
               fee={fee}
-              feeLabel="Charge (3%)"
+              feeLabel={feePercentLabel(FEE_RATES.withdraw)}
               pay={debit}
               payLabel="Wallet pays"
             />
+            <p className="text-xs text-muted">Minimum withdrawal is {formatXAF(LIMITS.withdrawMin)}.</p>
             {overDaily ? (
               <p className="text-sm font-semibold text-danger">Daily limit remaining is {formatXAF(Math.max(0, (cap || 0) - usedToday))}.</p>
             ) : null}

@@ -1,19 +1,16 @@
 "use client";
 
-import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { MethodDot, StatusBadge } from "@/components/ui/badge";
 import { PayQR } from "@/components/qr";
 import { PaymentLinkForm } from "@/components/payment-link-form";
-import { ProductLinkFrame } from "@/components/product-link-frame";
+import { PaymentLinkManageList } from "@/components/payment-link-manage";
 import { formatDate, formatXAF } from "@/lib/format";
-import { copyText } from "@/lib/clipboard";
 import { useNotify } from "@/lib/notify";
 import { useMe } from "@/lib/hooks/wallet";
-import { payHandleUrl, payLinkPath, payLinkUrl } from "@/lib/origin";
+import { payHandleUrl } from "@/lib/origin";
 import { useBrowserOrigin } from "@/lib/use-origin";
-import { linkTemplateMeta } from "@/lib/link-templates";
 
 export default function BusinessPage() {
   const notify = useNotify();
@@ -112,93 +109,13 @@ export default function BusinessPage() {
       {links.length > 0 ? (
         <div className="mb-6">
           <h2 className="mb-3 text-lg font-black">Your product links</h2>
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {links.map((link) => {
-              const url = payLinkUrl(link.slug, origin);
-              const template = linkTemplateMeta(link.template);
-              return (
-                <Card key={link.id} className="overflow-hidden p-3">
-                  <ProductLinkFrame
-                    template={link.template}
-                    title={link.title}
-                    amount={link.amount}
-                    merchantName={data.data?.businessName}
-                    imageUrl={link.imageUrl}
-                  />
-                  <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-muted">
-                    {template.name}
-                  </p>
-                  <p className="mt-1 truncate font-mono text-xs text-muted">{url}</p>
-                  <div className="mt-3 flex flex-col items-start gap-2">
-                    <div className="flex gap-3">
-                      <button
-                        type="button"
-                        className="text-sm font-bold text-brand"
-                        onClick={() =>
-                          copyText(url)
-                            .then(() => notify.success("Copied", "Share this link."))
-                            .catch((err: Error) => notify.error("Could not copy", err.message))
-                        }
-                      >
-                        Copy link
-                      </button>
-                      <Link href={payLinkPath(link.slug)} className="text-sm font-bold text-brand">
-                        Open checkout
-                      </Link>
-                    </div>
-                    <div className="flex gap-3">
-                      <button
-                        type="button"
-                        className="text-sm text-rose-600"
-                        onClick={async () => {
-                          if (!confirm("Delete this payment link?")) return;
-                          try {
-                            const res = await fetch("/api/business", {
-                              method: "DELETE",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({ id: link.id }),
-                            });
-                            const json = await res.json();
-                            if (!res.ok) throw new Error(json.error || "Failed to delete");
-                            client.invalidateQueries({ queryKey: ["business"] });
-                            notify.success("Deleted", "Payment link removed.");
-                          } catch (err) {
-                            notify.error("Could not delete", err instanceof Error ? err.message : "Failed");
-                          }
-                        }}
-                      >
-                        Delete
-                      </button>
-                      <button
-                        type="button"
-                        className="text-sm text-brand"
-                        onClick={async () => {
-                          const newTitle = prompt("New title", link.title) || link.title;
-                          const newAmountStr = prompt("New amount (leave empty for open)", link.amount ? String(link.amount) : "") ?? "";
-                          const newAmount = newAmountStr.trim() === "" ? null : Number(newAmountStr);
-                          try {
-                            const res = await fetch("/api/business", {
-                              method: "PATCH",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({ id: link.id, title: newTitle, amount: newAmount }),
-                            });
-                            const json = await res.json();
-                            if (!res.ok) throw new Error(json.error || "Failed to update");
-                            client.invalidateQueries({ queryKey: ["business"] });
-                            notify.success("Updated", "Payment link updated.");
-                          } catch (err) {
-                            notify.error("Could not update", err instanceof Error ? err.message : "Failed");
-                          }
-                        }}
-                      >
-                        Edit
-                      </button>
-                    </div>
-                  </div>
-                </Card>
-              );
-            })}
-          </div>
+          <p className="mb-3 text-sm text-muted">Edit the title, amount, photo, or template. Delete a link to take it offline.</p>
+          <PaymentLinkManageList
+            links={links}
+            merchantName={data.data?.businessName}
+            apiPath="/api/business"
+            queryKeys={[["business"], ["wallet-links"]]}
+          />
         </div>
       ) : null}
       <div className="mb-6">

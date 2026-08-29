@@ -42,6 +42,49 @@ export function parsePaymentLinkInput(body: Record<string, unknown>):
   };
 }
 
+export function parsePaymentLinkPatch(body: Record<string, unknown>):
+  | { ok: true; value: Partial<ParsedPaymentLink> }
+  | { ok: false; error: string } {
+  const value: Partial<ParsedPaymentLink> = {};
+
+  if (body.title !== undefined) {
+    const title = String(body.title || "").trim();
+    if (!title) return { ok: false, error: "Title is required." };
+    value.title = title;
+  }
+
+  if (body.amount !== undefined) {
+    const rawAmount = body.amount;
+    if (rawAmount === null || rawAmount === "") {
+      value.amount = null;
+    } else {
+      const amount = Number(rawAmount);
+      if (!Number.isFinite(amount) || amount < 0) {
+        return { ok: false, error: "Amount has to be a number, or left empty." };
+      }
+      value.amount = Math.round(amount);
+    }
+  }
+
+  if (body.imageUrl !== undefined) {
+    const imageUrl = String(body.imageUrl || "").trim();
+    if (imageUrl && !isOurCloudinaryUrl(imageUrl)) {
+      return { ok: false, error: "Upload the product photo from this page." };
+    }
+    value.imageUrl = imageUrl || undefined;
+  }
+
+  if (body.template !== undefined) {
+    value.template = normalizeLinkTemplate(body.template) || DEFAULT_LINK_TEMPLATE;
+  }
+
+  if (value.title === undefined && value.amount === undefined && value.imageUrl === undefined && value.template === undefined) {
+    return { ok: false, error: "Nothing to update." };
+  }
+
+  return { ok: true, value };
+}
+
 export function buildPaymentLink(userId: string, input: ParsedPaymentLink): StoredLink {
   return {
     id: uid("lnk"),

@@ -11,7 +11,7 @@ import { useDisburse, useMe } from "@/lib/hooks/wallet";
 import { useNotify } from "@/lib/notify";
 import { NetworkMark } from "@/components/network-mark";
 import { cameroonMsisdn, isCameroonMsisdn } from "@/lib/phone";
-import { momoOutFee } from "@/lib/fees";
+import { FEE_RATES, feePercentLabel, momoOutFee } from "@/lib/fees";
 import { AmountField } from "@/components/amount-field";
 import { amountIssue } from "@/lib/limits";
 
@@ -71,7 +71,7 @@ export default function PayoutsPage() {
               setOpen(true);
             }}
           >
-            <AmountField value={amount} onChange={setAmount} kind="withdraw" receive={value} fee={fee} feeLabel="Charge (3%)" pay={debit} />
+            <AmountField value={amount} onChange={setAmount} kind="withdraw" receive={value} fee={fee} feeLabel={feePercentLabel(FEE_RATES.withdraw)} pay={debit} />
             <Field label="Number">
               <Input
                 inputMode="numeric"

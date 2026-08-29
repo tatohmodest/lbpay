@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { depositFee, directTransferFee, FEE_RATES, momoOutFee } from "./fees";
+import { amountIssue, LIMITS } from "./limits";
 import {
   disbursementAccount,
   pickPayToken,
@@ -8,14 +9,24 @@ import {
   sanitizeDisburseText,
   unwrapPayunitNotify,
 } from "./providers/payunit-parse";
+import { parsePaymentLinkPatch } from "./server/payment-links";
+import { payunitGatewayUrl } from "./site";
 
-test("deposit is 2 percent and withdrawal is 3 percent", () => {
+test("deposit and withdrawal are 2 percent", () => {
   assert.equal(FEE_RATES.deposit, 0.02);
-  assert.equal(FEE_RATES.withdraw, 0.03);
+  assert.equal(FEE_RATES.withdraw, 0.02);
   assert.equal(depositFee(10_000), 200);
-  assert.equal(momoOutFee(10_000), 300);
-  assert.equal(directTransferFee(10_000, "mtn", "mtn"), 300);
+  assert.equal(momoOutFee(10_000), 200);
+  assert.equal(directTransferFee(10_000, "mtn", "mtn"), 200);
   assert.equal(directTransferFee(10_000, "mtn", "orange"), 600);
+});
+
+test("withdrawal minimum is 1000 XAF, not 100", () => {
+  assert.equal(LIMITS.withdrawMin, 1000);
+  assert.equal(LIMITS.depositMin, 100);
+  assert.match(amountIssue(100, "withdraw"), /1[\s\u00a0]?000/);
+  assert.equal(amountIssue(1000, "withdraw"), "");
+  assert.equal(amountIssue(100, "deposit"), "");
 });
 
 test("disbursement account is 237 plus the 9-digit MSISDN", () => {
@@ -63,4 +74,20 @@ test("pay_token is read from create and confirm shapes", () => {
 test("disbursement text is sanitized for PayUnit", () => {
   assert.equal(sanitizeDisburseText("Jean-Luc!", "LBPay user"), "Jean-Luc");
   assert.equal(sanitizeDisburseText("", "LBPay user"), "LBPay user");
+});
+
+test("PayUnit dashboard host is rewritten to the gateway API", () => {
+  assert.equal(payunitGatewayUrl("https://app.payunit.net"), "https://gateway.payunit.net");
+  assert.equal(payunitGatewayUrl("https://gateway.payunit.net"), "https://gateway.payunit.net");
+});
+
+test("payment link patches can change title without wiping the photo", () => {
+  const parsed = parsePaymentLinkPatch({ title: "New shoes", amount: 5000 });
+  assert.equal(parsed.ok, true);
+  if (parsed.ok) {
+    assert.equal(parsed.value.title, "New shoes");
+    assert.equal(parsed.value.amount, 5000);
+    assert.equal(parsed.value.imageUrl, undefined);
+    assert.equal(parsed.value.template, undefined);
+  }
 });

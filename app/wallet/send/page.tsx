@@ -14,7 +14,7 @@ import { formatXAF } from "@/lib/format";
 import { useDisburse, useHandleLookup, useMe, useTransfer } from "@/lib/hooks/wallet";
 import { useNotify } from "@/lib/notify";
 import { cameroonMsisdn, isCameroonMsisdn } from "@/lib/phone";
-import { momoOutFee } from "@/lib/fees";
+import { FEE_RATES, feePercentLabel, momoOutFee } from "@/lib/fees";
 import { AmountField } from "@/components/amount-field";
 import { amountIssue, cameroonDay, dailyOutboundCap, outboundKinds } from "@/lib/limits";
 import { readPinFail, isPinError } from "@/lib/pin-fail";
@@ -79,7 +79,7 @@ function SendInner() {
           { label: "Network", value: network === "orange" ? "Orange" : "MTN" },
           { label: "Phone", value: phone },
           { label: "They receive", value: formatXAF(value) },
-          ...(fee ? [{ label: "Charge (3%)", value: formatXAF(fee) }] : []),
+          ...(fee ? [{ label: feePercentLabel(FEE_RATES.withdraw), value: formatXAF(fee) }] : []),
           { label: "You pay", value: formatXAF(debit) },
         ];
 
@@ -175,7 +175,7 @@ function SendInner() {
             kind={amountKind}
             receive={value}
             fee={network === "wallet" ? 0 : fee}
-            feeLabel="Charge (3%)"
+            feeLabel={feePercentLabel(FEE_RATES.withdraw)}
             pay={network === "wallet" ? undefined : debit}
           />
           <Field label="Note">

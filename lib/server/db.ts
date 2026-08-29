@@ -1051,19 +1051,25 @@ export async function listLinks(userId: string) {
 export async function updateLink(userId: string, idOrSlug: string, changes: Partial<StoredLink>) {
   const db = await getDb();
   const idx = db.links.findIndex((item) => item.id === idOrSlug || item.slug === idOrSlug);
-  if (idx === -1) return null;
+  if (idx === -1) throw new Error("Payment link not found.");
   const link = db.links[idx];
   if (link.userId !== userId) throw new Error("Not authorized");
-  const patched: StoredLink = normalizeStoredLink({ ...link, ...changes });
+  const next: StoredLink = { ...link };
+  if (typeof changes.title === "string") next.title = changes.title;
+  if ("amount" in changes) next.amount = changes.amount ?? null;
+  if ("imageUrl" in changes) next.imageUrl = changes.imageUrl;
+  if (changes.template) next.template = changes.template;
+  if (changes.status) next.status = changes.status;
+  const patched = normalizeStoredLink(next);
   db.links[idx] = patched;
   await saveDb(db);
-  return normalizeStoredLink(patched);
+  return patched;
 }
 
 export async function deleteLink(userId: string, idOrSlug: string) {
   const db = await getDb();
   const idx = db.links.findIndex((item) => item.id === idOrSlug || item.slug === idOrSlug);
-  if (idx === -1) return false;
+  if (idx === -1) throw new Error("Payment link not found.");
   const link = db.links[idx];
   if (link.userId !== userId) throw new Error("Not authorized");
 

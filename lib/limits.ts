@@ -3,7 +3,9 @@ import { formatXAF } from "@/lib/format";
 export const LIMITS = {
   walletTransferMin: 100,
   depositMin: 100,
+  /** Withdrawals and Mobile Money payouts. Not the 100 XAF wallet/deposit floor. */
   momoOutMin: 1000,
+  withdrawMin: 1000,
   momoOutMax: 500_000,
   kycLevel1Daily: 500_000,
 } as const;
@@ -13,6 +15,7 @@ export type LimitKind = "withdraw" | "momo" | "deposit" | "wallet";
 export function limitsFor(kind: LimitKind) {
   if (kind === "wallet") return { min: LIMITS.walletTransferMin, max: null as number | null };
   if (kind === "deposit") return { min: LIMITS.depositMin, max: null as number | null };
+  if (kind === "withdraw") return { min: LIMITS.withdrawMin, max: LIMITS.momoOutMax };
   return { min: LIMITS.momoOutMin, max: LIMITS.momoOutMax };
 }
 
