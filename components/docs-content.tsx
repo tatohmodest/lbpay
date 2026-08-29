@@ -29,6 +29,8 @@ export function DocsContent() {
           {" "}
           on <code>https://gateway.payunit.net</code>, account number <code>237</code> + 9-digit
           MSISDN). Deposit is 2%. Withdrawal is 3%. Minimum withdrawal is 1,000 XAF.
+          PayUnit must enable the deposit/disbursement product on the merchant account; a PayUnit
+          wallet balance alone is not enough.
         </p>
         <pre className="overflow-x-auto rounded-2xl bg-navy p-4 font-mono text-xs text-emerald-100">
 {`POST /api/wallet/disburse

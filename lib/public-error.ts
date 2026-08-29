@@ -20,16 +20,16 @@ export type PublicError = { code: string; user: string };
 
 export function mapRailError(raw: unknown): PublicError {
   const text = raw instanceof Error ? raw.message : String(raw || "");
+  if (COLLECTION_OFF.test(text) || DISBURSE_OFF.test(text)) {
+    return {
+      code: "PAYUNIT_PRODUCT_NOT_ACTIVE",
+      user: "PayUnit has not activated Mobile Money disbursement on this merchant account. A PayUnit balance is not enough — ask PayUnit support to enable the deposit/disbursement product, then try again.",
+    };
+  }
   if (AUTH.test(text)) {
     return {
       code: "AUTHENTICATION_FAILED",
       user: "PayUnit rejected this request. Check that the live API keys are correct and that disbursement is enabled on the merchant account.",
-    };
-  }
-  if (COLLECTION_OFF.test(text) || DISBURSE_OFF.test(text)) {
-    return {
-      code: "COLLECTION_SERVICE_NOT_ACTIVE",
-      user: "This payment service is currently unavailable. We're working to restore it. Please try again later.",
     };
   }
   if (INVALID_ACCOUNT.test(text)) {

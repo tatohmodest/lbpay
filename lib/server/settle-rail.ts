@@ -1,5 +1,5 @@
 export type SettleKind = "deposit" | "receive" | "collection" | string;
-export type SettleStatus = "success" | "failed" | "cancelled" | "pending";
+export type SettleStatus = "success" | "failed" | "cancelled" | "pending" | "expired";
 
 export type SettleTx = {
   status: SettleStatus;
@@ -21,7 +21,7 @@ export function isCreditKind(kind: string) {
 }
 
 export function isTerminalStatus(status: string) {
-  return status === "success" || status === "failed" || status === "cancelled";
+  return status === "success" || status === "failed" || status === "cancelled" || status === "expired";
 }
 
 /**

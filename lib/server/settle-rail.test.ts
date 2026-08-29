@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { applyRailSettlement } from "./settle-rail";
 
 test("a successful deposit credits the wallet only once", () => {
-  const tx = { status: "pending" as const, kind: "deposit", amount: 1000, fee: 20, meta: {} };
+  const tx = { status: "pending" as const, kind: "deposit", amount: 1000, fee: 20, meta: {} as { creditApplied?: boolean } };
   const wallet = { balance: 500 };
   const first = applyRailSettlement(tx, wallet, "success");
   const second = applyRailSettlement(tx, wallet, "success");

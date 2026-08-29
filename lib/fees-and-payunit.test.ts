@@ -97,3 +97,10 @@ test("PayUnit merchant float and approval errors are not hidden as temporarily u
   assert.equal(mapRailError("Insufficient float on merchant account").code, "INSUFFICIENT_MERCHANT_FLOAT");
   assert.equal(mapRailError("Approval required for this disbursement").code, "DISBURSEMENT_APPROVAL");
 });
+
+test("PayUnit 401 activate-collection is not shown as a generic outage", () => {
+  const mapped = mapRailError(
+    "Authentication failed. Please check your credentials or authorisations needed. can't process operation, contact admin to activate collection",
+  );
+  assert.equal(mapped.code, "PAYUNIT_PRODUCT_NOT_ACTIVE");
+});
