@@ -26,6 +26,7 @@ export function DocsContent() {
         <p>
           Withdrawals and “send to MTN / Orange” are disbursements. Cash leaves LBPay through
           PayUnit (<code>POST /api/gateway/deposit</code> then <code>/api/gateway/deposit/confirm</code>
+          {" "}
           on <code>https://gateway.payunit.net</code>, account number <code>237</code> + 9-digit
           MSISDN). Deposit is 2%. Withdrawal is 3%.
         </p>
