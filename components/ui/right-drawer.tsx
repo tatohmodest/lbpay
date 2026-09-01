@@ -60,7 +60,7 @@ export function RightDrawer({
           open ? "translate-x-0" : "translate-x-full",
         )}
       >
-        <div className="relative overflow-hidden border-b border-line px-5 pb-5 pt-[max(1.25rem,env(safe-area-inset-top))]">
+        <div className="relative overflow-hidden px-5 pb-5 pt-[max(1.25rem,env(safe-area-inset-top))]">
           <div className="pointer-events-none absolute -right-10 -top-16 h-36 w-36 rounded-full bg-brand/15 blur-3xl" />
           <div className="relative flex items-start justify-between gap-3">
             <div>

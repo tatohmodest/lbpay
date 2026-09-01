@@ -1,12 +1,16 @@
-import { connection } from "next/server";
 import Image from "next/image";
 import { Star } from "lucide-react";
 import { Container } from "@/components/marketing/container";
 import { listPublicReviews } from "@/lib/server/db";
 
 export async function HomeReviews() {
-  await connection();
-  const reviews = await listPublicReviews();
+  let reviews: Awaited<ReturnType<typeof listPublicReviews>> = [];
+  try {
+    reviews = await listPublicReviews();
+  } catch (error) {
+    console.error("[lbpay] could not load public reviews", error);
+    return null;
+  }
   if (!reviews.length) return null;
 
   return (

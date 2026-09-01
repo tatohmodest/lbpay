@@ -21,6 +21,7 @@ export function Logo({
         width={32}
         height={32}
         className={cn("h-8 w-8 rounded-lg object-cover", markClassName)}
+        unoptimized
       />
       <span
         className={cn(

@@ -52,7 +52,7 @@ export function AppHeader({ onOpenMenu }: { onOpenMenu?: () => void }) {
 
   return (
     <>
-    <header className="fixed inset-x-0 top-0 z-40 border-b border-line/80 bg-white/80 backdrop-blur-xl">
+    <header className="fixed inset-x-0 top-0 z-40 bg-paper/90 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 md:px-8">
         <div className="flex items-center gap-8">
           <Logo href="/wallet" markClassName="h-8 w-8" />
@@ -93,7 +93,7 @@ export function AppHeader({ onOpenMenu }: { onOpenMenu?: () => void }) {
           <NotificationsButton />
           <Link
             href="/wallet/profile"
-            className="hidden h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-line sm:flex"
+            className="hidden h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-white sm:flex"
           >
             <Image
               src={state.user.avatar || "/illustrations/empty-wallet.webp"}
@@ -105,7 +105,7 @@ export function AppHeader({ onOpenMenu }: { onOpenMenu?: () => void }) {
           </Link>
           <button
             type="button"
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-line text-ink lg:hidden"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white text-ink lg:hidden"
             aria-label="Open menu"
             onClick={() => (onOpenMenu ? onOpenMenu() : setOpen(true))}
           >
@@ -190,7 +190,7 @@ export function BottomNav() {
   ].filter((item) => item.show);
 
   return (
-    <nav className="fixed bottom-0 left-0 z-50 flex h-[4.5rem] w-full items-center justify-around border-t border-line bg-white pb-safe md:hidden">
+    <nav className="fixed bottom-0 left-0 z-50 flex h-[4.5rem] w-full items-center justify-around bg-white/95 pb-safe backdrop-blur-xl md:hidden">
       {items.map((item) => {
         const active =
           item.href === "/wallet"

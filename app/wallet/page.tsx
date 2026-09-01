@@ -14,7 +14,6 @@ import {
   Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/badge";
 import { formatDate, formatXAF, isMoneyOut } from "@/lib/format";
 import { useApp } from "@/lib/store";
@@ -27,13 +26,13 @@ const actions = [
   {
     href: "/wallet/quick",
     label: "Quick Transfer",
-    copy: "Send money to any Mobile Money network",
+    copy: "Any Mobile Money network",
     icon: Zap,
   },
   {
     href: "/wallet/send",
     label: "Send",
-    copy: "Pay a friend, a shop, or any number",
+    copy: "A friend, a shop, a number",
     icon: Send,
   },
   {
@@ -65,100 +64,112 @@ export default function WalletPage() {
   const personalKyc = me.data?.user?.kyc?.personal || "unverified";
 
   return (
-    <div className="grid gap-6 lg:grid-cols-12">
+    <div className="mx-auto max-w-lg space-y-5 lg:mx-0 lg:grid lg:max-w-none lg:grid-cols-12 lg:gap-6 lg:space-y-0">
       {frozen ? (
-        <div className="rounded-2xl bg-red-50 p-4 text-sm font-semibold text-danger lg:col-span-12">
+        <div className="rounded-[1.5rem] bg-red-50 p-4 text-sm font-semibold text-danger lg:col-span-12">
           This account is frozen. Deposits, sends, and withdrawals are blocked until an admin restores it.
         </div>
       ) : null}
-      <VerifyPrompt userId={me.data?.user?.id} status={personalKyc} />
-      <div className="flex flex-col gap-6 lg:col-span-8">
-        <section className="relative overflow-hidden rounded-3xl bg-brand p-6 text-white shadow-lg">
-          <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/10 blur-3xl" />
-          <div className="relative z-10 flex items-start justify-between">
+      <div className="lg:col-span-12">
+        <VerifyPrompt userId={me.data?.user?.id} status={personalKyc} />
+      </div>
+
+      <div className="space-y-5 lg:col-span-8">
+        <section className="relative overflow-hidden rounded-[2rem] bg-forest p-6 text-white shadow-[0_24px_80px_rgba(6,38,28,0.18)]">
+          <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-brand/25 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-20 left-10 h-40 w-40 rounded-full bg-white/5 blur-3xl" />
+          <div className="relative z-10 flex items-start justify-between gap-3">
             <div>
-              <p className="text-sm text-white/80">Wallet Balance</p>
-              <h1 className="mt-1 text-4xl font-semibold tracking-tight md:text-5xl">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand">Wallet</p>
+              <h1 className="mt-3 font-mono text-4xl font-black tracking-tight md:text-5xl">
                 {formatXAF(balance, { withCurrency: false })}{" "}
-                <span className="text-2xl font-semibold opacity-80">XAF</span>
+                <span className="text-2xl font-bold text-white/70">XAF</span>
               </h1>
             </div>
             <CopyHandle
               handle={me.data?.user?.lbpayId || state.user.lbpayId}
-              className="rounded-full bg-white/15 px-3 py-1 text-sm text-white hover:bg-white/25"
+              className="rounded-full bg-white/10 px-3 py-1.5 text-sm text-white hover:bg-white/15"
             />
           </div>
           <div className="relative z-10 mt-8 grid grid-cols-2 gap-3">
             <Link href="/wallet/deposit">
-              <Button className="w-full bg-white text-brand hover:bg-brand-soft">
+              <Button className="h-12 w-full rounded-full bg-white text-brand hover:bg-brand-soft">
                 <ArrowDownLeft className="h-4 w-4" /> Deposit
               </Button>
             </Link>
             <Link href="/wallet/withdraw">
-              <Button className="w-full border border-white/30 bg-white/10 text-white hover:bg-white/20">
+              <Button className="h-12 w-full rounded-full border-0 bg-white/10 text-white hover:bg-white/15">
                 <ArrowUpRight className="h-4 w-4" /> Withdraw
               </Button>
             </Link>
           </div>
         </section>
 
-        <div className="grid grid-cols-2 gap-3">
-          {actions.map((action) => (
-            <Link key={action.href} href={action.href}>
-              <Card className="flex h-full flex-col gap-3 p-4 transition hover:border-brand/40 hover:shadow-[0_10px_30px_rgba(0,179,105,0.12)]">
-                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-brand-soft text-brand">
+        <section className="rounded-[2rem] bg-white p-2 shadow-[0_1px_2px_rgba(12,25,19,0.04)]">
+          <div className="grid grid-cols-2 gap-1">
+            {actions.map((action) => (
+              <Link
+                key={action.href}
+                href={action.href}
+                className="flex flex-col gap-3 rounded-[1.5rem] p-4 transition hover:bg-paper"
+              >
+                <span className="grid h-11 w-11 place-items-center rounded-2xl bg-brand-soft text-brand">
                   <action.icon className="h-5 w-5" />
-                </div>
-                <span>
-                  <span className="block text-sm font-semibold">{action.label}</span>
-                  <span className="mt-1 block text-xs leading-5 text-muted">{action.copy}</span>
                 </span>
-              </Card>
-            </Link>
-          ))}
-        </div>
-        <div className="grid gap-2">
+                <span>
+                  <span className="block text-sm font-bold text-ink">{action.label}</span>
+                  <span className="mt-0.5 block text-xs leading-5 text-muted">{action.copy}</span>
+                </span>
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        <section className="overflow-hidden rounded-[2rem] bg-white shadow-[0_1px_2px_rgba(12,25,19,0.04)]">
           {extras.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className="flex items-center gap-3 rounded-2xl border border-line bg-white px-4 py-3 transition hover:border-brand/40"
+              className="flex items-center gap-3 px-4 py-3.5 transition hover:bg-paper"
             >
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-paper text-brand">
+              <span className="grid h-11 w-11 place-items-center rounded-2xl bg-paper text-brand">
                 <item.icon className="h-4 w-4" />
               </span>
-              <span>
-                <span className="block text-sm font-semibold text-ink">{item.label}</span>
+              <span className="min-w-0">
+                <span className="block text-sm font-bold text-ink">{item.label}</span>
                 <span className="block text-xs text-muted">{item.copy}</span>
               </span>
             </Link>
           ))}
-        </div>
+        </section>
 
-        <Card className="p-5">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-sm font-bold uppercase tracking-wide text-muted">
-              Recent activity
-            </h2>
+        <section className="rounded-[2rem] bg-white p-5 shadow-[0_1px_2px_rgba(12,25,19,0.04)]">
+          <div className="mb-1 flex items-center justify-between">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand">Activity</p>
+              <h2 className="mt-1 text-lg font-black">Recent</h2>
+            </div>
             <Link href="/wallet/history" className="text-sm font-bold text-brand">
               View all
             </Link>
           </div>
-          <div className="divide-y divide-line">
+          <div className="mt-3 space-y-1">
             {transactions.length === 0 ? (
-              <p className="py-8 text-center text-sm text-muted">No movements yet. Deposit or receive to get started.</p>
+              <p className="rounded-2xl bg-paper px-4 py-8 text-center text-sm text-muted">
+                No movements yet. Deposit or receive to get started.
+              </p>
             ) : (
               transactions.slice(0, 5).map((tx) => (
-                <div key={tx.id} className="flex items-center justify-between py-3">
-                  <div>
-                    <p className="font-semibold">{tx.counterparty}</p>
+                <div key={tx.id} className="flex items-center justify-between rounded-2xl px-3 py-3 hover:bg-paper">
+                  <div className="min-w-0">
+                    <p className="truncate font-bold">{tx.counterparty}</p>
                     <p className="text-xs text-muted">
                       {tx.kind.replace("_", " ")} · {formatDate(tx.createdAt)}
                       {tx.fee > 0 ? ` · fee ${formatXAF(tx.fee, { withCurrency: false })}` : ""}
                     </p>
                   </div>
-                  <div className="text-right">
-                    <p className="font-mono text-sm font-semibold">
+                  <div className="ml-3 text-right">
+                    <p className="font-mono text-sm font-black">
                       {isMoneyOut(tx.kind) ? "−" : "+"}
                       {formatXAF(tx.amount, { withCurrency: false })}
                     </p>
@@ -168,27 +179,27 @@ export default function WalletPage() {
               ))
             )}
           </div>
-        </Card>
+        </section>
       </div>
 
-      <div className="flex flex-col gap-6 lg:col-span-4">
-        <Card className="p-5">
-          <p className="inline-flex items-center gap-1 text-xs font-bold uppercase tracking-wide text-brand">
+      <div className="space-y-5 lg:col-span-4">
+        <section className="rounded-[2rem] bg-white p-6 shadow-[0_1px_2px_rgba(12,25,19,0.04)]">
+          <p className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-brand">
             <Zap className="h-3.5 w-3.5" /> Fast transfer
           </p>
-          <h2 className="mt-2 text-lg font-bold">Quick Transfer</h2>
-          <p className="mt-1 text-sm text-muted">
+          <h2 className="mt-2 text-xl font-black">Quick Transfer</h2>
+          <p className="mt-2 text-sm leading-6 text-muted">
             Send money to any Mobile Money network. MTN to Orange, easily.
           </p>
-          <Link href="/wallet/quick" className="mt-4 block">
+          <Link href="/wallet/quick" className="mt-5 block">
             <Button className="w-full">Open Quick Transfer</Button>
           </Link>
-          <Link href="/wallet/send" className="mt-2 block text-center text-sm font-semibold text-brand">
+          <Link href="/wallet/send" className="mt-3 block text-center text-sm font-bold text-brand">
             Wallet send instead
           </Link>
-        </Card>
+        </section>
 
-        <Card className="overflow-hidden">
+        <section className="overflow-hidden rounded-[2rem] bg-white shadow-[0_1px_2px_rgba(12,25,19,0.04)]">
           <Image
             src="/illustrations/cross-network.webp"
             alt="MTN to Orange"
@@ -196,13 +207,13 @@ export default function WalletPage() {
             height={540}
             className="h-40 w-full object-cover"
           />
-          <div className="p-4">
-            <p className="text-sm font-semibold">Get paid with your QR or @handle</p>
+          <div className="p-5">
+            <p className="text-sm font-bold">Get paid with your QR or @handle</p>
             <Link href="/wallet/qr" className="mt-2 inline-block text-sm font-bold text-brand">
               Show my QR
             </Link>
           </div>
-        </Card>
+        </section>
       </div>
     </div>
   );

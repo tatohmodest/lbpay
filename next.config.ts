@@ -30,6 +30,7 @@ const nextConfig: NextConfig = {
     },
   },
   images: {
+    unoptimized: true,
     localPatterns: [
       {
         pathname: "/illustrations/**",
