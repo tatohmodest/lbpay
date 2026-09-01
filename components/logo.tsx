@@ -6,10 +6,12 @@ export function Logo({
   href = "/",
   className,
   markClassName,
+  tone = "light",
 }: {
   href?: string;
   className?: string;
   markClassName?: string;
+  tone?: "light" | "dark";
 }) {
   return (
     <Link href={href} className={cn("flex items-center gap-2.5", className)}>
@@ -20,7 +22,14 @@ export function Logo({
         height={32}
         className={cn("h-8 w-8 rounded-lg object-cover", markClassName)}
       />
-      <span className="text-[17px] font-semibold tracking-tight text-ink">LBPay</span>
+      <span
+        className={cn(
+          "text-[17px] font-semibold tracking-tight",
+          tone === "dark" ? "text-white" : "text-ink",
+        )}
+      >
+        LBPay
+      </span>
     </Link>
   );
 }

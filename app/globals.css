@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f6faf8;
-  --foreground: #0c1913;
+  --background: #f6f9fc;
+  --foreground: #0a2540;
   --header-h: 4.25rem;
 }
 
@@ -13,15 +13,18 @@
   --color-brand-dark: #009657;
   --color-brand-deep: #007a47;
   --color-brand-soft: #e7f7ef;
-  --color-ink: #0c1913;
-  --color-muted: #5a6b63;
-  --color-line: #dce8e1;
-  --color-paper: #f6faf8;
+  --color-ink: #0a2540;
+  --color-muted: #425466;
+  --color-line: #e3e8ee;
+  --color-paper: #f6f9fc;
   --color-card: #ffffff;
   --color-danger: #b42318;
   --color-mtn: #ffcc00;
   --color-om: #ff6600;
-  --color-navy: #07140f;
+  --color-navy: #0a2540;
+  --color-hero: #0a2540;
+  --color-hero-muted: #adbdcc;
+  --color-canvas: #f6f9fc;
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -87,4 +90,56 @@ body {
 
 .lb-sheet {
   animation: lb-sheet 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.lb-mesh {
+  background-color: #0a2540;
+  background-image:
+    radial-gradient(ellipse 80% 60% at 12% 18%, rgba(0, 179, 105, 0.42), transparent 58%),
+    radial-gradient(ellipse 55% 50% at 88% 8%, rgba(99, 91, 255, 0.38), transparent 52%),
+    radial-gradient(ellipse 50% 55% at 78% 82%, rgba(0, 184, 217, 0.28), transparent 55%),
+    radial-gradient(ellipse 45% 40% at 8% 88%, rgba(255, 102, 0, 0.22), transparent 50%),
+    radial-gradient(ellipse 40% 30% at 50% 50%, rgba(99, 91, 255, 0.12), transparent 60%);
+}
+
+.lb-grid {
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+  background-size: 72px 72px;
+  mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
+}
+
+.lb-float {
+  animation: lb-float 7s ease-in-out infinite;
+}
+
+.lb-float-delayed {
+  animation: lb-float 8.5s ease-in-out infinite;
+  animation-delay: -2.4s;
+}
+
+@keyframes lb-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-14px);
+  }
+}
+
+.lb-shimmer {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
+  background-size: 200% 100%;
+  animation: lb-shimmer 3.6s ease-in-out infinite;
+}
+
+@keyframes lb-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
 }

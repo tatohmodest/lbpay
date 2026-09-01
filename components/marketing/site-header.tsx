@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BookOpen, Code2, Download, Menu, Store, Wallet } from "lucide-react";
@@ -22,18 +22,36 @@ export function SiteHeader() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [menuPath, setMenuPath] = useState(pathname);
+  const [scrolled, setScrolled] = useState(false);
   const standalone = useStandaloneDisplay();
   const showInstall = !standalone;
+  const onHome = pathname === "/";
+  const dark = onHome && !scrolled;
+
   if (pathname !== menuPath) {
     setMenuPath(pathname);
     setOpen(false);
   }
 
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 24);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   return (
     <>
-      <header className="fixed inset-x-0 top-0 z-50 border-b border-line/80 bg-white/80 backdrop-blur-xl">
+      <header
+        className={cn(
+          "fixed inset-x-0 top-0 z-50 transition-colors duration-200",
+          dark
+            ? "border-b border-white/10 bg-[#0a2540]/55 backdrop-blur-xl"
+            : "border-b border-line/80 bg-white/80 backdrop-blur-xl",
+        )}
+      >
         <Container className="flex h-[var(--header-h)] items-center justify-between gap-4">
-          <Logo />
+          <Logo tone={dark ? "dark" : "light"} />
           <nav aria-label="Primary" className="hidden items-center gap-1 lg:flex">
             {links.map((link) => {
               const active = pathname === link.href || pathname.startsWith(`${link.href}/`);
@@ -42,8 +60,14 @@ export function SiteHeader() {
                   key={link.href}
                   href={link.href}
                   className={cn(
-                    "rounded-full px-3.5 py-2 text-sm font-medium transition",
-                    active ? "bg-brand-soft text-brand-deep" : "text-muted hover:text-ink",
+                    "rounded-md px-3.5 py-2 text-sm font-medium transition",
+                    active
+                      ? dark
+                        ? "bg-white/10 text-white"
+                        : "bg-brand-soft text-brand-deep"
+                      : dark
+                        ? "text-white/70 hover:text-white"
+                        : "text-muted hover:text-ink",
                   )}
                 >
                   {link.label}
@@ -56,23 +80,37 @@ export function SiteHeader() {
               <button
                 type="button"
                 onClick={() => openInstallPrompt()}
-                className="px-3 text-sm font-medium text-muted hover:text-ink"
+                className={cn(
+                  "px-3 text-sm font-medium",
+                  dark ? "text-white/70 hover:text-white" : "text-muted hover:text-ink",
+                )}
               >
                 Get app
               </button>
             ) : null}
-            <Link href="/login" className="px-3 text-sm font-medium text-muted hover:text-ink">
+            <Link
+              href="/login"
+              className={cn(
+                "px-3 text-sm font-medium",
+                dark ? "text-white/70 hover:text-white" : "text-muted hover:text-ink",
+              )}
+            >
               Sign in
             </Link>
             <Link href="/signup">
-              <Button size="sm">Open wallet</Button>
+              <Button size="sm" className="rounded-lg">
+                Start now
+              </Button>
             </Link>
           </div>
           <div className="flex items-center gap-2 lg:hidden">
             {showInstall ? (
               <button
                 type="button"
-                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-line text-ink"
+                className={cn(
+                  "inline-flex h-10 w-10 items-center justify-center rounded-lg border",
+                  dark ? "border-white/15 text-white" : "border-line text-ink",
+                )}
                 aria-label="Get the LBPay app"
                 onClick={() => openInstallPrompt()}
               >
@@ -81,7 +119,10 @@ export function SiteHeader() {
             ) : null}
             <button
               type="button"
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-line text-ink"
+              className={cn(
+                "inline-flex h-10 w-10 items-center justify-center rounded-lg border",
+                dark ? "border-white/15 text-white" : "border-line text-ink",
+              )}
               aria-expanded={open}
               aria-label="Open menu"
               onClick={() => setOpen(true)}
@@ -96,13 +137,13 @@ export function SiteHeader() {
         open={open}
         onClose={() => setOpen(false)}
         title="Menu"
-        subtitle="Move money across Cameroon."
+        subtitle="Payments infrastructure for Cameroon."
         footer={
           <div className="grid gap-2">
             {showInstall ? (
               <Button
                 variant="secondary"
-                className="w-full"
+                className="w-full rounded-lg"
                 onClick={() => {
                   setOpen(false);
                   openInstallPrompt();
@@ -113,12 +154,12 @@ export function SiteHeader() {
             ) : null}
             <div className="grid grid-cols-2 gap-2">
               <Link href="/login">
-                <Button variant="secondary" className="w-full">
+                <Button variant="secondary" className="w-full rounded-lg">
                   Sign in
                 </Button>
               </Link>
               <Link href="/signup">
-                <Button className="w-full">Open wallet</Button>
+                <Button className="w-full rounded-lg">Start now</Button>
               </Link>
             </div>
           </div>
@@ -133,13 +174,13 @@ export function SiteHeader() {
                 key={link.href}
                 href={link.href}
                 className={cn(
-                  "flex items-center gap-3 rounded-2xl px-3 py-3 transition",
+                  "flex items-center gap-3 rounded-xl px-3 py-3 transition",
                   active ? "bg-brand-soft text-brand-deep" : "text-ink hover:bg-paper",
                 )}
               >
                 <span
                   className={cn(
-                    "flex h-10 w-10 items-center justify-center rounded-xl",
+                    "flex h-10 w-10 items-center justify-center rounded-lg",
                     active ? "bg-white text-brand-deep" : "bg-paper text-muted",
                   )}
                 >

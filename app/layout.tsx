@@ -82,7 +82,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#ffffff",
+  themeColor: "#0a2540",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
@@ -95,7 +95,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${geist.variable} ${geistMono.variable} h-full`}>
-      <body className="min-h-full bg-paper font-sans text-ink antialiased">
+      <body className="min-h-full bg-canvas font-sans text-ink antialiased">
         <SiteJsonLd />
         <AppProviders>{children}</AppProviders>
       </body>

@@ -3,7 +3,7 @@ import { SiteHeader } from "@/components/marketing/site-header";
 
 export default function MarketingLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-white font-sans antialiased">
+    <div className="min-h-screen bg-canvas font-sans antialiased">
       <SiteHeader />
       <div className="pt-header">{children}</div>
       <SiteFooter />

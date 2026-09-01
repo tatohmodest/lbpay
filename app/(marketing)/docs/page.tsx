@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { DocsContent } from "@/components/docs-content";
+import { DocsOnThisPage, DocsSidebar } from "@/components/docs/docs-sidebar";
 import { Container } from "@/components/marketing/container";
 import { SITE_OG_IMAGE } from "@/lib/site";
 
@@ -24,8 +25,44 @@ export const metadata: Metadata = {
 
 export default function DocsPage() {
   return (
-    <Container className="py-12 md:py-16">
-      <DocsContent />
-    </Container>
+    <div className="bg-canvas">
+      <div className="border-b border-line bg-navy text-white">
+        <Container className="py-12 md:py-16">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand">
+            Developers
+          </p>
+          <h1 className="mt-3 max-w-2xl text-3xl font-semibold tracking-[-0.03em] md:text-5xl">
+            Build payments into your product.
+          </h1>
+          <p className="mt-4 max-w-xl text-[16px] leading-7 text-white/65">
+            Guides and reference for the LBPay API — collections, payouts, payment links, and
+            sandbox behavior in XAF.
+          </p>
+        </Container>
+      </div>
+      <Container className="grid gap-10 py-10 lg:grid-cols-[220px_minmax(0,1fr)_200px] lg:gap-12 lg:py-14">
+        <aside className="hidden lg:block">
+          <div className="sticky top-[calc(var(--header-h)+1.25rem)]">
+            <DocsSidebar />
+          </div>
+        </aside>
+        <div className="min-w-0">
+          <details className="mb-8 rounded-xl border border-line bg-white p-3 lg:hidden">
+            <summary className="cursor-pointer px-2 py-1.5 text-sm font-semibold text-ink">
+              On this page
+            </summary>
+            <div className="mt-3">
+              <DocsSidebar />
+            </div>
+          </details>
+          <DocsContent hideHeader />
+        </div>
+        <aside className="hidden xl:block">
+          <div className="sticky top-[calc(var(--header-h)+1.25rem)]">
+            <DocsOnThisPage />
+          </div>
+        </aside>
+      </Container>
+    </div>
   );
 }
