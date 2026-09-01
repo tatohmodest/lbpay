@@ -12,7 +12,7 @@ export function Field({
 }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-xs font-medium text-muted">
+      <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">
         {label}
       </span>
       {children}
@@ -25,7 +25,7 @@ export function Input({ className, ...props }: InputHTMLAttributes<HTMLInputElem
   return (
     <input
       className={cn(
-        "w-full rounded-xl border border-line bg-white px-3.5 py-3 text-sm text-ink outline-none transition placeholder:text-muted/70 focus:border-brand focus:ring-4 focus:ring-brand/10 disabled:bg-paper disabled:text-muted",
+        "w-full rounded-2xl border-0 bg-paper px-4 py-3.5 text-sm font-medium text-ink outline-none transition placeholder:text-muted/60 focus:bg-white focus:ring-4 focus:ring-brand/15 disabled:opacity-60",
         className,
       )}
       {...props}

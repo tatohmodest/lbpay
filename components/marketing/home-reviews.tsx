@@ -1,16 +1,37 @@
-import Image from "next/image";
-import { Star } from "lucide-react";
-import { Container } from "@/components/marketing/container";
-import { listPublicReviews } from "@/lib/server/db";
+"use client";
 
-export async function HomeReviews() {
-  let reviews: Awaited<ReturnType<typeof listPublicReviews>> = [];
-  try {
-    reviews = await listPublicReviews();
-  } catch (error) {
-    console.error("[lbpay] could not load public reviews", error);
-    return null;
-  }
+import { useEffect, useState } from "react";
+import { Star } from "lucide-react";
+import { AppImg } from "@/components/app-img";
+import { Container } from "@/components/marketing/container";
+
+type PublicReview = {
+  id: string;
+  name: string;
+  avatar: string;
+  rating: number;
+  body: string;
+};
+
+export function HomeReviews() {
+  const [reviews, setReviews] = useState<PublicReview[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/reviews")
+      .then((res) => (res.ok ? res.json() : { reviews: [] }))
+      .then((data: { reviews?: PublicReview[] }) => {
+        if (cancelled) return;
+        setReviews(Array.isArray(data.reviews) ? data.reviews : []);
+      })
+      .catch(() => {
+        if (!cancelled) setReviews([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   if (!reviews.length) return null;
 
   return (
@@ -30,7 +51,7 @@ export async function HomeReviews() {
               }
             >
               <div className="flex items-center gap-3">
-                <Image
+                <AppImg
                   src={item.avatar}
                   alt=""
                   width={48}

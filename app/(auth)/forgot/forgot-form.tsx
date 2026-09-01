@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { AuthCard, AuthScreen, AuthTitle } from "@/components/auth-shell";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Field, Input } from "@/components/ui/input";
 import { readApiJson, type AuthApiResponse } from "@/lib/http";
 import { useNotify } from "@/lib/notify";
@@ -101,14 +101,15 @@ export function ForgotForm({ initialEmail = "" }: { initialEmail?: string }) {
   }
 
   return (
-    <div className="mx-auto flex min-h-[calc(100svh-var(--header-h))] max-w-md flex-col justify-center px-6 py-12">
+    <AuthScreen>
       {step === "email" ? (
         <>
-          <h1 className="text-3xl font-semibold tracking-tight">Forgot password</h1>
-          <p className="mt-2 text-sm text-muted">
-            Enter the email on your account. We will send a 6-digit code if it matches.
-          </p>
-          <Card className="mt-8 p-6">
+          <AuthTitle
+            kicker="Account"
+            title="Forgot password"
+            subtitle="Enter the email on your account. We will send a 6-digit code if it matches."
+          />
+          <AuthCard>
             <form className="flex flex-col gap-4" onSubmit={requestCode}>
               <Field label="Email">
                 <Input
@@ -122,19 +123,22 @@ export function ForgotForm({ initialEmail = "" }: { initialEmail?: string }) {
                 />
               </Field>
               {error ? <p className="text-sm font-medium text-danger">{error}</p> : null}
-              <Button type="submit" disabled={loading}>
+              <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? "Please wait…" : "Send reset code"}
               </Button>
             </form>
-          </Card>
+          </AuthCard>
         </>
       ) : null}
 
       {step === "otp" ? (
         <>
-          <h1 className="text-3xl font-semibold tracking-tight">Check your email</h1>
-          <p className="mt-2 text-sm text-muted">We sent a 6-digit code to {email || "your inbox"}.</p>
-          <Card className="mt-8 p-6">
+          <AuthTitle
+            kicker="Inbox"
+            title="Check your email"
+            subtitle={`We sent a 6-digit code to ${email || "your inbox"}.`}
+          />
+          <AuthCard>
             <form className="flex flex-col gap-4" onSubmit={verifyCode}>
               <Field label="Reset code">
                 <Input
@@ -148,24 +152,25 @@ export function ForgotForm({ initialEmail = "" }: { initialEmail?: string }) {
                 />
               </Field>
               {error ? <p className="text-sm font-medium text-danger">{error}</p> : null}
-              <Button type="submit" disabled={loading || otp.length !== 6}>
+              <Button type="submit" className="w-full" disabled={loading || otp.length !== 6}>
                 {loading ? "Please wait…" : "Verify code"}
               </Button>
               <Button type="button" variant="ghost" onClick={resend}>
                 Resend code
               </Button>
             </form>
-          </Card>
+          </AuthCard>
         </>
       ) : null}
 
       {step === "password" ? (
         <>
-          <h1 className="text-3xl font-semibold tracking-tight">Set a new password</h1>
-          <p className="mt-2 text-sm text-muted">
-            Choose a password of 6 or more characters. Your PIN stays the same.
-          </p>
-          <Card className="mt-8 p-6">
+          <AuthTitle
+            kicker="Security"
+            title="Set a new password"
+            subtitle="Choose a password of 6 or more characters. Your PIN stays the same."
+          />
+          <AuthCard>
             <form className="flex flex-col gap-4" onSubmit={resetPassword}>
               <Field label="New password">
                 <Input
@@ -190,20 +195,20 @@ export function ForgotForm({ initialEmail = "" }: { initialEmail?: string }) {
                 />
               </Field>
               {error ? <p className="text-sm font-medium text-danger">{error}</p> : null}
-              <Button type="submit" disabled={loading}>
+              <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? "Please wait…" : "Update password"}
               </Button>
             </form>
-          </Card>
+          </AuthCard>
         </>
       ) : null}
 
       <p className="mt-6 text-sm text-muted">
         Remembered it?{" "}
-        <Link href="/login" className="font-medium text-brand-deep">
+        <Link href="/login" className="font-bold text-brand">
           Sign in
         </Link>
       </p>
-    </div>
+    </AuthScreen>
   );
 }

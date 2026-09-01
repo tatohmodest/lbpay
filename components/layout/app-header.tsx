@@ -12,7 +12,7 @@ import { useMe } from "@/lib/hooks/wallet";
 import { cn } from "@/lib/cn";
 import { isAdmin, productUnlocked } from "@/lib/roles";
 import { openInstallPrompt, useStandaloneDisplay } from "@/lib/pwa";
-import Image from "next/image";
+import { AppImg } from "@/components/app-img";
 
 export function AppHeader({ onOpenMenu }: { onOpenMenu?: () => void }) {
   const pathname = usePathname();
@@ -95,8 +95,8 @@ export function AppHeader({ onOpenMenu }: { onOpenMenu?: () => void }) {
             href="/wallet/profile"
             className="hidden h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-white sm:flex"
           >
-            <Image
-              src={state.user.avatar || "/illustrations/empty-wallet.webp"}
+            <AppImg
+              src={state.user.avatar}
               alt={state.user.name || "Account"}
               width={40}
               height={40}
@@ -127,8 +127,8 @@ export function AppHeader({ onOpenMenu }: { onOpenMenu?: () => void }) {
               className="flex items-center gap-3 rounded-2xl bg-paper px-3 py-3"
             >
               <span className="flex h-10 w-10 overflow-hidden rounded-full border border-line">
-                <Image
-                  src={state.user.avatar || "/illustrations/empty-wallet.webp"}
+                <AppImg
+                  src={state.user.avatar}
                   alt=""
                   width={40}
                   height={40}

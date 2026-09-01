@@ -23,7 +23,7 @@ export function mapRailError(raw: unknown): PublicError {
   if (COLLECTION_OFF.test(text) || DISBURSE_OFF.test(text)) {
     return {
       code: "PAYUNIT_PRODUCT_NOT_ACTIVE",
-      user: "PayUnit has not activated Mobile Money disbursement on this merchant account. A PayUnit balance is not enough — ask PayUnit support to enable the deposit/disbursement product, then try again.",
+      user: "PayUnit has not activated Mobile Money disbursement on this merchant account. A PayUnit balance is not enough. Ask PayUnit support to enable the deposit/disbursement product, then try again.",
     };
   }
   if (AUTH.test(text)) {

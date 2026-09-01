@@ -2,10 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import Link from "next/link";
+import { AuthCard, AuthTitle } from "@/components/auth-shell";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Field, Input } from "@/components/ui/input";
 import { PinPad } from "@/components/auth/pin-pad";
 import { isMobileClient } from "@/lib/device";
@@ -21,9 +20,11 @@ import { slugify } from "@/lib/format";
 export function AuthForm({
   mode,
   notice,
+  invitedBy,
 }: {
   mode: "login" | "signup";
   notice?: string;
+  invitedBy?: string;
 }) {
   const router = useRouter();
   const notify = useNotify();
@@ -45,6 +46,7 @@ export function AuthForm({
   const pinWait = secondsLeft(lockedUntil, now);
   const autoId = slugify(name);
   const previewId = idChoice || autoId;
+  const inviteHandle = normalizeHandle(invitedBy || "");
 
   function resetHandleConflict() {
     setIdChoice("");
@@ -65,7 +67,13 @@ export function AuthForm({
     const res = await fetch("/api/auth/signup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, phone, password, lbpayId: handleToSend }),
+      body: JSON.stringify({
+        name,
+        email,
+        phone,
+        password,
+        lbpayId: handleToSend,
+      }),
     });
     const data = await readApiJson<AuthApiResponse>(res);
     if (!res.ok) {
@@ -178,29 +186,40 @@ export function AuthForm({
     }
   }
 
+  const formNotice =
+    notice ||
+    (mode === "signup" && inviteHandle ? `@${inviteHandle} invited you to LBPay.` : undefined);
+
   return (
     <div className="grid min-h-[calc(100svh-var(--header-h))] lg:grid-cols-2">
-      <div className="relative order-1 h-52 overflow-hidden bg-paper sm:h-64 lg:order-2 lg:h-auto">
-        <Image
-          src="/illustrations/hero-send-money.webp"
-          alt="Send money in Cameroon with LBPay"
-          fill
-          className="object-cover"
-          priority
-        />
-      </div>
-      <div className="order-2 flex flex-col justify-center px-6 py-10 md:px-16 lg:order-1">
+      <aside className="relative hidden overflow-hidden bg-forest px-10 py-12 text-white lg:flex lg:flex-col lg:justify-between">
+        <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-brand/25 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-24 left-8 h-40 w-40 rounded-full bg-white/5 blur-3xl" />
+        <div className="relative z-10">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand">LBPay</p>
+          <h2 className="mt-4 max-w-[11ch] text-4xl font-black leading-[1.08] xl:text-5xl">
+            {mode === "login" ? "Your XAF wallet, ready." : "Open a wallet in minutes."}
+          </h2>
+          <p className="mt-4 max-w-sm text-sm leading-6 text-white/70">
+            Email, a one-time code, then a PIN. Send across MTN and Orange from one ledger.
+          </p>
+        </div>
+        <p className="relative z-10 text-sm text-white/45">Built for Cameroon.</p>
+      </aside>
+
+      <div className="flex flex-col justify-center bg-paper px-6 py-10 md:px-14 lg:px-16">
         {step === "form" ? (
-          <>
-            <h1 className="text-3xl font-semibold tracking-tight">
-              {mode === "login" ? "Sign in" : "Create your wallet"}
-            </h1>
-            <p className="mt-2 text-sm leading-6 text-muted">
-              {mode === "login"
-                ? "Email and password, then your PIN."
-                : "We will email a one-time code, then you set a PIN."}
-            </p>
-            <Card className="mt-8 p-6">
+          <div className="mx-auto w-full max-w-[420px]">
+            <AuthTitle
+              kicker={mode === "login" ? "Welcome back" : "Get started"}
+              title={mode === "login" ? "Sign in" : "Create your wallet"}
+              subtitle={
+                mode === "login"
+                  ? "Email and password, then your PIN."
+                  : "We will email a one-time code, then you set a PIN."
+              }
+            />
+            <AuthCard>
               <form className="flex flex-col gap-4" onSubmit={submitForm}>
                 {mode === "signup" ? (
                   <>
@@ -222,11 +241,11 @@ export function AuthForm({
                         <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">
                           Your LBPay ID
                         </p>
-                        <p className="mt-1 font-mono text-base font-semibold text-ink">@{previewId}</p>
+                        <p className="mt-1 font-mono text-base font-black text-ink">@{previewId}</p>
                       </div>
                     ) : null}
                     {idConflict ? (
-                      <div className="space-y-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                      <div className="space-y-3 rounded-2xl bg-amber-50 p-4">
                         <p className="text-sm font-medium text-ink">
                           @{idConflict.taken} is already taken. @{idConflict.suggestion} is free.
                         </p>
@@ -303,56 +322,60 @@ export function AuthForm({
                 </Field>
                 {mode === "login" ? (
                   <div className="-mt-1 text-right">
-                    <Link href="/forgot" className="text-xs font-medium text-brand-deep">
+                    <Link href="/forgot" className="text-xs font-bold text-brand">
                       Forgot password?
                     </Link>
                   </div>
                 ) : null}
-                {notice ? (
-                  <p className="text-sm font-medium text-brand-deep">{notice}</p>
-                ) : null}
+                {formNotice ? <p className="text-sm font-semibold text-brand-deep">{formNotice}</p> : null}
                 {error ? <p className="text-sm font-medium text-danger">{error}</p> : null}
-                <Button type="submit" disabled={loading}>
+                <Button type="submit" className="mt-1 w-full" disabled={loading}>
                   {loading ? "Please wait…" : mode === "login" ? "Continue" : "Create account"}
                 </Button>
               </form>
-            </Card>
+            </AuthCard>
             <p className="mt-6 text-sm text-muted">
               {mode === "login" ? (
                 <>
                   New here?{" "}
-                  <Link href="/signup" className="font-medium text-brand-deep">
+                  <Link href="/signup" className="font-bold text-brand">
                     Create an account
                   </Link>
                 </>
               ) : (
                 <>
                   Already have an account?{" "}
-                  <Link href="/login" className="font-medium text-brand-deep">
+                  <Link href="/login" className="font-bold text-brand">
                     Sign in
                   </Link>
                 </>
               )}
             </p>
-          </>
+          </div>
         ) : (
-          <div>
-            <h1 className="text-3xl font-semibold tracking-tight">Enter your PIN</h1>
-            <p className="mt-2 mb-6 text-sm text-muted">This confirms it is you.</p>
-            <PinPad
-              value={pin}
-              disabled={pinWait > 0}
-              onChange={(next) => {
-                setPin(next);
-                setError("");
-                if (next.length === 4 && pinWait <= 0) void submitPin(next);
-              }}
-              error={error}
-              hint={pinWait > 0 ? `Too many incorrect PINs. Wait ${pinWait}s.` : undefined}
+          <div className="mx-auto w-full max-w-[420px]">
+            <AuthTitle
+              kicker="Confirm"
+              title="Enter your PIN"
+              subtitle="This confirms it is you."
+              align="center"
             />
-            <Link href="/pin/forgot" className="mt-6 block text-center text-sm font-semibold text-brand">
-              Forgot PIN?
-            </Link>
+            <AuthCard>
+              <PinPad
+                value={pin}
+                disabled={pinWait > 0}
+                onChange={(next) => {
+                  setPin(next);
+                  setError("");
+                  if (next.length === 4 && pinWait <= 0) void submitPin(next);
+                }}
+                error={error}
+                hint={pinWait > 0 ? `Too many incorrect PINs. Wait ${pinWait}s.` : undefined}
+              />
+              <Link href="/pin/forgot" className="mt-6 block text-center text-sm font-bold text-brand">
+                Forgot PIN?
+              </Link>
+            </AuthCard>
           </div>
         )}
       </div>

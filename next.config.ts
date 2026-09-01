@@ -31,21 +31,6 @@ const nextConfig: NextConfig = {
   },
   images: {
     unoptimized: true,
-    localPatterns: [
-      {
-        pathname: "/illustrations/**",
-      },
-      {
-        pathname: "/icons/**",
-      },
-    ],
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "res.cloudinary.com",
-        pathname: "/**",
-      },
-    ],
   },
   async headers() {
     return [

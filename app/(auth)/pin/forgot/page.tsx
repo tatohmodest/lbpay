@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { AuthCard, AuthScreen, AuthTitle } from "@/components/auth-shell";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Field, Input } from "@/components/ui/input";
 import { PinPad } from "@/components/auth/pin-pad";
 import { readApiJson, type AuthApiResponse } from "@/lib/http";
@@ -120,14 +120,15 @@ export default function ForgotPinPage() {
   }
 
   return (
-    <div className="mx-auto flex min-h-[calc(100svh-var(--header-h))] max-w-md flex-col justify-center px-6 py-12">
+    <AuthScreen>
       {step === "email" ? (
         <>
-          <h1 className="text-3xl font-semibold tracking-tight">Forgot PIN</h1>
-          <p className="mt-2 text-sm text-muted">
-            Enter the email on your account. We will send a code to confirm it is you.
-          </p>
-          <Card className="mt-8 p-6">
+          <AuthTitle
+            kicker="Security"
+            title="Forgot PIN"
+            subtitle="Enter the email on your account. We will send a code to confirm it is you."
+          />
+          <AuthCard>
             <form
               className="flex flex-col gap-4"
               onSubmit={(e) => {
@@ -151,23 +152,26 @@ export default function ForgotPinPage() {
                 </Field>
               )}
               {error ? <p className="text-sm font-medium text-danger">{error}</p> : null}
-              <Button type="submit" disabled={loading || (!knownEmail && email.trim().length < 5)}>
+              <Button type="submit" className="w-full" disabled={loading || (!knownEmail && email.trim().length < 5)}>
                 {loading ? "Please wait…" : "Send code"}
               </Button>
             </form>
-          </Card>
+          </AuthCard>
         </>
       ) : null}
 
       {step === "otp" ? (
         <>
-          <h1 className="text-3xl font-semibold tracking-tight">Verify it is you</h1>
-          <p className="mt-2 text-sm text-muted">
-            {sent
-              ? `We sent a 6-digit code to ${email || "your inbox"}.`
-              : "We will send a 6-digit code to confirm it is you."}
-          </p>
-          <Card className="mt-8 p-6">
+          <AuthTitle
+            kicker="Inbox"
+            title="Verify it is you"
+            subtitle={
+              sent
+                ? `We sent a 6-digit code to ${email || "your inbox"}.`
+                : "We will send a 6-digit code to confirm it is you."
+            }
+          />
+          <AuthCard>
             {!sent ? (
               <Button onClick={() => void sendCode(knownEmail || email)} disabled={loading}>
                 {loading ? "Please wait…" : "Send code"}
@@ -186,7 +190,7 @@ export default function ForgotPinPage() {
                   />
                 </Field>
                 {error ? <p className="text-sm font-medium text-danger">{error}</p> : null}
-                <Button type="submit" disabled={loading || otp.length !== 6}>
+                <Button type="submit" className="w-full" disabled={loading || otp.length !== 6}>
                   {loading ? "Please wait…" : "Verify code"}
                 </Button>
                 <Button type="button" variant="ghost" onClick={() => void sendCode()}>
@@ -194,15 +198,18 @@ export default function ForgotPinPage() {
                 </Button>
               </form>
             )}
-          </Card>
+          </AuthCard>
         </>
       ) : null}
 
       {step === "password" ? (
         <>
-          <h1 className="text-3xl font-semibold tracking-tight">Enter your password</h1>
-          <p className="mt-2 text-sm text-muted">This confirms the account before a new PIN is set.</p>
-          <Card className="mt-8 p-6">
+          <AuthTitle
+            kicker="Confirm"
+            title="Enter your password"
+            subtitle="This confirms the account before a new PIN is set."
+          />
+          <AuthCard>
             <form className="flex flex-col gap-4" onSubmit={confirmPassword}>
               <Field label="Password">
                 <Input
@@ -214,20 +221,23 @@ export default function ForgotPinPage() {
                 />
               </Field>
               {error ? <p className="text-sm font-medium text-danger">{error}</p> : null}
-              <Button type="submit" disabled={loading}>
+              <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? "Please wait…" : "Continue"}
               </Button>
             </form>
-          </Card>
+          </AuthCard>
         </>
       ) : null}
 
       {step === "pin" ? (
         <>
-          <h1 className="text-center text-3xl font-semibold tracking-tight">
-            {pinStage === "create" ? "Set a new PIN" : "Confirm your new PIN"}
-          </h1>
-          <p className="mt-2 mb-8 text-center text-sm text-muted">Choose 4 digits you will remember.</p>
+          <AuthTitle
+            kicker="Security"
+            title={pinStage === "create" ? "Set a new PIN" : "Confirm your new PIN"}
+            subtitle="Choose 4 digits you will remember."
+            align="center"
+          />
+          <AuthCard>
           {pinStage === "create" ? (
             <PinPad
               value={pin}
@@ -258,32 +268,36 @@ export default function ForgotPinPage() {
               hint={loading ? "Saving…" : "Enter the same 4 digits again"}
             />
           )}
+          </AuthCard>
         </>
       ) : null}
 
       {step === "done" ? (
         <>
-          <h1 className="text-3xl font-semibold tracking-tight">Thank you</h1>
-          <p className="mt-2 text-sm text-muted">Your PIN has been updated. Use it the next time you confirm a payment.</p>
-          <Card className="mt-8 p-6">
+          <AuthTitle
+            kicker="Done"
+            title="Thank you"
+            subtitle="Your PIN has been updated. Use it the next time you confirm a payment."
+          />
+          <AuthCard>
             <Button
               className="w-full"
               onClick={() => router.push(me.data?.session ? "/wallet" : "/login")}
             >
               {me.data?.session ? "Back to wallet" : "Sign in"}
             </Button>
-          </Card>
+          </AuthCard>
         </>
       ) : null}
 
       {step !== "done" ? (
         <p className="mt-6 text-sm text-muted">
           Remembered it?{" "}
-          <Link href={me.data?.session ? "/wallet" : "/login"} className="font-medium text-brand-deep">
+          <Link href={me.data?.session ? "/wallet" : "/login"} className="font-bold text-brand">
             Go back
           </Link>
         </p>
       ) : null}
-    </div>
+    </AuthScreen>
   );
 }

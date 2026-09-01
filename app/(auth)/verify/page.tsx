@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
+import { AuthCard, AuthScreen, AuthTitle } from "@/components/auth-shell";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Field, Input } from "@/components/ui/input";
 import { readApiJson, type AuthApiResponse } from "@/lib/http";
 import { useNotify } from "@/lib/notify";
@@ -61,10 +61,13 @@ function VerifyInner() {
   }
 
   return (
-    <div className="mx-auto flex min-h-[calc(100svh-var(--header-h))] max-w-md flex-col justify-center px-6 py-12">
-      <h1 className="text-3xl font-semibold tracking-tight">Check your email</h1>
-      <p className="mt-2 text-sm text-muted">We sent a 6-digit code to {email || "your inbox"}.</p>
-      <Card className="mt-8 p-6">
+    <AuthScreen>
+      <AuthTitle
+        kicker="Inbox"
+        title="Check your email"
+        subtitle={`We sent a 6-digit code to ${email || "your inbox"}.`}
+      />
+      <AuthCard>
         <form className="flex flex-col gap-4" onSubmit={verify}>
           <Field label="Verification code">
             <Input
@@ -78,15 +81,15 @@ function VerifyInner() {
             />
           </Field>
           {error ? <p className="text-sm font-semibold text-danger">{error}</p> : null}
-          <Button type="submit" disabled={loading || otp.length !== 6}>
+          <Button type="submit" className="w-full" disabled={loading || otp.length !== 6}>
             Verify email
           </Button>
           <Button type="button" variant="ghost" onClick={resend}>
             Resend code
           </Button>
         </form>
-      </Card>
-    </div>
+      </AuthCard>
+    </AuthScreen>
   );
 }
 

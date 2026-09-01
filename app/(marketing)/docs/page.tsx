@@ -35,7 +35,7 @@ export default function DocsPage() {
             Build payments into your product.
           </h1>
           <p className="mt-4 max-w-xl text-[16px] leading-7 text-white/65">
-            Guides and reference for the LBPay API — collections, payouts, payment links, and
+            Guides and reference for the LBPay API: collections, payouts, payment links, and
             sandbox behavior in XAF.
           </p>
         </Container>

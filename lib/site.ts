@@ -83,7 +83,7 @@ export const SITE_TITLE = "LBPay | Send money in Cameroon, MTN, Orange Money, XA
 
 export const SITE_DESCRIPTION = `🚀 **LBPay is officially LIVE.**
 
-Today, I’m incredibly proud to announce the launch of **LBPay — Looping Binary’s payment ecosystem built to make digital payments simpler, faster, and more accessible across Cameroon.** 🇨🇲
+Today, I’m incredibly proud to announce the launch of **LBPay: Looping Binary’s payment ecosystem built to make digital payments simpler, faster, and more accessible across Cameroon.** 🇨🇲
 
 With LBPay, users can:
 💸 Send & receive money
@@ -96,7 +96,7 @@ But for me, LBPay represents more than another product.
 
 It represents an idea we’ve been working on at **Looping Binary**: building technology that solves real problems around us and can eventually scale far beyond Cameroon.
 
-From an idea, to countless lines of code, debugging, testing, redesigning, and rebuilding — **LBPay is finally here.**
+From an idea, to countless lines of code, debugging, testing, redesigning, and rebuilding. **LBPay is finally here.**
 
 And this is only the beginning. 🚀
 

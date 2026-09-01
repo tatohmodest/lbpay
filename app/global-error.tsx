@@ -24,9 +24,9 @@ export default function GlobalError({
             <p style={{ margin: 0, fontSize: 11, fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#00b369" }}>
               LBPay
             </p>
-            <h1 style={{ margin: "12px 0 0", fontSize: 24, fontWeight: 900 }}>Could not open LBPay</h1>
+            <h1 style={{ margin: "12px 0 0", fontSize: 24, fontWeight: 900 }}>This page did not load</h1>
             <p style={{ margin: "8px 0 0", fontSize: 14, lineHeight: 1.6, color: "#5a6b63" }}>
-              Reload this screen. Your wallet is still there.
+              Reload. Your wallet is still there.
             </p>
             <button
               type="button"

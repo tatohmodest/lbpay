@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { PinPad } from "@/components/auth/pin-pad";
+import { AuthCard, AuthScreen, AuthTitle } from "@/components/auth-shell";
 import { isMobileClient } from "@/lib/device";
 import { readApiJson } from "@/lib/http";
 import { useNotify } from "@/lib/notify";
@@ -48,13 +49,14 @@ export default function PinSetupPage() {
   }
 
   return (
-    <div className="mx-auto flex min-h-[calc(100svh-var(--header-h))] max-w-sm flex-col justify-center px-6 py-12">
-      <h1 className="text-center text-3xl font-semibold tracking-tight">
-        {stage === "create" ? "Create your PIN" : "Confirm your PIN"}
-      </h1>
-      <p className="mt-2 mb-8 text-center text-sm text-muted">
-        You will enter this PIN on login, when sending money, and when returning to the app on mobile.
-      </p>
+    <AuthScreen>
+      <AuthTitle
+        kicker="Security"
+        title={stage === "create" ? "Create your PIN" : "Confirm your PIN"}
+        subtitle="You will enter this PIN on login, when sending money, and when returning to the app on mobile."
+        align="center"
+      />
+      <AuthCard>
       {stage === "create" ? (
         <PinPad
           value={pin}
@@ -85,6 +87,7 @@ export default function PinSetupPage() {
           hint="Enter the same 4 digits again"
         />
       )}
-    </div>
+      </AuthCard>
+    </AuthScreen>
   );
 }

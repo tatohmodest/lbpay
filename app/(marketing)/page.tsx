@@ -77,8 +77,8 @@ export default function LandingPage() {
             Cameroon payments, made easy.
           </h1>
           <p className="mx-auto mt-5 max-w-xl text-[16px] leading-8 text-hero-muted md:text-lg">
-            Send, receive, and collect XAF. MTN, Orange, cards, and a wallet with an @handle —
-            one ledger underneath.
+            Send, receive, and collect XAF. MTN, Orange, cards, and a wallet with an @handle.
+            One ledger underneath.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <Link href="/signup">
@@ -391,7 +391,7 @@ export default function LandingPage() {
               Common questions.
             </h2>
             <p className="mt-4 text-sm leading-6 text-muted">
-              Wallet, checkout, and the payments API — answered without the jargon.
+              Wallet, checkout, and the payments API, answered without the jargon.
             </p>
           </div>
           <FaqAccordion />

@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import { Camera } from "lucide-react";
+import { AppImg } from "@/components/app-img";
 import { compressAvatarImage } from "@/lib/image-compress";
 import { MAX_KYC_UPLOAD_BYTES } from "@/lib/kyc";
 import { useNotify } from "@/lib/notify";
@@ -58,7 +58,7 @@ export function ProfileAvatar({ src, name }: { src: string; name: string }) {
 
   return (
     <label className="relative mx-auto block h-24 w-24 cursor-pointer">
-      <Image
+      <AppImg
         src={preview || src}
         alt={name || "Profile photo"}
         width={96}

@@ -1,6 +1,6 @@
-import Image from "next/image";
 import Link from "next/link";
 import { cn } from "@/lib/cn";
+import { AppImg } from "@/components/app-img";
 
 export function Logo({
   href = "/",
@@ -15,13 +15,12 @@ export function Logo({
 }) {
   return (
     <Link href={href} className={cn("flex items-center gap-2.5", className)}>
-      <Image
+      <AppImg
         src="/illustrations/lbpay-mark.webp"
         alt="LBPay"
         width={32}
         height={32}
         className={cn("h-8 w-8 rounded-lg object-cover", markClassName)}
-        unoptimized
       />
       <span
         className={cn(

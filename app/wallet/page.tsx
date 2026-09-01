@@ -20,6 +20,7 @@ import { useApp } from "@/lib/store";
 import { useMe } from "@/lib/hooks/wallet";
 import { VerifyPrompt } from "@/components/verify-prompt";
 import { CopyHandle } from "@/components/copy-handle";
+import { InviteSomeone } from "@/components/invite-someone";
 import type { Transaction } from "@/lib/types";
 
 const actions = [
@@ -124,6 +125,8 @@ export default function WalletPage() {
             ))}
           </div>
         </section>
+
+        <InviteSomeone />
 
         <section className="overflow-hidden rounded-[2rem] bg-white shadow-[0_1px_2px_rgba(12,25,19,0.04)]">
           {extras.map((item) => (
