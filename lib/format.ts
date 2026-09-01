@@ -1,5 +1,10 @@
 import type { TransactionKind } from "@/lib/types";
 
+export function firstName(name?: string | null) {
+  const part = (name || "").trim().split(/\s+/)[0] || "";
+  return part.replace(/[.,]+$/g, "");
+}
+
 export function formatXAF(amount: number, options?: { withCurrency?: boolean }) {
   const withCurrency = options?.withCurrency ?? true;
   const formatted = new Intl.NumberFormat("fr-CM", {

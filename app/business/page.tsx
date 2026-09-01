@@ -3,18 +3,27 @@
 import Link from "next/link";
 import { Link2, QrCode, Receipt, Users } from "lucide-react";
 import { StatusBadge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { formatDate, formatXAF } from "@/lib/format";
+import { AppImg } from "@/components/app-img";
+import { HouseCard } from "@/components/business/house-card";
+import { firstName, formatDate, formatXAF } from "@/lib/format";
 import { useMe } from "@/lib/hooks/wallet";
 import { useQuery } from "@tanstack/react-query";
 import { payLinkPath } from "@/lib/origin";
+import { cn } from "@/lib/cn";
 
 const actions = [
-  { href: "/business/links", label: "New link", copy: "A checkout anyone can pay", icon: Link2 },
-  { href: "/business/qr", label: "My QR", copy: "Let a customer scan and pay", icon: QrCode },
-  { href: "/business/payments", label: "Sales", copy: "Every collection in one list", icon: Receipt },
-  { href: "/business/customers", label: "Customers", copy: "People who have paid you", icon: Users },
-];
+  { href: "/business/links", label: "Link", copy: "New checkout", icon: Link2, tone: "sand" },
+  { href: "/business/qr", label: "QR", copy: "Scan to pay", icon: QrCode, tone: "mist" },
+  { href: "/business/payments", label: "Sales", copy: "Collections", icon: Receipt, tone: "lilac" },
+  { href: "/business/customers", label: "People", copy: "Who paid", icon: Users, tone: "blush" },
+] as const;
+
+const tones: Record<(typeof actions)[number]["tone"], string> = {
+  sand: "bg-[#f4ead2] text-[#8a691f]",
+  mist: "bg-[#e4eef8] text-[#3a5f86]",
+  lilac: "bg-[#ece6f8] text-[#5b4a8a]",
+  blush: "bg-[#f8e6e6] text-[#8a4545]",
+};
 
 export default function BusinessPage() {
   const me = useMe();
@@ -48,83 +57,85 @@ export default function BusinessPage() {
 
   const links = data.data?.links || [];
   const collections = data.data?.collections || [];
-  const shop = data.data?.businessName || me.data?.user?.businessName || "Business";
+  const shop = data.data?.businessName || me.data?.user?.businessName || "Your shop";
+  const person = firstName(me.data?.user?.name) || shop;
+  const series = collections
+    .filter((tx) => tx.status === "success")
+    .slice(0, 8)
+    .map((tx) => tx.amount)
+    .reverse();
 
   return (
-    <div className="mx-auto max-w-lg space-y-4 lg:mx-0 lg:max-w-3xl">
-      <section className="relative overflow-hidden rounded-[2rem] bg-forest p-5 text-white shadow-[0_24px_80px_rgba(6,38,28,0.18)]">
-        <div className="pointer-events-none absolute -right-16 -top-16 h-44 w-44 rounded-full bg-brand/25 blur-3xl" />
-        <div className="relative z-10">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand">{shop}</p>
-          <p className="mt-3 text-xs text-white/65">Collected</p>
-          <h1 className="mt-1 font-mono text-3xl font-black tracking-tight md:text-4xl">
-            {formatXAF(data.data?.revenue || 0, { withCurrency: false })}{" "}
-            <span className="text-lg font-bold text-white/70">XAF</span>
-          </h1>
-          <p className="mt-2 text-xs text-white/60">
-            {links.length} {links.length === 1 ? "link" : "links"} · {collections.length}{" "}
-            {collections.length === 1 ? "sale" : "sales"}
-          </p>
-          <div className="mt-5 grid grid-cols-2 gap-2">
-            <Link href="/business/links">
-              <Button className="h-11 w-full rounded-full bg-white text-brand hover:bg-brand-soft">
-                New link
-              </Button>
-            </Link>
-            <Link href="/business/qr">
-              <Button className="h-11 w-full rounded-full border-0 bg-white/10 text-white hover:bg-white/15">
-                My QR
-              </Button>
-            </Link>
-          </div>
+    <div className="mx-auto max-w-lg space-y-5 lg:mx-0 lg:max-w-3xl">
+      <header className="flex items-center gap-3">
+        <AppImg
+          src={me.data?.user?.avatar}
+          alt=""
+          className="h-12 w-12 rounded-full object-cover ring-2 ring-white shadow-[0_8px_20px_rgba(12,25,19,0.08)]"
+        />
+        <div className="min-w-0">
+          <p className="text-lg font-black tracking-tight text-ink">Hello, {person}</p>
+          <p className="truncate text-sm text-muted">{shop}</p>
         </div>
+      </header>
+
+      <HouseCard
+        label="Total collected"
+        amount={data.data?.revenue || 0}
+        holder={shop}
+        handle={me.data?.user?.lbpayId}
+        series={series}
+      />
+
+      <section className="grid grid-cols-4 gap-2">
+        {actions.map((action) => (
+          <Link
+            key={action.href}
+            href={action.href}
+            className="flex flex-col items-center gap-2 rounded-[1.25rem] bg-white px-1.5 py-3 shadow-[0_1px_2px_rgba(12,25,19,0.04)] transition hover:bg-[#faf8f4]"
+          >
+            <span className={cn("grid h-10 w-10 place-items-center rounded-2xl", tones[action.tone])}>
+              <action.icon className="h-4 w-4" />
+            </span>
+            <span className="text-center">
+              <span className="block text-[12px] font-bold text-ink">{action.label}</span>
+              <span className="mt-0.5 block text-[10px] leading-3 text-muted">{action.copy}</span>
+            </span>
+          </Link>
+        ))}
       </section>
 
-      <section className="rounded-[2rem] bg-white p-1.5 shadow-[0_1px_2px_rgba(12,25,19,0.04)]">
-        <div className="grid grid-cols-2 gap-1">
-          {actions.map((action) => (
-            <Link
-              key={action.href}
-              href={action.href}
-              className="flex flex-col gap-2.5 rounded-[1.5rem] p-3.5 transition hover:bg-paper"
-            >
-              <span className="grid h-9 w-9 place-items-center rounded-2xl bg-brand-soft text-brand">
-                <action.icon className="h-4 w-4" />
-              </span>
-              <span>
-                <span className="block text-sm font-bold text-ink">{action.label}</span>
-                <span className="mt-0.5 block text-xs leading-4 text-muted">{action.copy}</span>
-              </span>
-            </Link>
-          ))}
-        </div>
+      <section className="grid grid-cols-3 gap-2">
+        <Stat label="Till" value={formatXAF(data.data?.revenue || 0, { withCurrency: false })} />
+        <Stat label="Links" value={String(links.length)} />
+        <Stat label="Sales" value={String(collections.length)} />
       </section>
 
-      <section className="rounded-[2rem] bg-white p-4 shadow-[0_1px_2px_rgba(12,25,19,0.04)]">
+      <section className="rounded-[1.5rem] bg-white p-4 shadow-[0_1px_2px_rgba(12,25,19,0.04)]">
         <div className="mb-1 flex items-center justify-between">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand">Checkout</p>
-            <h2 className="mt-1 text-lg font-black">Links</h2>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">Checkout</p>
+            <h2 className="mt-1 text-base font-black">Links</h2>
           </div>
-          <Link href="/business/links" className="text-sm font-bold text-brand">
+          <Link href="/business/links" className="text-sm font-bold text-ink/70">
             {links.length ? "See all" : "Create"}
           </Link>
         </div>
         {links.length === 0 ? (
-          <p className="mt-3 rounded-2xl bg-paper px-4 py-8 text-center text-sm text-muted">None</p>
+          <p className="mt-3 rounded-2xl bg-[#f6f3ec] px-4 py-8 text-center text-sm text-muted">None</p>
         ) : (
           <div className="mt-2 space-y-0.5">
             {links.slice(0, 4).map((link) => (
               <Link
                 key={link.id}
                 href={payLinkPath(link.slug)}
-                className="flex items-center gap-3 rounded-2xl px-2 py-2.5 transition hover:bg-paper"
+                className="flex items-center gap-3 rounded-2xl px-1.5 py-2.5 transition hover:bg-[#f6f3ec]"
               >
                 {link.imageUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={link.imageUrl} alt="" className="h-11 w-11 rounded-2xl object-cover" />
+                  <img src={link.imageUrl} alt="" className="h-10 w-10 rounded-xl object-cover" />
                 ) : (
-                  <div className="grid h-11 w-11 place-items-center rounded-2xl bg-brand-soft text-[10px] font-bold text-brand-deep">
+                  <div className="grid h-10 w-10 place-items-center rounded-xl bg-[#f4ead2] text-[10px] font-bold text-[#8a691f]">
                     Pay
                   </div>
                 )}
@@ -132,7 +143,7 @@ export default function BusinessPage() {
                   <p className="truncate text-sm font-bold">{link.title}</p>
                   <p className="text-xs text-muted">Open checkout</p>
                 </div>
-                <p className="shrink-0 font-mono text-sm font-black">
+                <p className="shrink-0 font-mono text-sm font-black text-ink">
                   {link.amount ? formatXAF(link.amount, { withCurrency: false }) : "Open"}
                 </p>
               </Link>
@@ -141,30 +152,33 @@ export default function BusinessPage() {
         )}
       </section>
 
-      <section className="rounded-[2rem] bg-white p-4 shadow-[0_1px_2px_rgba(12,25,19,0.04)]">
+      <section className="rounded-[1.5rem] bg-white p-4 shadow-[0_1px_2px_rgba(12,25,19,0.04)]">
         <div className="mb-1 flex items-center justify-between">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand">Activity</p>
-            <h2 className="mt-1 text-lg font-black">Recent sales</h2>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">Ledger</p>
+            <h2 className="mt-1 text-base font-black">Recent sales</h2>
           </div>
           {collections.length ? (
-            <Link href="/business/payments" className="text-sm font-bold text-brand">
+            <Link href="/business/payments" className="text-sm font-bold text-ink/70">
               See all
             </Link>
           ) : null}
         </div>
         {collections.length === 0 ? (
-          <p className="mt-3 rounded-2xl bg-paper px-4 py-8 text-center text-sm text-muted">None</p>
+          <p className="mt-3 rounded-2xl bg-[#f6f3ec] px-4 py-8 text-center text-sm text-muted">None</p>
         ) : (
           <div className="mt-2 space-y-0.5">
             {collections.slice(0, 5).map((tx) => (
-              <div key={tx.id} className="flex items-center justify-between gap-3 rounded-2xl px-2 py-2.5">
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-bold">{tx.counterparty}</p>
-                  <p className="text-xs text-muted">{formatDate(tx.createdAt)}</p>
+              <div key={tx.id} className="flex items-center justify-between gap-3 rounded-2xl px-1.5 py-2.5">
+                <div className="flex min-w-0 items-center gap-3">
+                  <Initial name={tx.counterparty} />
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-bold">{tx.counterparty}</p>
+                    <p className="text-xs text-muted">{formatDate(tx.createdAt)}</p>
+                  </div>
                 </div>
                 <div className="shrink-0 text-right">
-                  <p className="font-mono text-sm font-black">
+                  <p className="font-mono text-sm font-black text-[#7a5b1e]">
                     +{formatXAF(tx.amount, { withCurrency: false })}
                   </p>
                   <StatusBadge status={tx.status} />
@@ -175,5 +189,23 @@ export default function BusinessPage() {
         )}
       </section>
     </div>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-[1.25rem] bg-white px-3 py-3 shadow-[0_1px_2px_rgba(12,25,19,0.04)]">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted">{label}</p>
+      <p className="mt-1 truncate font-mono text-base font-black text-ink">{value}</p>
+    </div>
+  );
+}
+
+function Initial({ name }: { name: string }) {
+  const letter = (name.trim()[0] || "?").toUpperCase();
+  return (
+    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#ece6f8] text-sm font-black text-[#5b4a8a]">
+      {letter}
+    </span>
   );
 }
