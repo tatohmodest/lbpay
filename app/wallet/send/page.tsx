@@ -9,7 +9,9 @@ import { Field, Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ConfirmSheet } from "@/components/confirm-sheet";
 import { NetworkMark } from "@/components/network-mark";
+import { contactsFromTransactions } from "@/lib/contacts";
 import { useApp } from "@/lib/store";
+import type { Transaction } from "@/lib/types";
 import { formatXAF } from "@/lib/format";
 import { useDisburse, useHandleLookup, useMe, useTransfer } from "@/lib/hooks/wallet";
 import { useNotify } from "@/lib/notify";
@@ -45,6 +47,8 @@ function SendInner() {
   const [pinLockedUntil, setPinLockedUntil] = useState(0);
   const lookup = useHandleLookup(network === "wallet" ? to : "");
 
+  const transactions = (me.data?.transactions as Transaction[] | undefined) ?? state.transactions;
+  const contacts = contactsFromTransactions(transactions);
   const balance = me.data?.balance ?? state.balance;
   const value = Number(amount) || 0;
   const phone = network === "wallet" ? "" : cameroonMsisdn(to);
@@ -194,23 +198,30 @@ function SendInner() {
           </Button>
         </form>
       </Card>
-      <div className="mt-4">
-        <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted">Saved people</p>
-        <div className="flex flex-wrap gap-2">
-          {state.beneficiaries.map((person) => (
-            <button
-              key={person.id}
-              type="button"
-              onClick={() => {
-                setTo(person.lbpayId ? `@${person.lbpayId}` : cameroonMsisdn(person.phone || ""));
-                setNetwork(person.network ?? "wallet");
-              }}
-              className="rounded-full border border-line bg-white px-3 py-1.5 text-sm"
-            >
-              {person.name}
-            </button>
-          ))}
-        </div>
+      <div className="mt-6 rounded-[2rem] bg-white p-5 shadow-[0_1px_2px_rgba(12,25,19,0.04)]">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand">People</p>
+        <h2 className="mt-1 text-lg font-black">Contacts</h2>
+        {contacts.length === 0 ? (
+          <div className="mt-4">
+            <p className="rounded-2xl bg-paper px-4 py-8 text-center text-sm text-muted">None</p>
+          </div>
+        ) : (
+          <div className="mt-4 flex flex-wrap gap-2">
+            {contacts.map((contact) => (
+              <button
+                key={contact.key}
+                type="button"
+                onClick={() => {
+                  setTo(contact.to);
+                  setNetwork(contact.via);
+                }}
+                className="rounded-full bg-paper px-3 py-1.5 text-sm font-bold text-ink"
+              >
+                {contact.label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
       <ConfirmSheet
         open={open}

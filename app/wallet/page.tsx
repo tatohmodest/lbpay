@@ -5,7 +5,6 @@ import Image from "next/image";
 import {
   ArrowDownLeft,
   ArrowUpRight,
-  History,
   Phone,
   QrCode,
   Receipt,
@@ -21,6 +20,8 @@ import { useMe } from "@/lib/hooks/wallet";
 import { VerifyPrompt } from "@/components/verify-prompt";
 import { CopyHandle } from "@/components/copy-handle";
 import { InviteSomeone } from "@/components/invite-someone";
+import { ContactsStrip } from "@/components/wallet-contacts";
+import { contactsFromTransactions, contactFromTransaction, contactSendHref } from "@/lib/contacts";
 import type { Transaction } from "@/lib/types";
 
 const actions = [
@@ -51,7 +52,6 @@ const actions = [
 ];
 
 const extras = [
-  { href: "/wallet/history", label: "Transactions", copy: "Every payment in one place", icon: History },
   { href: "/wallet/airtime", label: "Airtime", copy: "Coming soon", icon: Phone },
   { href: "/wallet/bills", label: "Bills", copy: "Coming soon", icon: Receipt },
 ];
@@ -61,6 +61,7 @@ export default function WalletPage() {
   const me = useMe();
   const balance = me.data?.balance ?? state.balance;
   const transactions = (me.data?.transactions as Transaction[] | undefined) ?? state.transactions;
+  const contacts = contactsFromTransactions(transactions);
   const frozen = (me.data?.user?.status || state.user.status) === "frozen";
   const personalKyc = me.data?.user?.kyc?.personal || "unverified";
 
@@ -126,6 +127,78 @@ export default function WalletPage() {
           </div>
         </section>
 
+        <section className="rounded-[2rem] bg-white p-5 shadow-[0_1px_2px_rgba(12,25,19,0.04)]">
+          <div className="mb-1 flex items-center justify-between">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand">People</p>
+              <h2 className="mt-1 text-lg font-black">Contacts</h2>
+            </div>
+            {contacts.length ? (
+              <Link href="/wallet/contacts" className="text-sm font-bold text-brand">
+                See all
+              </Link>
+            ) : null}
+          </div>
+          <ContactsStrip contacts={contacts.slice(0, 8)} />
+        </section>
+
+        <section className="rounded-[2rem] bg-white p-5 shadow-[0_1px_2px_rgba(12,25,19,0.04)]">
+          <div className="mb-1 flex items-center justify-between">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand">Activity</p>
+              <h2 className="mt-1 text-lg font-black">History</h2>
+            </div>
+            {transactions.length ? (
+              <Link href="/wallet/history" className="text-sm font-bold text-brand">
+                See all
+              </Link>
+            ) : null}
+          </div>
+          <div className="mt-3 space-y-1">
+            {transactions.length === 0 ? (
+              <p className="rounded-2xl bg-paper px-4 py-8 text-center text-sm text-muted">None</p>
+            ) : (
+              transactions.slice(0, 5).map((tx) => {
+                const contact = contactFromTransaction(tx);
+                const row = (
+                  <div className="flex items-center justify-between rounded-2xl px-3 py-3">
+                    <div className="min-w-0">
+                      <p className="truncate font-bold">{tx.counterparty}</p>
+                      <p className="text-xs text-muted">
+                        {tx.kind.replace("_", " ")} · {formatDate(tx.createdAt)}
+                        {tx.fee > 0 ? ` · fee ${formatXAF(tx.fee, { withCurrency: false })}` : ""}
+                      </p>
+                    </div>
+                    <div className="ml-3 text-right">
+                      <p className="font-mono text-sm font-black">
+                        {isMoneyOut(tx.kind) ? "−" : "+"}
+                        {formatXAF(tx.amount, { withCurrency: false })}
+                      </p>
+                      <StatusBadge status={tx.status} />
+                    </div>
+                  </div>
+                );
+                if (!contact) {
+                  return (
+                    <div key={tx.id} className="rounded-2xl">
+                      {row}
+                    </div>
+                  );
+                }
+                return (
+                  <Link
+                    key={tx.id}
+                    href={contactSendHref(contact)}
+                    className="block rounded-2xl transition hover:bg-paper"
+                  >
+                    {row}
+                  </Link>
+                );
+              })
+            )}
+          </div>
+        </section>
+
         <InviteSomeone />
 
         <section className="overflow-hidden rounded-[2rem] bg-white shadow-[0_1px_2px_rgba(12,25,19,0.04)]">
@@ -144,44 +217,6 @@ export default function WalletPage() {
               </span>
             </Link>
           ))}
-        </section>
-
-        <section className="rounded-[2rem] bg-white p-5 shadow-[0_1px_2px_rgba(12,25,19,0.04)]">
-          <div className="mb-1 flex items-center justify-between">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand">Activity</p>
-              <h2 className="mt-1 text-lg font-black">Recent</h2>
-            </div>
-            <Link href="/wallet/history" className="text-sm font-bold text-brand">
-              View all
-            </Link>
-          </div>
-          <div className="mt-3 space-y-1">
-            {transactions.length === 0 ? (
-              <p className="rounded-2xl bg-paper px-4 py-8 text-center text-sm text-muted">
-                No movements yet. Deposit or receive to get started.
-              </p>
-            ) : (
-              transactions.slice(0, 5).map((tx) => (
-                <div key={tx.id} className="flex items-center justify-between rounded-2xl px-3 py-3 hover:bg-paper">
-                  <div className="min-w-0">
-                    <p className="truncate font-bold">{tx.counterparty}</p>
-                    <p className="text-xs text-muted">
-                      {tx.kind.replace("_", " ")} · {formatDate(tx.createdAt)}
-                      {tx.fee > 0 ? ` · fee ${formatXAF(tx.fee, { withCurrency: false })}` : ""}
-                    </p>
-                  </div>
-                  <div className="ml-3 text-right">
-                    <p className="font-mono text-sm font-black">
-                      {isMoneyOut(tx.kind) ? "−" : "+"}
-                      {formatXAF(tx.amount, { withCurrency: false })}
-                    </p>
-                    <StatusBadge status={tx.status} />
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
         </section>
       </div>
 
