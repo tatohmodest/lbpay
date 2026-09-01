@@ -43,23 +43,23 @@ export function ProductPhotoField({
       <span className="mb-1.5 block text-xs font-medium text-muted">Product photo</span>
       <span
         className={cn(
-          "flex min-h-32 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-2xl border border-dashed p-3 text-center",
+          "flex cursor-pointer items-center gap-3 overflow-hidden rounded-2xl border border-dashed px-3 py-3",
           url ? "border-brand bg-brand-soft/40" : "border-line bg-paper",
           busy && "opacity-70",
         )}
       >
         {url ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={url} alt="" className="h-36 w-full rounded-xl object-cover" />
+          <img src={url} alt="" className="h-14 w-14 rounded-xl object-cover" />
         ) : (
-          <>
-            <Camera className="h-6 w-6 text-brand" />
-            <span className="mt-2 text-sm font-semibold">
-              {busy ? "Compressing and uploading…" : "Add a photo"}
-            </span>
-            <span className="mt-1 text-xs text-muted">Optional. Up to 10MB, then we shrink it.</span>
-          </>
+          <Camera className="h-5 w-5 shrink-0 text-brand" />
         )}
+        <span className="min-w-0 text-left">
+          <span className="block text-sm font-semibold">
+            {busy ? "Compressing and uploading…" : url ? "Change photo" : "Add a photo"}
+          </span>
+          <span className="mt-0.5 block text-xs text-muted">Optional. Up to 10MB.</span>
+        </span>
       </span>
       <input
         type="file"
