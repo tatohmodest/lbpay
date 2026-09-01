@@ -50,24 +50,26 @@ export function ConsoleShell({
 }) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [menuPath, setMenuPath] = useState(pathname);
-  if (pathname !== menuPath) {
-    setMenuPath(pathname);
-    setMenuOpen(false);
-  }
+  const [openedPath, setOpenedPath] = useState(pathname);
+  const mobileOpen = menuOpen && openedPath === pathname;
 
   return (
     <Guard>
       <div className="min-h-screen bg-paper">
         <div className="lg:hidden">
-          <AppHeader onOpenMenu={() => setMenuOpen(true)} />
+          <AppHeader
+            onOpenMenu={() => {
+              setOpenedPath(pathname);
+              setMenuOpen(true);
+            }}
+          />
         </div>
         <ConsoleSidebar
           title={title}
           subtitle={subtitle}
           items={items}
           cta={cta}
-          mobileOpen={menuOpen}
+          mobileOpen={mobileOpen}
           onMobileClose={() => setMenuOpen(false)}
         />
         <main

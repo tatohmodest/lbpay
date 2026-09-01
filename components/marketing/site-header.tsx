@@ -21,14 +21,10 @@ const links = [
 export function SiteHeader() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const [menuPath, setMenuPath] = useState(pathname);
+  const [openedPath, setOpenedPath] = useState(pathname);
   const standalone = useStandaloneDisplay();
   const showInstall = !standalone;
-
-  if (pathname !== menuPath) {
-    setMenuPath(pathname);
-    setOpen(false);
-  }
+  const menuOpen = open && openedPath === pathname;
 
   return (
     <>
@@ -85,9 +81,12 @@ export function SiteHeader() {
             <button
               type="button"
               className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/15 text-white"
-              aria-expanded={open}
+              aria-expanded={menuOpen}
               aria-label="Open menu"
-              onClick={() => setOpen(true)}
+              onClick={() => {
+                setOpenedPath(pathname);
+                setOpen(true);
+              }}
             >
               <Menu className="h-5 w-5" />
             </button>
@@ -96,7 +95,7 @@ export function SiteHeader() {
       </header>
 
       <RightDrawer
-        open={open}
+        open={menuOpen}
         onClose={() => setOpen(false)}
         title="Menu"
         subtitle="Send and collect XAF across Cameroon."

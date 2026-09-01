@@ -2,16 +2,31 @@
 
 import { useSyncExternalStore } from "react";
 
+let current = 0;
+
 function subscribe(onStoreChange: () => void) {
-  const id = window.setInterval(onStoreChange, 1000);
+  current = Date.now();
+  const id = window.setInterval(() => {
+    current = Date.now();
+    onStoreChange();
+  }, 1000);
   return () => window.clearInterval(id);
+}
+
+function getNow() {
+  if (!current) current = Date.now();
+  return current;
+}
+
+function getIdle() {
+  return 0;
 }
 
 export function useNow(enabled = true) {
   return useSyncExternalStore(
     enabled ? subscribe : () => () => undefined,
-    () => Date.now(),
-    () => 0,
+    enabled ? getNow : getIdle,
+    getIdle,
   );
 }
 

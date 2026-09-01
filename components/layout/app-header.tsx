@@ -20,13 +20,10 @@ export function AppHeader({ onOpenMenu }: { onOpenMenu?: () => void }) {
   const me = useMe();
   const user = me.data?.user;
   const [open, setOpen] = useState(false);
-  const [menuPath, setMenuPath] = useState(pathname);
+  const [openedPath, setOpenedPath] = useState(pathname);
   const standalone = useStandaloneDisplay();
   const showInstall = !standalone;
-  if (pathname !== menuPath) {
-    setMenuPath(pathname);
-    setOpen(false);
-  }
+  const menuOpen = open && openedPath === pathname;
   const products = [
     { href: "/wallet", label: "Wallet", icon: Wallet, copy: "Send, receive, and pay from one place", show: true },
     {
@@ -107,7 +104,14 @@ export function AppHeader({ onOpenMenu }: { onOpenMenu?: () => void }) {
             type="button"
             className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white text-ink lg:hidden"
             aria-label="Open menu"
-            onClick={() => (onOpenMenu ? onOpenMenu() : setOpen(true))}
+            onClick={() => {
+              if (onOpenMenu) {
+                onOpenMenu();
+                return;
+              }
+              setOpenedPath(pathname);
+              setOpen(true);
+            }}
           >
             <Menu className="h-5 w-5" />
           </button>
@@ -117,7 +121,7 @@ export function AppHeader({ onOpenMenu }: { onOpenMenu?: () => void }) {
 
       {!onOpenMenu ? (
         <RightDrawer
-          open={open}
+          open={menuOpen}
           onClose={() => setOpen(false)}
           title="LBPay"
           subtitle="Account"
