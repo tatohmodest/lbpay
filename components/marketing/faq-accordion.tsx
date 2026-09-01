@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { Minus, Plus } from "lucide-react";
 import { SITE_FAQS } from "@/lib/site";
 import { cn } from "@/lib/cn";
 
@@ -21,12 +21,9 @@ export function FaqAccordion() {
               className="flex w-full items-center justify-between gap-4 py-6 text-left"
             >
               <h3 className="text-base font-semibold text-ink md:text-lg">{item.question}</h3>
-              <ChevronDown
-                className={cn(
-                  "h-5 w-5 shrink-0 text-muted transition-transform",
-                  expanded && "rotate-180 text-brand-deep",
-                )}
-              />
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-brand text-white">
+                {expanded ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+              </span>
             </button>
             <div
               className={cn(

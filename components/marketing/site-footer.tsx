@@ -20,27 +20,25 @@ const developers = [
 
 const company = [
   { href: "/signup", label: "Create account" },
-  { href: "/login", label: "Sign in" },
+  { href: "/login", label: "Log in" },
   { href: "/#faq", label: "FAQ" },
   { href: "/sitemap.xml", label: "Sitemap" },
 ];
 
 export function SiteFooter() {
   return (
-    <footer className="bg-navy text-white">
+    <footer className="border-t border-line bg-[#eef3f0]">
       <Container className="grid gap-10 py-16 md:grid-cols-12">
         <div className="md:col-span-5">
-          <Logo tone="dark" />
-          <p className="mt-4 max-w-sm text-sm leading-6 text-white/60">{SITE_TAGLINE}.</p>
+          <Logo />
+          <p className="mt-4 max-w-sm text-sm leading-6 text-muted">{SITE_TAGLINE}.</p>
         </div>
         <nav aria-label="Product" className="md:col-span-2">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/45">
-            Products
-          </p>
-          <ul className="mt-4 space-y-2.5 text-sm text-white/80">
+          <p className="text-xs font-semibold text-ink">Products</p>
+          <ul className="mt-4 space-y-2.5 text-sm text-muted">
             {product.map((item) => (
               <li key={item.href}>
-                <Link href={item.href} className="hover:text-white">
+                <Link href={item.href} className="hover:text-brand-deep">
                   {item.label}
                 </Link>
               </li>
@@ -48,13 +46,11 @@ export function SiteFooter() {
           </ul>
         </nav>
         <nav aria-label="Developers" className="md:col-span-2">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/45">
-            Developers
-          </p>
-          <ul className="mt-4 space-y-2.5 text-sm text-white/80">
+          <p className="text-xs font-semibold text-ink">Developers</p>
+          <ul className="mt-4 space-y-2.5 text-sm text-muted">
             {developers.map((item) => (
               <li key={item.href}>
-                <Link href={item.href} className="hover:text-white">
+                <Link href={item.href} className="hover:text-brand-deep">
                   {item.label}
                 </Link>
               </li>
@@ -62,13 +58,11 @@ export function SiteFooter() {
           </ul>
         </nav>
         <nav aria-label="Account" className="md:col-span-3">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/45">
-            Company
-          </p>
-          <ul className="mt-4 space-y-2.5 text-sm text-white/80">
+          <p className="text-xs font-semibold text-ink">Company</p>
+          <ul className="mt-4 space-y-2.5 text-sm text-muted">
             {company.map((item) => (
               <li key={item.href}>
-                <Link href={item.href} className="hover:text-white">
+                <Link href={item.href} className="hover:text-brand-deep">
                   {item.label}
                 </Link>
               </li>
@@ -76,8 +70,8 @@ export function SiteFooter() {
           </ul>
         </nav>
       </Container>
-      <div className="border-t border-white/10">
-        <Container className="flex flex-col gap-2 py-6 text-xs leading-5 text-white/45 md:flex-row md:items-center md:justify-between">
+      <div className="border-t border-line/80">
+        <Container className="flex flex-col gap-2 py-6 text-xs leading-5 text-muted md:flex-row md:items-center md:justify-between">
           <p>© {new Date().getFullYear()} LBPay. Cameroon payments in XAF.</p>
           <p className="max-w-xl md:text-right">{LEGAL_NOTE}</p>
         </Container>

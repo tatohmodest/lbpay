@@ -3,18 +3,18 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRight,
-  ArrowUpRight,
-  Code2,
-  QrCode,
+  Check,
+  Globe,
+  Lock,
+  Play,
   ShieldCheck,
-  Store,
   Wallet,
+  Zap,
 } from "lucide-react";
 import { FaqJsonLd } from "@/components/json-ld";
-import { CheckoutPreview } from "@/components/marketing/checkout-preview";
 import { Container } from "@/components/marketing/container";
-import { DeveloperCodePanel } from "@/components/marketing/developer-code-panel";
 import { FaqAccordion } from "@/components/marketing/faq-accordion";
+import { SendWidget } from "@/components/marketing/send-widget";
 import { Button } from "@/components/ui/button";
 import { SITE_DESCRIPTION, SITE_OG_IMAGE, SITE_TITLE, SITE_URL } from "@/lib/site";
 
@@ -38,109 +38,101 @@ export const metadata: Metadata = {
 
 const rails = ["MTN Mobile Money", "Orange Money", "Cards", "LBPay wallet"];
 
-const stats = [
-  { value: "XAF", label: "One currency. The one Cameroon uses." },
-  { value: "2%", label: "Deposit fee. Withdrawals are 3%." },
-  { value: "PIN", label: "Every send, deposit, and payout is confirmed." },
-  { value: "API", label: "Sandbox keys first. Live after KYC." },
+const features = [
+  { icon: Zap, title: "Fast & affordable", copy: "Wallet to wallet is instant. No waiting on a float agent." },
+  { icon: Globe, title: "Built for Cameroon", copy: "XAF only. MTN, Orange, cards, and a stored wallet." },
+  { icon: Wallet, title: "Extra clear fees", copy: "Deposits 2%. Withdrawals 3%. Transfers inside LBPay are free." },
+  { icon: Lock, title: "Secure & trusted", copy: "Email OTP, a 4-digit PIN, and a ledger that posts every move." },
 ];
 
-const bento = [
+const steps = [
+  { n: "01", title: "Create account", copy: "Name, email, phone, password. Confirm with a 6-digit code." },
+  { n: "02", title: "Set your PIN", copy: "Four digits. You use it on every send, deposit, and withdrawal." },
+  { n: "03", title: "Send money", copy: "A number or an @handle. LBPay picks the rail underneath." },
+];
+
+const quotes = [
   {
-    href: "/products/business",
-    kicker: "Payments",
-    title: "Accept payments online and at the counter.",
-    copy: "One checkout for MTN, Orange, cards, and wallet. QR and payment links included.",
-    className: "md:col-span-2 md:row-span-2",
-    image: "/illustrations/merchant-qr.png",
-    alt: "Merchant QR checkout accepting Mobile Money in Cameroon",
+    name: "Aisha N.",
+    role: "Designer, Douala",
+    image: "/illustrations/portrait-aisha.png",
+    quote: "I send to an @handle now. I do not think about MTN or Orange until someone needs cash out.",
+    tone: "brand",
   },
   {
-    href: "/products/wallet",
-    kicker: "Wallet",
-    title: "Send XAF with an @handle.",
-    copy: "Wallet to wallet is instant. Cash out to Mobile Money when it has to leave.",
-    className: "",
-    image: "/illustrations/hero-send-money.png",
-    alt: "People sending money with the LBPay wallet",
+    name: "Jean M.",
+    role: "Shop owner, Yaoundé",
+    image: "/illustrations/portrait-jean.png",
+    quote: "Customers scan the QR and pay with whatever they already have. One counter. That is the whole job.",
+    tone: "white",
   },
   {
-    href: "/products/developers",
-    kicker: "Developers",
-    title: "A payments API, not a wrapper.",
-    copy: "Collect, pay out, and receive webhooks in your own product.",
-    className: "",
-    image: "/illustrations/developer-platform.png",
-    alt: "LBPay developer platform",
-  },
-  {
-    href: "/products/business",
-    kicker: "Links",
-    title: "Share a link. Get paid.",
-    copy: "Fixed or open amounts. Works in WhatsApp, Instagram, or SMS.",
-    className: "",
-    image: "/illustrations/request-money.png",
-    alt: "Request money and payment links",
-  },
-  {
-    href: "/products/wallet",
-    kicker: "Networks",
-    title: "MTN to Orange. One send.",
-    copy: "People should not think in networks. LBPay chooses the rail.",
-    className: "md:col-span-2",
-    image: "/illustrations/cross-network.png",
-    alt: "Cross-network Mobile Money transfers",
+    name: "Mira K.",
+    role: "Developer, Bafoussam",
+    image: "/illustrations/portrait-mira.png",
+    quote: "Sandbox keys the same day I applied. The payments API is the product. The networks stay underneath.",
+    tone: "white",
   },
 ];
+
+const cities = ["Douala", "Yaoundé", "Bafoussam", "Bamenda", "Garoua", "Buea"];
+
+function Tick({ children }: { children: React.ReactNode }) {
+  return (
+    <li className="flex items-start gap-3 text-[15px] leading-6 text-ink">
+      <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-brand text-white">
+        <Check className="h-3 w-3" strokeWidth={3} />
+      </span>
+      {children}
+    </li>
+  );
+}
 
 export default function LandingPage() {
   return (
-    <div className="bg-canvas font-sans antialiased [font-feature-settings:'kern'_1,'liga'_1]">
+    <div className="bg-paper">
       <FaqJsonLd />
 
-      <section className="relative -mt-[var(--header-h)] overflow-hidden text-white">
-        <div className="lb-mesh absolute inset-0" />
-        <div className="lb-grid pointer-events-none absolute inset-0" />
-        <Container className="relative grid items-center gap-12 pb-20 pt-[calc(var(--header-h)+3rem)] lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-16 lg:pb-28 lg:pt-[calc(var(--header-h)+4.5rem)]">
-          <div>
-            <p className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/70">
-              <span className="h-1.5 w-1.5 rounded-full bg-brand" />
-              Cameroon payments
-            </p>
-            <h1 className="mt-6 max-w-[13ch] text-[2.7rem] font-semibold leading-[1.05] tracking-[-0.045em] md:text-[4.15rem]">
-              Payments infrastructure for Cameroon.
-            </h1>
-            <p className="mt-6 max-w-xl text-[17px] leading-8 text-hero-muted md:text-lg">
-              Collect, send, and settle XAF with MTN, Orange, cards, and a wallet API — from the
-              first transfer to a national merchant network.
-            </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Link href="/signup">
-                <Button size="lg" className="rounded-lg px-6">
-                  Start now <ArrowRight className="h-4 w-4" />
-                </Button>
-              </Link>
-              <Link href="/docs">
-                <Button
-                  size="lg"
-                  variant="secondary"
-                  className="rounded-lg border-white/20 bg-white/5 text-white hover:bg-white/10"
-                >
-                  Explore the docs
-                </Button>
-              </Link>
-            </div>
-            <p className="mt-6 flex items-center gap-2 text-sm text-white/60">
-              <ShieldCheck className="h-4 w-4 text-brand" />
-              PIN confirmed. Ledger posted. XAF only.
-            </p>
+      <section className="-mt-[var(--header-h)] bg-forest text-white">
+        <Container className="pb-10 pt-[calc(var(--header-h)+3.5rem)] text-center md:pb-6 md:pt-[calc(var(--header-h)+4.5rem)]">
+          <h1 className="mx-auto max-w-[16ch] text-[2.6rem] font-semibold leading-[1.08] tracking-[-0.04em] md:text-[4.25rem]">
+            Cameroon payments, made easy.
+          </h1>
+          <p className="mx-auto mt-5 max-w-xl text-[16px] leading-8 text-hero-muted md:text-lg">
+            Send, receive, and collect XAF. MTN, Orange, cards, and a wallet with an @handle —
+            one ledger underneath.
+          </p>
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+            <Link href="/signup">
+              <Button size="lg" className="rounded-full px-7">
+                Open an account <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
+            <Link href="/#how-lbpay-works">
+              <Button
+                size="lg"
+                variant="secondary"
+                className="rounded-full border-white/25 bg-transparent px-7 text-white hover:bg-white/10"
+              >
+                <Play className="h-4 w-4 fill-current" /> How it works
+              </Button>
+            </Link>
           </div>
-          <CheckoutPreview />
         </Container>
+        <div className="relative mx-auto max-w-[1180px] px-5 md:px-8">
+          <Image
+            src="/illustrations/hero-devices.png"
+            alt="LBPay wallet on desktop and phone, balances in XAF"
+            width={1600}
+            height={900}
+            priority
+            className="h-auto w-full rounded-t-[1.5rem] md:rounded-t-[2rem]"
+          />
+        </div>
       </section>
 
-      <section className="border-b border-line bg-white">
-        <Container className="flex flex-wrap items-center justify-between gap-4 py-5">
+      <section className="bg-white">
+        <Container className="flex flex-wrap items-center justify-between gap-4 py-6">
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
             Works with
           </p>
@@ -148,7 +140,7 @@ export default function LandingPage() {
             {rails.map((rail) => (
               <span
                 key={rail}
-                className="rounded-full border border-line bg-canvas px-3.5 py-1.5 text-xs font-medium text-ink"
+                className="rounded-full bg-paper px-4 py-1.5 text-sm font-medium text-ink"
               >
                 {rail}
               </span>
@@ -157,231 +149,339 @@ export default function LandingPage() {
         </Container>
       </section>
 
-      <section id="products" className="bg-canvas py-20 lg:py-28">
+      <section id="products" className="bg-paper py-20 lg:py-24">
         <Container>
-          <div className="max-w-2xl">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand-deep">
-              Products
-            </p>
-            <h2 className="mt-3 text-3xl font-semibold tracking-[-0.03em] text-ink md:text-[2.75rem] md:leading-[1.15]">
-              Modular payments. One ledger.
-            </h2>
-            <p className="mt-4 text-[17px] leading-8 text-muted">
-              Personal, business, and developers post to the same XAF books. Access is gated by
-              role, not by a different stack.
-            </p>
+          <h2 className="mx-auto max-w-3xl text-center text-3xl font-semibold tracking-[-0.03em] text-ink md:text-[2.6rem] md:leading-[1.15]">
+            Fast and secure money transfers for people and businesses.
+          </h2>
+          <div className="mt-12 grid gap-5 lg:grid-cols-2">
+            <Link
+              href="/products/wallet"
+              className="overflow-hidden rounded-[1.75rem] bg-forest text-white shadow-[0_20px_50px_rgba(6,38,28,0.18)]"
+            >
+              <div className="p-8 pb-4">
+                <p className="text-sm font-semibold text-brand">For personal</p>
+                <h3 className="mt-2 text-2xl font-semibold tracking-tight">Your XAF wallet, with an @handle.</h3>
+                <p className="mt-3 text-sm leading-6 text-white/70">
+                  Send, request, split, and cash out to Mobile Money.
+                </p>
+                <span className="mt-6 inline-flex items-center gap-2 rounded-full bg-brand px-4 py-2 text-sm font-semibold text-white">
+                  Open wallet <ArrowRight className="h-4 w-4" />
+                </span>
+              </div>
+              <Image
+                src="/illustrations/personal-phone.png"
+                alt="LBPay personal wallet on a phone"
+                width={1200}
+                height={900}
+                className="h-auto w-full"
+              />
+            </Link>
+            <Link
+              href="/products/business"
+              className="overflow-hidden rounded-[1.75rem] bg-forest text-white shadow-[0_20px_50px_rgba(6,38,28,0.18)]"
+            >
+              <div className="p-8 pb-4">
+                <p className="text-sm font-semibold text-brand">For businesses</p>
+                <h3 className="mt-2 text-2xl font-semibold tracking-tight">One counter for every way Cameroon pays.</h3>
+                <p className="mt-3 text-sm leading-6 text-white/70">
+                  QR, payment links, MTN, Orange, cards, and wallet.
+                </p>
+                <span className="mt-6 inline-flex items-center gap-2 rounded-full bg-brand px-4 py-2 text-sm font-semibold text-white">
+                  See checkout <ArrowRight className="h-4 w-4" />
+                </span>
+              </div>
+              <Image
+                src="/illustrations/business-kit.png"
+                alt="LBPay merchant QR, card, and dashboard"
+                width={1200}
+                height={900}
+                className="h-auto w-full"
+              />
+            </Link>
           </div>
-          <div className="mt-12 grid gap-4 md:grid-cols-4">
-            {bento.map((item) => (
-              <Link
-                key={`${item.kicker}-${item.title}`}
-                href={item.href}
-                className={`group relative h-full min-h-[240px] overflow-hidden rounded-2xl border border-line bg-white shadow-[0_1px_2px_rgba(10,37,64,0.04)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_50px_rgba(10,37,64,0.10)] ${item.className}`}
-              >
-                <Image
-                  src={item.image}
-                  alt={item.alt}
-                  fill
-                  sizes="(min-width: 768px) 50vw, 100vw"
-                  className="object-cover transition duration-500 group-hover:scale-[1.03]"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0a2540]/90 via-[#0a2540]/35 to-transparent" />
-                <div className="absolute inset-x-0 bottom-0 p-6 text-white">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand">
-                    {item.kicker}
-                  </p>
-                  <h3 className="mt-2 text-xl font-semibold tracking-tight">{item.title}</h3>
-                  <p className="mt-2 max-w-md text-sm leading-6 text-white/75">{item.copy}</p>
-                </div>
-              </Link>
+        </Container>
+      </section>
+
+      <section className="bg-white py-20 lg:py-24">
+        <Container>
+          <div className="flex flex-col items-start justify-between gap-6 md:flex-row md:items-end">
+            <h2 className="max-w-xl text-3xl font-semibold tracking-[-0.03em] md:text-[2.4rem] md:leading-[1.15]">
+              The money transfer layer Cameroon already needed.
+            </h2>
+            <Link href="/signup">
+              <Button className="rounded-full px-6">Get started</Button>
+            </Link>
+          </div>
+          <div className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+            {features.map((item) => (
+              <div key={item.title}>
+                <span className="grid h-12 w-12 place-items-center rounded-full bg-brand text-white">
+                  <item.icon className="h-5 w-5" />
+                </span>
+                <h3 className="mt-4 text-base font-semibold text-ink">{item.title}</h3>
+                <p className="mt-2 text-sm leading-6 text-muted">{item.copy}</p>
+              </div>
             ))}
           </div>
         </Container>
       </section>
 
-      <section className="bg-white py-20 lg:py-28">
-        <Container className="grid items-center gap-12 lg:grid-cols-2 lg:gap-20">
+      <section className="bg-paper py-20 lg:py-24">
+        <Container className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand-deep">
-              Merchant checkout
-            </p>
-            <h2 className="mt-3 text-3xl font-semibold tracking-[-0.03em] md:text-[2.75rem] md:leading-[1.15]">
-              Accept payments everywhere Cameroon already pays.
+            <h2 className="text-3xl font-semibold tracking-[-0.03em] md:text-[2.4rem] md:leading-[1.15]">
+              One account for MTN, Orange, and XAF.
             </h2>
-            <p className="mt-4 text-[17px] leading-8 text-muted">
-              A customer scans, taps a link, or pays in your app. MTN, Orange, card, or wallet —
-              one counter, one settlement, same ledger the wallet uses.
+            <p className="mt-4 text-[16px] leading-7 text-muted">
+              Hold a balance, send to a phone or @handle, and only settle out to Mobile Money when
+              cash has to leave the ledger.
             </p>
-            <ul className="mt-8 space-y-4">
-              {[
-                { icon: QrCode, title: "QR at the counter", copy: "Scan, enter an amount, pay." },
-                { icon: Store, title: "Payment links", copy: "Share anywhere. Collect in XAF." },
-                { icon: Wallet, title: "Wallet checkout", copy: "If they have LBPay, it is instant." },
-              ].map((item) => (
-                <li key={item.title} className="flex gap-3">
-                  <span className="mt-0.5 grid h-9 w-9 place-items-center rounded-lg bg-brand-soft text-brand-deep">
-                    <item.icon className="h-4 w-4" />
-                  </span>
-                  <span>
-                    <span className="block text-sm font-semibold text-ink">{item.title}</span>
-                    <span className="block text-sm text-muted">{item.copy}</span>
-                  </span>
-                </li>
-              ))}
+            <ul className="mt-6 space-y-3">
+              <Tick>@handle instead of memorising numbers</Tick>
+              <Tick>Wallet to wallet posts instantly</Tick>
+              <Tick>Cash out to MTN or Orange when you need it</Tick>
             </ul>
-            <Link
-              href="/products/business"
-              className="mt-8 inline-flex items-center gap-1 text-sm font-semibold text-brand-deep"
-            >
-              See checkout <ArrowUpRight className="h-4 w-4" />
+            <Link href="/products/wallet" className="mt-8 inline-block">
+              <Button className="rounded-full px-6">See the wallet</Button>
             </Link>
           </div>
-          <div className="overflow-hidden rounded-[1.5rem] border border-line shadow-[0_24px_80px_rgba(10,37,64,0.10)]">
+          <Image
+            src="/illustrations/wallet-panel.png"
+            alt="LBPay XAF balances across MTN, Orange, wallet, and cards"
+            width={1200}
+            height={900}
+            className="h-auto w-full"
+          />
+        </Container>
+      </section>
+
+      <section className="bg-forest py-20 text-white lg:py-24">
+        <Container className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
+          <Image
+            src="/illustrations/debit-card.png"
+            alt="LBPay emerald payment card for Cameroon XAF"
+            width={1600}
+            height={900}
+            className="h-auto w-full"
+          />
+          <div>
+            <h2 className="text-3xl font-semibold tracking-[-0.03em] md:text-[2.4rem] md:leading-[1.15]">
+              Checkout that feels native across Cameroon.
+            </h2>
+            <ul className="mt-6 space-y-3">
+              <li className="flex gap-3 text-[15px] leading-6 text-white/80">
+                <Check className="mt-0.5 h-5 w-5 shrink-0 text-brand" />
+                QR at the counter, payment links in WhatsApp
+              </li>
+              <li className="flex gap-3 text-[15px] leading-6 text-white/80">
+                <Check className="mt-0.5 h-5 w-5 shrink-0 text-brand" />
+                MTN, Orange, cards, and wallet on one settlement
+              </li>
+              <li className="flex gap-3 text-[15px] leading-6 text-white/80">
+                <Check className="mt-0.5 h-5 w-5 shrink-0 text-brand" />
+                Same XAF ledger the personal wallet uses
+              </li>
+            </ul>
+            <Link href="/products/business" className="mt-8 inline-block">
+              <Button className="rounded-full px-6">Start collecting</Button>
+            </Link>
+          </div>
+        </Container>
+      </section>
+
+      <section className="bg-white py-20 lg:py-24">
+        <Container className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
+          <div>
+            <h2 className="text-3xl font-semibold tracking-[-0.03em] md:text-[2.4rem] md:leading-[1.15]">
+              One app for all your XAF transfers.
+            </h2>
+            <p className="mt-4 text-[16px] leading-7 text-muted">
+              Send, request, split, deposit, and withdraw. Install LBPay on your phone or keep it in
+              the browser.
+            </p>
+            <ul className="mt-6 space-y-3">
+              <Tick>PIN on every money move</Tick>
+              <Tick>History, beneficiaries, and QR receive</Tick>
+              <Tick>Works as a PWA on iOS and Android</Tick>
+            </ul>
+            <Link href="/signup" className="mt-8 inline-block">
+              <Button className="rounded-full px-6">Get the app</Button>
+            </Link>
+          </div>
+          <div className="mx-auto w-full max-w-[320px]">
             <Image
-              src="/illustrations/branded-business.png"
-              alt="LBPay branded business checkout in Cameroon"
-              width={1536}
-              height={1024}
+              src="/illustrations/app-phone.png"
+              alt="LBPay mobile app home screen"
+              width={900}
+              height={1600}
               className="h-auto w-full"
             />
           </div>
         </Container>
       </section>
 
-      <section className="bg-navy py-20 text-white lg:py-28">
-        <Container className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand">
-              Developers
-            </p>
-            <h2 className="mt-3 text-3xl font-semibold tracking-[-0.03em] md:text-[2.75rem] md:leading-[1.15]">
-              Reliable infrastructure for any stack.
-            </h2>
-            <p className="mt-4 text-[17px] leading-8 text-white/65">
-              Integrate collections and disbursements in XAF. Sandbox keys when you apply. Live
-              keys after KYC. Payments, payouts, payment links, webhooks, and balance.
-            </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Link href="/docs">
-                <Button size="lg" className="rounded-lg">
-                  View developer docs
-                </Button>
-              </Link>
-              <Link href="/products/developers">
-                <Button
-                  size="lg"
-                  variant="secondary"
-                  className="rounded-lg border-white/20 bg-transparent text-white hover:bg-white/10"
-                >
-                  See the API <Code2 className="h-4 w-4" />
-                </Button>
-              </Link>
-            </div>
-          </div>
-          <DeveloperCodePanel />
-        </Container>
-      </section>
-
-      <section className="border-y border-line bg-white">
-        <Container className="grid gap-8 py-14 sm:grid-cols-2 lg:grid-cols-4">
-          {stats.map((stat) => (
-            <div key={stat.value}>
-              <p className="text-4xl font-semibold tracking-[-0.04em] text-ink">{stat.value}</p>
-              <p className="mt-2 text-sm leading-6 text-muted">{stat.label}</p>
-            </div>
-          ))}
-        </Container>
-      </section>
-
-      <section id="how-lbpay-works" className="bg-canvas py-20 lg:py-28">
-        <Container className="grid gap-12 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-20">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand-deep">
-              How it works
-            </p>
-            <h2 className="mt-3 text-3xl font-semibold tracking-[-0.03em] md:text-[2.5rem] md:leading-[1.15]">
-              Built for how Cameroon already moves money.
-            </h2>
-            <p className="mt-4 text-[15px] leading-7 text-muted">
-              The product is the ledger and the checkout. The networks are rails.
-            </p>
-          </div>
-          <article className="space-y-5 text-[15px] leading-7 text-ink">
-            <p>
-              LBPay is a Cameroon fintech platform for sending money, receiving money, and
-              collecting payments in Central African CFA franc (XAF). It is built around how
-              people already move cash: MTN Mobile Money, Orange Money, cards, and a stored wallet
-              with an @handle.
-            </p>
-            <p>
-              Anyone can open a personal wallet from the signup page. After an email one-time code
-              and a PIN, you hold XAF, send to a phone number or an @handle, request money, and
-              split a bill. Transfers between two LBPay wallets post on the ledger immediately.
-              When cash has to leave to MTN or Orange, LBPay runs a disbursement on the payment
-              rail.
-            </p>
-            <p>
-              Sending from MTN to Orange is the consumer job people actually have. You enter an
-              amount in XAF, a number or @handle, and confirm with your PIN. LBPay chooses whether
-              the move stays inside the wallet or goes out as a Mobile Money payout.
-            </p>
-            <p>
-              Merchants in Douala, Yaoundé, Bafoussam, and the rest of Cameroon get one checkout:
-              QR codes, payment links, MTN, Orange, cards, and wallet. Teams that need a Mobile
-              Money API integrate LBPay, not a single processor. Read the{" "}
-              <Link href="/docs" className="font-medium text-brand-deep">
-                payments API docs
-              </Link>{" "}
-              or{" "}
-              <Link href="/signup" className="font-medium text-brand-deep">
-                create a wallet
-              </Link>{" "}
-              to start.
-            </p>
-          </article>
-        </Container>
-      </section>
-
-      <section id="faq" className="bg-white py-20 lg:py-28" aria-labelledby="faq-heading">
-        <Container className="max-w-3xl">
-          <h2 id="faq-heading" className="text-3xl font-semibold tracking-[-0.03em] md:text-4xl">
-            Questions, answered
-          </h2>
-          <div className="mt-10">
-            <FaqAccordion />
-          </div>
-        </Container>
-      </section>
-
-      <section className="bg-canvas py-20 lg:py-24">
+      <section className="bg-paper py-20 lg:py-24">
         <Container>
-          <div className="overflow-hidden rounded-[1.75rem] bg-navy px-8 py-12 text-white md:flex md:items-center md:justify-between md:px-14 md:py-16">
+          <h2 className="text-center text-3xl font-semibold tracking-[-0.03em] md:text-[2.4rem]">
+            Customer success is our success.
+          </h2>
+          <div className="mt-12 grid gap-5 md:grid-cols-3">
+            {quotes.map((item) => (
+              <article
+                key={item.name}
+                className={
+                  item.tone === "brand"
+                    ? "rounded-[1.5rem] bg-brand p-6 text-white"
+                    : "rounded-[1.5rem] bg-white p-6 shadow-[0_8px_30px_rgba(6,38,28,0.06)]"
+                }
+              >
+                <div className="flex items-center gap-3">
+                  <Image
+                    src={item.image}
+                    alt=""
+                    width={48}
+                    height={48}
+                    className="h-12 w-12 rounded-full object-cover"
+                  />
+                  <div>
+                    <p className="text-sm font-semibold">{item.name}</p>
+                    <p className={`text-xs ${item.tone === "brand" ? "text-white/80" : "text-muted"}`}>
+                      {item.role}
+                    </p>
+                  </div>
+                </div>
+                <p className={`mt-5 text-sm leading-6 ${item.tone === "brand" ? "text-white" : "text-ink"}`}>
+                  “{item.quote}”
+                </p>
+              </article>
+            ))}
+          </div>
+        </Container>
+      </section>
+
+      <section id="how-lbpay-works" className="bg-white py-20 lg:py-24">
+        <Container className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
+          <SendWidget />
+          <div>
+            <p className="text-sm font-semibold text-brand-deep">Getting started</p>
+            <h2 className="mt-2 text-3xl font-semibold tracking-[-0.03em] md:text-[2.4rem] md:leading-[1.15]">
+              It is simple to start using LBPay.
+            </h2>
+            <ol className="mt-8 space-y-6">
+              {steps.map((step) => (
+                <li key={step.n} className="flex gap-4">
+                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-brand text-sm font-bold text-white">
+                    {step.n}
+                  </span>
+                  <span>
+                    <span className="block font-semibold text-ink">{step.title}</span>
+                    <span className="mt-1 block text-sm leading-6 text-muted">{step.copy}</span>
+                  </span>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </Container>
+      </section>
+
+      <section className="bg-paper py-10 lg:py-14">
+        <Container>
+          <div className="grid items-center gap-8 overflow-hidden rounded-[1.75rem] bg-forest px-8 py-10 text-white md:grid-cols-2 md:px-12">
             <div>
               <h2 className="text-3xl font-semibold tracking-[-0.03em] md:text-4xl">
-                Ready to get started?
+                Wallet transfers are free.
               </h2>
-              <p className="mt-3 max-w-xl text-[15px] leading-7 text-white/65">
-                Create an account instantly. Email, a one-time code, a PIN — then send XAF across
-                Cameroon.
+              <p className="mt-3 max-w-md text-sm leading-7 text-white/70">
+                LBPay to LBPay posts on the ledger with no fee. You only pay when money leaves to
+                MTN or Orange.
               </p>
-            </div>
-            <div className="mt-8 flex flex-wrap gap-3 md:mt-0">
-              <Link href="/signup">
-                <Button size="lg" className="rounded-lg">
-                  Start now
-                </Button>
-              </Link>
-              <Link href="/docs">
-                <Button
-                  size="lg"
-                  variant="secondary"
-                  className="rounded-lg border-white/20 bg-transparent text-white hover:bg-white/10"
-                >
-                  Read the docs
-                </Button>
+              <Link href="/signup" className="mt-6 inline-block">
+                <Button className="rounded-full px-6">Register now</Button>
               </Link>
             </div>
+            <Image
+              src="/illustrations/wallet-3d.png"
+              alt=""
+              width={1200}
+              height={675}
+              className="h-auto w-full justify-self-end md:max-w-sm"
+            />
           </div>
+        </Container>
+      </section>
+
+      <section className="bg-white py-20 lg:py-24">
+        <Container className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
+          <div>
+            <h2 className="text-3xl font-semibold tracking-[-0.03em] md:text-[2.4rem] md:leading-[1.15]">
+              Send money across Cameroon with LBPay.
+            </h2>
+            <ul className="mt-8 grid grid-cols-2 gap-3">
+              {cities.map((city) => (
+                <li key={city} className="flex items-center gap-2 text-sm font-medium text-ink">
+                  <span className="h-2 w-2 rounded-full bg-brand" />
+                  {city}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-6 text-sm leading-6 text-muted">
+              Built for how people already move cash in Douala, Yaoundé, and the rest of the
+              country.
+            </p>
+          </div>
+          <Image
+            src="/illustrations/cameroon-map.png"
+            alt="Map of Cameroon highlighting coverage"
+            width={1600}
+            height={900}
+            className="h-auto w-full"
+          />
+        </Container>
+      </section>
+
+      <section id="faq" className="bg-paper py-20 lg:py-24" aria-labelledby="faq-heading">
+        <Container className="grid gap-10 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-16">
+          <div>
+            <h2 id="faq-heading" className="text-3xl font-semibold tracking-[-0.03em] md:text-[2.4rem]">
+              Common questions.
+            </h2>
+            <p className="mt-4 text-sm leading-6 text-muted">
+              Wallet, checkout, and the payments API — answered without the jargon.
+            </p>
+          </div>
+          <FaqAccordion />
+        </Container>
+      </section>
+
+      <section className="bg-forest py-16 text-center text-white md:py-20">
+        <Container>
+          <h2 className="mx-auto max-w-2xl text-3xl font-semibold tracking-[-0.03em] md:text-4xl">
+            Set up and move money with LBPay.
+          </h2>
+          <p className="mx-auto mt-3 max-w-lg text-sm leading-7 text-white/70">
+            Email, a one-time code, a PIN. Then send XAF across Cameroon.
+          </p>
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+            <Link href="/signup">
+              <Button size="lg" className="rounded-full px-8">
+                Open an account
+              </Button>
+            </Link>
+            <Link href="/docs">
+              <Button
+                size="lg"
+                variant="secondary"
+                className="rounded-full border-white/25 bg-transparent px-8 text-white hover:bg-white/10"
+              >
+                Read the docs
+              </Button>
+            </Link>
+          </div>
+          <p className="mt-6 inline-flex items-center gap-2 text-sm text-white/60">
+            <ShieldCheck className="h-4 w-4 text-brand" />
+            PIN confirmed. Ledger posted. XAF only.
+          </p>
         </Container>
       </section>
     </div>

@@ -25,11 +25,9 @@ export const metadata: Metadata = {
 
 export default function DocsPage() {
   return (
-    <div className="bg-canvas">
-      <div className="relative overflow-hidden border-b border-line bg-navy text-white">
-        <div className="lb-mesh absolute inset-0 opacity-90" />
-        <div className="lb-grid pointer-events-none absolute inset-0" />
-        <Container className="relative py-12 md:py-16">
+    <div className="bg-paper">
+      <div className="relative overflow-hidden bg-forest text-white">
+        <Container className="py-12 md:py-16">
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand">
             Developers
           </p>
