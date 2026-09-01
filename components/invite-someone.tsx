@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { inviteShareText, inviteSignupUrl } from "@/lib/invite";
 import { useMe } from "@/lib/hooks/wallet";
@@ -12,26 +12,30 @@ export function InviteSomeone() {
   const { state } = useApp();
   const notify = useNotify();
   const [open, setOpen] = useState(false);
+  const [url, setUrl] = useState("");
   const handle = me.data?.user?.lbpayId || state.user.lbpayId || "";
-  const url = useMemo(() => {
-    const origin = typeof window !== "undefined" ? window.location.origin : undefined;
-    return inviteSignupUrl(handle, origin);
-  }, [handle, open]);
+
+  function openInvite() {
+    setUrl(inviteSignupUrl(handle, window.location.origin));
+    setOpen(true);
+  }
 
   async function copyLink() {
+    const shareUrl = url || inviteSignupUrl(handle, window.location.origin);
     try {
-      await navigator.clipboard.writeText(url);
+      await navigator.clipboard.writeText(shareUrl);
       notify.success("Link copied", "Send it to a friend.");
     } catch {
-      notify.info("Copy this link", url);
+      notify.info("Copy this link", shareUrl);
     }
   }
 
   async function shareLink() {
-    const text = inviteShareText(handle, url);
+    const shareUrl = url || inviteSignupUrl(handle, window.location.origin);
+    const text = inviteShareText(handle, shareUrl);
     if (typeof navigator.share === "function") {
       try {
-        await navigator.share({ title: "LBPay", text, url });
+        await navigator.share({ title: "LBPay", text, url: shareUrl });
         return;
       } catch {
         // User cancelled, or share is unavailable. Copy instead.
@@ -44,7 +48,7 @@ export function InviteSomeone() {
     <>
       <button
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={openInvite}
         className="flex w-full items-center gap-4 overflow-hidden rounded-[2rem] bg-white p-3 text-left shadow-[0_1px_2px_rgba(12,25,19,0.04)] transition hover:bg-paper/60"
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}

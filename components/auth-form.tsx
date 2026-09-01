@@ -138,7 +138,7 @@ export function AuthForm({
     }
   }
 
-  async function useSuggestedId() {
+  async function applySuggestedId() {
     if (!idConflict?.suggestion) return;
     setLoading(true);
     setError("");
@@ -250,7 +250,7 @@ export function AuthForm({
                           @{idConflict.taken} is already taken. @{idConflict.suggestion} is free.
                         </p>
                         <div className="flex flex-wrap gap-2">
-                          <Button type="button" disabled={loading} onClick={() => void useSuggestedId()}>
+                          <Button type="button" disabled={loading} onClick={() => void applySuggestedId()}>
                             Use @{idConflict.suggestion}
                           </Button>
                           <Button

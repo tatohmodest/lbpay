@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Camera } from "lucide-react";
 import { AppImg } from "@/components/app-img";
 import { compressAvatarImage } from "@/lib/image-compress";
@@ -17,11 +17,8 @@ export function ProfileAvatar({ src, name }: { src: string; name: string }) {
   const me = useMe();
   const queryClient = useQueryClient();
   const [busy, setBusy] = useState(false);
-  const [preview, setPreview] = useState(src);
-
-  useEffect(() => {
-    setPreview(src);
-  }, [src]);
+  const [uploaded, setUploaded] = useState<string | null>(null);
+  const preview = uploaded || src;
 
   async function onFile(file: File | undefined) {
     if (!file) return;
@@ -41,7 +38,7 @@ export function ProfileAvatar({ src, name }: { src: string; name: string }) {
         user?: UserProfile;
       };
       if (!res.ok || !data.url || !data.user) throw new Error(data.error || "Could not update that photo.");
-      setPreview(data.url);
+      setUploaded(data.url);
       hydrateFromServer({
         user: data.user,
         balance: me.data?.balance ?? state.balance,
