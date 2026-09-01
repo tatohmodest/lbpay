@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Code2, Download, Menu, Shield, Store, Wallet, UserRound } from "lucide-react";
+import { Code2, Download, History, Menu, Shield, Store, UserRound, Users, Wallet } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { RightDrawer } from "@/components/ui/right-drawer";
 import { NotificationsButton } from "@/components/notifications-button";
@@ -183,31 +183,25 @@ export function AppHeader({ onOpenMenu }: { onOpenMenu?: () => void }) {
 
 export function BottomNav() {
   const pathname = usePathname();
-  const me = useMe();
-  const user = me.data?.user;
   const items = [
-    { href: "/wallet", label: "Wallet", icon: Wallet, show: true },
-    { href: "/business", label: "Business", icon: Store, show: true },
-    { href: "/developers", label: "Dev", icon: Code2, show: productUnlocked(user, "developer") },
-    { href: "/admin", label: "Admin", icon: Shield, show: isAdmin(user) },
-    { href: "/wallet/profile", label: "Profile", icon: UserRound, show: true },
-  ].filter((item) => item.show);
+    { href: "/wallet", label: "Wallet", icon: Wallet },
+    { href: "/wallet/contacts", label: "Contacts", icon: Users },
+    { href: "/wallet/history", label: "History", icon: History },
+    { href: "/business", label: "Business", icon: Store },
+    { href: "/wallet/profile", label: "Profile", icon: UserRound },
+  ];
 
   return (
     <nav className="fixed bottom-0 left-0 z-50 flex h-[4.5rem] w-full items-center justify-around bg-white/95 pb-safe backdrop-blur-xl md:hidden">
       {items.map((item) => {
-        const active =
-          item.href === "/wallet"
-            ? pathname === "/wallet" ||
-              (pathname.startsWith("/wallet/") && !pathname.startsWith("/wallet/profile"))
-            : pathname === item.href || pathname.startsWith(`${item.href}/`);
+        const active = isBottomNavActive(item.href, pathname);
         const Icon = item.icon;
         return (
           <Link
             key={item.href}
             href={item.href}
             className={cn(
-              "flex flex-col items-center gap-1 text-[11px] font-medium tracking-wide",
+              "flex min-w-0 flex-1 flex-col items-center gap-1 text-[11px] font-medium tracking-wide",
               active ? "text-brand" : "text-muted",
             )}
           >
@@ -218,4 +212,15 @@ export function BottomNav() {
       })}
     </nav>
   );
+}
+
+function isBottomNavActive(href: string, pathname: string) {
+  if (href === "/wallet") {
+    if (pathname === "/wallet") return true;
+    if (!pathname.startsWith("/wallet/")) return false;
+    return !["/wallet/contacts", "/wallet/history", "/wallet/profile"].some(
+      (tab) => pathname === tab || pathname.startsWith(`${tab}/`),
+    );
+  }
+  return pathname === href || pathname.startsWith(`${href}/`);
 }
