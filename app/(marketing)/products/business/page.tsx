@@ -12,7 +12,7 @@ export default function BusinessProductPage() {
       eyebrow="Business"
       title="One counter for every way Cameroon pays."
       description="QR codes, payment links, and one checkout. Customers pay with MTN, Orange, or wallet. Cards coming soon. You get paid in one place."
-      image="/illustrations/merchant-qr.png"
+      image="/illustrations/merchant-qr.webp"
       alt="LBPay merchant QR checkout in Cameroon"
       points={[
         "MTN, Orange, cards, and LBPay wallet",

@@ -16,7 +16,7 @@ export function Logo({
   return (
     <Link href={href} className={cn("flex items-center gap-2.5", className)}>
       <Image
-        src="/illustrations/lbpay-mark.png"
+        src="/illustrations/lbpay-mark.webp"
         alt="LBPay"
         width={32}
         height={32}

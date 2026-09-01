@@ -99,7 +99,7 @@ export default function LandingPage() {
         </Container>
         <div className="relative mx-auto max-w-[1180px] px-5 md:px-8">
           <Image
-            src="/illustrations/hero-devices.png"
+            src="/illustrations/hero-devices.webp"
             alt="LBPay wallet on desktop and phone, balances in XAF"
             width={1600}
             height={900}
@@ -148,7 +148,7 @@ export default function LandingPage() {
                 </span>
               </div>
               <Image
-                src="/illustrations/personal-phone.png"
+                src="/illustrations/personal-phone.webp"
                 alt="LBPay personal wallet on a phone"
                 width={1200}
                 height={900}
@@ -170,7 +170,7 @@ export default function LandingPage() {
                 </span>
               </div>
               <Image
-                src="/illustrations/business-kit.png"
+                src="/illustrations/business-kit.webp"
                 alt="LBPay merchant QR, card, and dashboard"
                 width={1200}
                 height={900}
@@ -225,7 +225,7 @@ export default function LandingPage() {
             </Link>
           </div>
           <Image
-            src="/illustrations/wallet-panel.png"
+            src="/illustrations/wallet-panel.webp"
             alt="LBPay XAF balances across MTN, Orange, wallet, and cards"
             width={1200}
             height={900}
@@ -237,7 +237,7 @@ export default function LandingPage() {
       <section className="bg-forest py-20 text-white lg:py-24">
         <Container className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
           <Image
-            src="/illustrations/debit-card.png"
+            src="/illustrations/debit-card.webp"
             alt="LBPay emerald payment card for Cameroon XAF"
             width={1600}
             height={900}
@@ -290,7 +290,7 @@ export default function LandingPage() {
           </div>
           <div className="mx-auto w-full max-w-[320px]">
             <Image
-              src="/illustrations/app-phone.png"
+              src="/illustrations/app-phone.webp"
               alt="LBPay mobile app home screen"
               width={900}
               height={1600}
@@ -345,7 +345,7 @@ export default function LandingPage() {
               </Link>
             </div>
             <Image
-              src="/illustrations/wallet-3d.png"
+              src="/illustrations/wallet-3d.webp"
               alt=""
               width={1200}
               height={675}
@@ -375,7 +375,7 @@ export default function LandingPage() {
             </p>
           </div>
           <Image
-            src="/illustrations/cameroon-map.png"
+            src="/illustrations/cameroon-map.webp"
             alt="Map of Cameroon highlighting coverage"
             width={1600}
             height={900}

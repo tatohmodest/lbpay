@@ -58,7 +58,7 @@ export function emptyProfile(): UserProfile {
     lbpayId: "",
     email: "",
     phone: "",
-    avatar: "/illustrations/empty-wallet.png",
+    avatar: "/illustrations/empty-wallet.webp",
     kycStatus: "unverified",
     roles: ["personal"],
     status: "active",

@@ -190,7 +190,7 @@ export default function WalletPage() {
 
         <Card className="overflow-hidden">
           <Image
-            src="/illustrations/cross-network.png"
+            src="/illustrations/cross-network.webp"
             alt="MTN to Orange"
             width={800}
             height={540}

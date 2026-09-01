@@ -10,13 +10,13 @@ export const BUSINESS_KINDS = [
     id: "small" as const,
     name: "Small business",
     blurb: "WhatsApp, a stall, or selling a few things online. No company papers.",
-    image: "/illustrations/small-business.png",
+    image: "/illustrations/small-business.webp",
   },
   {
     id: "branded" as const,
     name: "Branded business",
     blurb: "A named shop or registered company. Tax ID is optional.",
-    image: "/illustrations/branded-business.png",
+    image: "/illustrations/branded-business.webp",
   },
 ];
 

@@ -90,7 +90,7 @@ export default function RequestPage() {
       </div>
       <div>
         <Image
-          src="/illustrations/request-money.png"
+          src="/illustrations/request-money.webp"
           alt=""
           width={900}
           height={600}

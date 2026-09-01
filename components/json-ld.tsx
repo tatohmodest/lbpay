@@ -21,7 +21,7 @@ export function SiteJsonLd() {
         "@id": orgId,
         name: SITE_NAME,
         url: SITE_URL,
-        logo: `${SITE_URL}/illustrations/lbpay-mark.png`,
+        logo: `${SITE_URL}/illustrations/lbpay-mark.webp`,
         image: `${SITE_URL}/og.png`,
         description: SITE_DESCRIPTION,
         areaServed: { "@type": "Country", name: "Cameroon" },

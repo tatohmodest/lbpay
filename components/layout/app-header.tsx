@@ -96,7 +96,7 @@ export function AppHeader({ onOpenMenu }: { onOpenMenu?: () => void }) {
             className="hidden h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-line sm:flex"
           >
             <Image
-              src={state.user.avatar || "/illustrations/empty-wallet.png"}
+              src={state.user.avatar || "/illustrations/empty-wallet.webp"}
               alt={state.user.name || "Account"}
               width={40}
               height={40}
@@ -128,7 +128,7 @@ export function AppHeader({ onOpenMenu }: { onOpenMenu?: () => void }) {
             >
               <span className="flex h-10 w-10 overflow-hidden rounded-full border border-line">
                 <Image
-                  src={state.user.avatar || "/illustrations/empty-wallet.png"}
+                  src={state.user.avatar || "/illustrations/empty-wallet.webp"}
                   alt=""
                   width={40}
                   height={40}

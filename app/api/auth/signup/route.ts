@@ -54,7 +54,7 @@ export async function POST(request: Request) {
       lbpayId: handle,
       email,
       phone,
-      avatar: "/illustrations/empty-wallet.png",
+      avatar: "/illustrations/empty-wallet.webp",
       passwordHash: "",
       pinHash: null,
       emailVerified: false,

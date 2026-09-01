@@ -12,7 +12,7 @@ export default function DevelopersProductPage() {
       eyebrow="Developers"
       title="A payments API. Not a wrapper."
       description="Collect, pay out, and get events in your own product. Sandbox for tests. Live when you are ready. MTN and Orange stay underneath."
-      image="/illustrations/developer-platform.png"
+      image="/illustrations/developer-platform.webp"
       alt="LBPay developer platform for XAF payments and payouts"
       points={[
         "Bearer secret keys, sandbox and live",

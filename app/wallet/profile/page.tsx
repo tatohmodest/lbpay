@@ -29,7 +29,7 @@ export default function ProfilePage() {
     <div className="mx-auto max-w-xl">
       <Card className="p-6 text-center">
         <ProfileAvatar
-          src={me.data?.user?.avatar || state.user.avatar || "/illustrations/empty-wallet.png"}
+          src={me.data?.user?.avatar || state.user.avatar || "/illustrations/empty-wallet.webp"}
           name={state.user.name}
         />
         <h1 className="mt-4 text-2xl font-black">{state.user.name}</h1>

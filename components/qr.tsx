@@ -12,7 +12,7 @@ export function PayQR({ value, size = 180 }: { value: string; size?: number }) {
         fgColor="#0f1f17"
         level="M"
         imageSettings={{
-          src: "/illustrations/lbpay-mark.png",
+          src: "/illustrations/lbpay-mark.webp",
           height: 36,
           width: 36,
           excavate: true,

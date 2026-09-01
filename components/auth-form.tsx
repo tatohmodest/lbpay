@@ -182,7 +182,7 @@ export function AuthForm({
     <div className="grid min-h-[calc(100svh-var(--header-h))] lg:grid-cols-2">
       <div className="relative order-1 h-52 overflow-hidden bg-paper sm:h-64 lg:order-2 lg:h-auto">
         <Image
-          src="/illustrations/hero-send-money.png"
+          src="/illustrations/hero-send-money.webp"
           alt="Send money in Cameroon with LBPay"
           fill
           className="object-cover"

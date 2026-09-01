@@ -1369,7 +1369,7 @@ export async function listPublicReviews(): Promise<PublicReview[]> {
       return {
         id: row.id,
         name: user.name,
-        avatar: user.avatar || "/illustrations/empty-wallet.png",
+        avatar: user.avatar || "/illustrations/empty-wallet.webp",
         rating: row.rating,
         body: row.body,
         createdAt: row.createdAt,
