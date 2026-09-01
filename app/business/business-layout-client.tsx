@@ -11,6 +11,7 @@ import {
   Users,
   Wallet,
 } from "lucide-react";
+import { BusinessMobileTabs } from "@/components/business/mobile-tabs";
 import { ConsoleShell, WalletShell } from "@/components/layout/shells";
 import { RoleGate } from "@/components/role-gate";
 import { useMe } from "@/lib/hooks/wallet";
@@ -21,10 +22,10 @@ const items = [
   { href: "/business/payments", label: "Sales", icon: Receipt },
   { href: "/business/invoices", label: "Invoices", icon: FileText },
   { href: "/business/customers", label: "Customers", icon: Users },
-  { href: "/business/links", label: "Payment Links", icon: Link2 },
+  { href: "/business/links", label: "Links", icon: Link2 },
   { href: "/business/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/business/settlements", label: "Settlement", icon: Wallet },
-  { href: "/business/qr", label: "QR Codes", icon: QrCode },
+  { href: "/business/qr", label: "QR", icon: QrCode },
   { href: "/business/settings", label: "Settings", icon: Settings },
 ];
 
@@ -55,7 +56,10 @@ export function BusinessLayoutClient({ children }: { children: React.ReactNode }
       items={items}
       cta={{ href: "/business/links", label: "New payment link" }}
     >
-      <RoleGate kind="business">{children}</RoleGate>
+      <RoleGate kind="business">
+        <BusinessMobileTabs />
+        {children}
+      </RoleGate>
     </ConsoleShell>
   );
 }

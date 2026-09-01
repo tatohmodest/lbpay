@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Card } from "@/components/ui/card";
+import { BusinessPageHeader } from "@/components/business/page-header";
 import { formatXAF } from "@/lib/format";
 import { useQuery } from "@tanstack/react-query";
 import { payLinkPath, payLinkUrl } from "@/lib/origin";
@@ -16,35 +16,45 @@ export default function BusinessInvoicesPage() {
   const links = data.data?.links || [];
 
   return (
-    <div>
-      <h1 className="text-2xl font-black">Invoices</h1>
-      <p className="text-sm text-muted">Send a bill your customer can pay online.</p>
-      <Card className="mt-6 divide-y divide-line">
+    <div className="mx-auto max-w-lg lg:mx-0 lg:max-w-3xl">
+      <BusinessPageHeader title="Invoices" copy="Send a bill your customer can pay online." />
+      <div className="overflow-hidden rounded-[2rem] bg-white p-2 shadow-[0_1px_2px_rgba(12,25,19,0.04)]">
         {links.length === 0 ? (
-          <p className="p-6 text-sm text-muted">No invoices yet. Create a payment link to get started.</p>
+          <p className="px-4 py-10 text-center text-sm text-muted">None</p>
         ) : (
-          links.map((link: { id: string; title: string; slug: string; amount: number | null; collected: number; imageUrl?: string }) => (
-            <div key={link.id} className="flex items-center gap-4 p-4">
-              {link.imageUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={link.imageUrl} alt="" className="h-14 w-14 rounded-2xl object-cover" />
-              ) : (
-                <div className="grid h-14 w-14 place-items-center rounded-2xl bg-brand-soft text-[10px] font-semibold text-brand-deep">
-                  LBPay
+          links.map(
+            (link: {
+              id: string;
+              title: string;
+              slug: string;
+              amount: number | null;
+              collected: number;
+              imageUrl?: string;
+            }) => (
+              <div key={link.id} className="flex items-center gap-3 rounded-2xl px-3 py-3">
+                {link.imageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={link.imageUrl} alt="" className="h-11 w-11 rounded-2xl object-cover" />
+                ) : (
+                  <div className="grid h-11 w-11 place-items-center rounded-2xl bg-brand-soft text-[10px] font-bold text-brand-deep">
+                    Pay
+                  </div>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-bold">{link.title}</p>
+                  <p className="truncate font-mono text-[11px] text-muted">{payLinkUrl(link.slug, origin)}</p>
+                  <Link href={payLinkPath(link.slug)} className="text-sm font-bold text-brand">
+                    Open checkout
+                  </Link>
                 </div>
-              )}
-              <div className="min-w-0 flex-1">
-                <p className="font-semibold">{link.title}</p>
-                <p className="text-xs text-muted">{payLinkUrl(link.slug, origin)}</p>
-                <Link href={payLinkPath(link.slug)} className="mt-1 inline-block text-sm font-bold text-brand">
-                  Open checkout
-                </Link>
+                <p className="shrink-0 font-mono text-sm font-black">
+                  {link.amount ? formatXAF(link.amount, { withCurrency: false }) : "Open"}
+                </p>
               </div>
-              <p className="font-mono text-sm">{link.amount ? formatXAF(link.amount) : "Open"}</p>
-            </div>
-          ))
+            ),
+          )
         )}
-      </Card>
+      </div>
     </div>
   );
 }

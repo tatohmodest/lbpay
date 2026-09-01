@@ -43,14 +43,14 @@ export function ProductLinkFrame({
           alt=""
           className={cn(
             "w-full object-cover",
-            mini ? "h-24" : hero ? "h-[22rem] sm:h-[26rem] md:h-[28rem]" : "h-56 sm:h-64",
+            mini ? "h-24" : hero ? "h-[22rem] sm:h-[26rem] md:h-[28rem]" : "h-36 sm:h-48 lg:h-56",
           )}
         />
       ) : (
         <div
           className={cn(
             "grid place-items-center bg-gradient-to-br from-brand-soft to-paper",
-            mini ? "h-24" : hero ? "h-64 sm:h-80" : "h-48 sm:h-56",
+            mini ? "h-24" : hero ? "h-64 sm:h-80" : "h-36 sm:h-48",
           )}
         >
           <span className={cn("font-semibold text-brand-deep", mini ? "text-lg" : hero ? "text-4xl" : "text-3xl")}>

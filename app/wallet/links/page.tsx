@@ -1,9 +1,9 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Card } from "@/components/ui/card";
 import { PaymentLinkForm } from "@/components/payment-link-form";
 import { PaymentLinkManageList } from "@/components/payment-link-manage";
+import { BusinessPageHeader } from "@/components/business/page-header";
 import { useNotify } from "@/lib/notify";
 import { useMe } from "@/lib/hooks/wallet";
 
@@ -59,25 +59,26 @@ export default function WalletLinksPage() {
 
   return (
     <div className="mx-auto max-w-5xl">
-      <h1 className="text-2xl font-black">Payment links</h1>
-      <p className="mt-1 text-sm text-muted">Create, edit, or delete a checkout anyone can open and pay.</p>
-      <Card className="mt-6 p-6">
-        <h2 className="text-lg font-black">New product link</h2>
-        <p className="mt-1 text-sm text-muted">
-          Add a photo and pick a finance template before you share the checkout.
-        </p>
-        <div className="mt-5">
+      <BusinessPageHeader
+        kicker="Checkout"
+        title="Payment links"
+        copy="Create a checkout anyone can open and pay."
+      />
+      <section className="rounded-[2rem] bg-white p-4 shadow-[0_1px_2px_rgba(12,25,19,0.04)] md:p-6">
+        <h2 className="text-base font-black md:text-lg">New product link</h2>
+        <p className="mt-1 text-sm text-muted">Add a photo and pick a wrap, then share.</p>
+        <div className="mt-4">
           <PaymentLinkForm
             merchantName={me.data?.user?.businessName || me.data?.user?.name}
             submitting={create.isPending}
             onSubmit={(input) => create.mutateAsync(input)}
           />
         </div>
-      </Card>
+      </section>
       {links.length > 0 ? (
-        <div className="mt-6">
-          <h2 className="text-lg font-black">Your links</h2>
-          <p className="mt-1 mb-3 text-sm text-muted">Change the title, amount, photo, or template. Delete a link to take it offline.</p>
+        <div className="mt-5">
+          <h2 className="text-base font-black md:text-lg">Your links</h2>
+          <p className="mt-1 mb-3 text-sm text-muted">Edit the title, amount, photo, or wrap.</p>
           <PaymentLinkManageList
             links={links}
             merchantName={me.data?.user?.businessName || me.data?.user?.name}

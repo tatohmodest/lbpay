@@ -52,7 +52,7 @@ export function PaymentLinkForm({
 
   return (
     <form
-      className="flex flex-col gap-6"
+      className="flex flex-col gap-4"
       onSubmit={(e) => {
         e.preventDefault();
         void Promise.resolve(
@@ -75,8 +75,8 @@ export function PaymentLinkForm({
           .catch(() => undefined);
       }}
     >
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] lg:items-start">
-        <div className="flex min-w-0 flex-col gap-4">
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] lg:items-start lg:gap-8">
+        <div className="flex min-w-0 flex-col gap-3.5">
           <Field label="Product / service title">
             <Input value={title} onChange={(e) => setTitle(e.target.value)} required />
           </Field>
@@ -97,7 +97,7 @@ export function PaymentLinkForm({
           />
           <div className="min-w-0">
             <p className="mb-1 text-sm font-semibold text-ink">Finance template</p>
-            <p className="mb-3 text-sm text-muted">Pick a wrap. Slide the row if you need more.</p>
+            <p className="mb-3 text-xs text-muted sm:text-sm">Pick a wrap. Slide for more.</p>
             <div className="relative -mx-5 md:mx-0">
               <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 pb-2 [scrollbar-width:thin] overscroll-x-contain md:px-0">
                 {LINK_TEMPLATES.map((item) => {
@@ -150,15 +150,27 @@ export function PaymentLinkForm({
         </div>
         <div className="min-w-0 lg:sticky lg:top-8">
           <p className="mb-1 text-sm font-semibold text-ink">Preview</p>
-          <p className="mb-3 text-sm text-muted">This is the wrap customers see.</p>
-          <ProductLinkFrame
-            size="hero"
-            template={template}
-            title={title || "Your product"}
-            amount={amount ? Number(amount) : null}
-            merchantName={merchantName}
-            imageUrl={imageUrl}
-          />
+          <p className="mb-3 hidden text-sm text-muted lg:block">This is the wrap customers see.</p>
+          <div className="lg:hidden">
+            <ProductLinkFrame
+              size="compact"
+              template={template}
+              title={title || "Your product"}
+              amount={amount ? Number(amount) : null}
+              merchantName={merchantName}
+              imageUrl={imageUrl}
+            />
+          </div>
+          <div className="hidden lg:block">
+            <ProductLinkFrame
+              size="default"
+              template={template}
+              title={title || "Your product"}
+              amount={amount ? Number(amount) : null}
+              merchantName={merchantName}
+              imageUrl={imageUrl}
+            />
+          </div>
         </div>
       </div>
       <Button type="submit" disabled={submitting} className="w-full sm:w-auto">
