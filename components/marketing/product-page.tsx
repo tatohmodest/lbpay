@@ -31,7 +31,7 @@ export function ProductPage({
       <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-deep">
         {eyebrow}
       </p>
-      <h1 className="mt-3 text-4xl font-semibold tracking-tight md:text-5xl">{title}</h1>
+      <h1 className="mt-3 text-4xl font-extrabold tracking-tight md:text-5xl">{title}</h1>
       <p className="mt-5 max-w-xl text-[15px] leading-7 text-muted">{description}</p>
       <ul className="mt-6 space-y-2 text-sm text-ink">
         {points.map((point) => (

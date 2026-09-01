@@ -50,6 +50,12 @@ body {
   font-feature-settings: "ss01" on, "cv11" on;
 }
 
+.marketing-root {
+  --font-sans: var(--font-marketing);
+  font-family: var(--font-marketing), ui-sans-serif, system-ui, sans-serif;
+  font-feature-settings: "kern" on, "liga" on;
+}
+
 ::selection {
   background: #00b369;
   color: white;

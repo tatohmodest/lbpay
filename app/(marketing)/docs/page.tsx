@@ -31,7 +31,7 @@ export default function DocsPage() {
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand">
             Developers
           </p>
-          <h1 className="mt-3 max-w-2xl text-3xl font-semibold tracking-[-0.03em] md:text-5xl">
+          <h1 className="mt-3 max-w-2xl text-3xl font-extrabold tracking-tight md:text-5xl">
             Build payments into your product.
           </h1>
           <p className="mt-4 max-w-xl text-[16px] leading-7 text-white/65">

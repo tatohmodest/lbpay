@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useSyncExternalStore } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
@@ -13,6 +12,8 @@ import { useMe } from "@/lib/hooks/wallet";
 import { useNotify } from "@/lib/notify";
 import { isAdmin, productUnlocked } from "@/lib/roles";
 import { CopyHandle } from "@/components/copy-handle";
+import { ProfileAvatar } from "@/components/profile-avatar";
+import { ReviewForm } from "@/components/review-form";
 import { disablePush, enablePush, openPushPrompt, pushPermission, pushSupported } from "@/lib/push-client";
 
 export default function ProfilePage() {
@@ -27,12 +28,9 @@ export default function ProfilePage() {
   return (
     <div className="mx-auto max-w-xl">
       <Card className="p-6 text-center">
-        <Image
-          src={state.user.avatar || "/illustrations/empty-wallet.png"}
-          alt=""
-          width={96}
-          height={96}
-          className="mx-auto h-24 w-24 rounded-full object-cover"
+        <ProfileAvatar
+          src={me.data?.user?.avatar || state.user.avatar || "/illustrations/empty-wallet.png"}
+          name={state.user.name}
         />
         <h1 className="mt-4 text-2xl font-black">{state.user.name}</h1>
         <CopyHandle handle={me.data?.user?.lbpayId || state.user.lbpayId} className="mt-1 text-brand hover:text-brand-dark" />
@@ -110,6 +108,7 @@ export default function ProfilePage() {
           Sign out
         </Button>
       </Card>
+      <ReviewForm />
       <p className="mt-4 text-xs text-muted">{LEGAL_NOTE}</p>
     </div>
   );

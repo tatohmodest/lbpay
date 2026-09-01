@@ -11,9 +11,11 @@ import {
   Wallet,
   Zap,
 } from "lucide-react";
+import { Suspense } from "react";
 import { FaqJsonLd } from "@/components/json-ld";
 import { Container } from "@/components/marketing/container";
 import { FaqAccordion } from "@/components/marketing/faq-accordion";
+import { HomeReviews } from "@/components/marketing/home-reviews";
 import { SendWidget } from "@/components/marketing/send-widget";
 import { Button } from "@/components/ui/button";
 import { SITE_DESCRIPTION, SITE_OG_IMAGE, SITE_TITLE, SITE_URL } from "@/lib/site";
@@ -51,30 +53,6 @@ const steps = [
   { n: "03", title: "Send money", copy: "A number or an @handle. LBPay picks the rail underneath." },
 ];
 
-const quotes = [
-  {
-    name: "Aisha N.",
-    role: "Designer, Douala",
-    image: "/illustrations/portrait-aisha.png",
-    quote: "I send to an @handle now. I do not think about MTN or Orange until someone needs cash out.",
-    tone: "brand",
-  },
-  {
-    name: "Jean M.",
-    role: "Shop owner, Yaoundé",
-    image: "/illustrations/portrait-jean.png",
-    quote: "Customers scan the QR and pay with whatever they already have. One counter. That is the whole job.",
-    tone: "white",
-  },
-  {
-    name: "Mira K.",
-    role: "Developer, Bafoussam",
-    image: "/illustrations/portrait-mira.png",
-    quote: "Sandbox keys the same day I applied. The payments API is the product. The networks stay underneath.",
-    tone: "white",
-  },
-];
-
 const cities = ["Douala", "Yaoundé", "Bafoussam", "Bamenda", "Garoua", "Buea"];
 
 function Tick({ children }: { children: React.ReactNode }) {
@@ -95,7 +73,7 @@ export default function LandingPage() {
 
       <section className="-mt-[var(--header-h)] bg-forest text-white">
         <Container className="pb-10 pt-[calc(var(--header-h)+3.5rem)] text-center md:pb-6 md:pt-[calc(var(--header-h)+4.5rem)]">
-          <h1 className="mx-auto max-w-[16ch] text-[2.6rem] font-semibold leading-[1.08] tracking-[-0.04em] md:text-[4.25rem]">
+          <h1 className="mx-auto max-w-[16ch] text-[2.6rem] font-extrabold leading-[1.08] tracking-tight md:text-[4.25rem]">
             Cameroon payments, made easy.
           </h1>
           <p className="mx-auto mt-5 max-w-xl text-[16px] leading-8 text-hero-muted md:text-lg">
@@ -151,7 +129,7 @@ export default function LandingPage() {
 
       <section id="products" className="bg-paper py-20 lg:py-24">
         <Container>
-          <h2 className="mx-auto max-w-3xl text-center text-3xl font-semibold tracking-[-0.03em] text-ink md:text-[2.6rem] md:leading-[1.15]">
+          <h2 className="mx-auto max-w-3xl text-center text-3xl font-extrabold tracking-tight text-ink md:text-[2.6rem] md:leading-[1.15]">
             Fast and secure money transfers for people and businesses.
           </h2>
           <div className="mt-12 grid gap-5 lg:grid-cols-2">
@@ -161,7 +139,7 @@ export default function LandingPage() {
             >
               <div className="p-8 pb-4">
                 <p className="text-sm font-semibold text-brand">For personal</p>
-                <h3 className="mt-2 text-2xl font-semibold tracking-tight">Your XAF wallet, with an @handle.</h3>
+                <h3 className="mt-2 text-2xl font-extrabold tracking-tight">Your XAF wallet, with an @handle.</h3>
                 <p className="mt-3 text-sm leading-6 text-white/70">
                   Send, request, split, and cash out to Mobile Money.
                 </p>
@@ -183,7 +161,7 @@ export default function LandingPage() {
             >
               <div className="p-8 pb-4">
                 <p className="text-sm font-semibold text-brand">For businesses</p>
-                <h3 className="mt-2 text-2xl font-semibold tracking-tight">One counter for every way Cameroon pays.</h3>
+                <h3 className="mt-2 text-2xl font-extrabold tracking-tight">One counter for every way Cameroon pays.</h3>
                 <p className="mt-3 text-sm leading-6 text-white/70">
                   QR, payment links, MTN, Orange, cards, and wallet.
                 </p>
@@ -206,7 +184,7 @@ export default function LandingPage() {
       <section className="bg-white py-20 lg:py-24">
         <Container>
           <div className="flex flex-col items-start justify-between gap-6 md:flex-row md:items-end">
-            <h2 className="max-w-xl text-3xl font-semibold tracking-[-0.03em] md:text-[2.4rem] md:leading-[1.15]">
+            <h2 className="max-w-xl text-3xl font-extrabold tracking-tight md:text-[2.4rem] md:leading-[1.15]">
               The money transfer layer Cameroon already needed.
             </h2>
             <Link href="/signup">
@@ -230,7 +208,7 @@ export default function LandingPage() {
       <section className="bg-paper py-20 lg:py-24">
         <Container className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
           <div>
-            <h2 className="text-3xl font-semibold tracking-[-0.03em] md:text-[2.4rem] md:leading-[1.15]">
+            <h2 className="text-3xl font-extrabold tracking-tight md:text-[2.4rem] md:leading-[1.15]">
               One account for MTN, Orange, and XAF.
             </h2>
             <p className="mt-4 text-[16px] leading-7 text-muted">
@@ -266,7 +244,8 @@ export default function LandingPage() {
             className="h-auto w-full"
           />
           <div>
-            <h2 className="text-3xl font-semibold tracking-[-0.03em] md:text-[2.4rem] md:leading-[1.15]">
+            <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-brand">Coming soon</p>
+            <h2 className="mt-3 text-3xl font-extrabold tracking-tight md:text-[2.4rem] md:leading-[1.15]">
               Checkout that feels native across Cameroon.
             </h2>
             <ul className="mt-6 space-y-3">
@@ -293,7 +272,7 @@ export default function LandingPage() {
       <section className="bg-white py-20 lg:py-24">
         <Container className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
           <div>
-            <h2 className="text-3xl font-semibold tracking-[-0.03em] md:text-[2.4rem] md:leading-[1.15]">
+            <h2 className="text-3xl font-extrabold tracking-tight md:text-[2.4rem] md:leading-[1.15]">
               One app for all your XAF transfers.
             </h2>
             <p className="mt-4 text-[16px] leading-7 text-muted">
@@ -321,51 +300,16 @@ export default function LandingPage() {
         </Container>
       </section>
 
-      <section className="bg-paper py-20 lg:py-24">
-        <Container>
-          <h2 className="text-center text-3xl font-semibold tracking-[-0.03em] md:text-[2.4rem]">
-            Customer success is our success.
-          </h2>
-          <div className="mt-12 grid gap-5 md:grid-cols-3">
-            {quotes.map((item) => (
-              <article
-                key={item.name}
-                className={
-                  item.tone === "brand"
-                    ? "rounded-[1.5rem] bg-brand p-6 text-white"
-                    : "rounded-[1.5rem] bg-white p-6 shadow-[0_8px_30px_rgba(6,38,28,0.06)]"
-                }
-              >
-                <div className="flex items-center gap-3">
-                  <Image
-                    src={item.image}
-                    alt=""
-                    width={48}
-                    height={48}
-                    className="h-12 w-12 rounded-full object-cover"
-                  />
-                  <div>
-                    <p className="text-sm font-semibold">{item.name}</p>
-                    <p className={`text-xs ${item.tone === "brand" ? "text-white/80" : "text-muted"}`}>
-                      {item.role}
-                    </p>
-                  </div>
-                </div>
-                <p className={`mt-5 text-sm leading-6 ${item.tone === "brand" ? "text-white" : "text-ink"}`}>
-                  “{item.quote}”
-                </p>
-              </article>
-            ))}
-          </div>
-        </Container>
-      </section>
+      <Suspense fallback={null}>
+        <HomeReviews />
+      </Suspense>
 
       <section id="how-lbpay-works" className="bg-white py-20 lg:py-24">
         <Container className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
           <SendWidget />
           <div>
             <p className="text-sm font-semibold text-brand-deep">Getting started</p>
-            <h2 className="mt-2 text-3xl font-semibold tracking-[-0.03em] md:text-[2.4rem] md:leading-[1.15]">
+            <h2 className="mt-2 text-3xl font-extrabold tracking-tight md:text-[2.4rem] md:leading-[1.15]">
               It is simple to start using LBPay.
             </h2>
             <ol className="mt-8 space-y-6">
@@ -389,7 +333,7 @@ export default function LandingPage() {
         <Container>
           <div className="grid items-center gap-8 overflow-hidden rounded-[1.75rem] bg-forest px-8 py-10 text-white md:grid-cols-2 md:px-12">
             <div>
-              <h2 className="text-3xl font-semibold tracking-[-0.03em] md:text-4xl">
+              <h2 className="text-3xl font-extrabold tracking-tight md:text-4xl">
                 Wallet transfers are free.
               </h2>
               <p className="mt-3 max-w-md text-sm leading-7 text-white/70">
@@ -414,7 +358,7 @@ export default function LandingPage() {
       <section className="bg-white py-20 lg:py-24">
         <Container className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
           <div>
-            <h2 className="text-3xl font-semibold tracking-[-0.03em] md:text-[2.4rem] md:leading-[1.15]">
+            <h2 className="text-3xl font-extrabold tracking-tight md:text-[2.4rem] md:leading-[1.15]">
               Send money across Cameroon with LBPay.
             </h2>
             <ul className="mt-8 grid grid-cols-2 gap-3">
@@ -443,7 +387,7 @@ export default function LandingPage() {
       <section id="faq" className="bg-paper py-20 lg:py-24" aria-labelledby="faq-heading">
         <Container className="grid gap-10 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-16">
           <div>
-            <h2 id="faq-heading" className="text-3xl font-semibold tracking-[-0.03em] md:text-[2.4rem]">
+            <h2 id="faq-heading" className="text-3xl font-extrabold tracking-tight md:text-[2.4rem]">
               Common questions.
             </h2>
             <p className="mt-4 text-sm leading-6 text-muted">
@@ -456,7 +400,7 @@ export default function LandingPage() {
 
       <section className="bg-forest py-16 text-center text-white md:py-20">
         <Container>
-          <h2 className="mx-auto max-w-2xl text-3xl font-semibold tracking-[-0.03em] md:text-4xl">
+          <h2 className="mx-auto max-w-2xl text-3xl font-extrabold tracking-tight md:text-4xl">
             Set up and move money with LBPay.
           </h2>
           <p className="mx-auto mt-3 max-w-lg text-sm leading-7 text-white/70">

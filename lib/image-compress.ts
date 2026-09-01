@@ -94,3 +94,12 @@ export async function compressProductImage(file: File) {
     emptyError: "Upload a photo of the product.",
   });
 }
+
+export async function compressAvatarImage(file: File) {
+  return compressImage(file, {
+    targetBytes: 280_000,
+    maxEdge: 800,
+    filename: "avatar.jpg",
+    emptyError: "Choose a profile photo.",
+  });
+}

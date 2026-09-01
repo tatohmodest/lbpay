@@ -141,6 +141,24 @@ export type StoredPushSubscription = {
   createdAt: string;
 };
 
+export type StoredReview = {
+  id: string;
+  userId: string;
+  rating: number;
+  body: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type PublicReview = {
+  id: string;
+  name: string;
+  avatar: string;
+  rating: number;
+  body: string;
+  createdAt: string;
+};
+
 export type DbShape = {
   users: StoredUser[];
   otps: StoredOtp[];
@@ -154,6 +172,7 @@ export type DbShape = {
   deletedLinkIds?: string[];
   logs: StoredLog[];
   pushSubscriptions: StoredPushSubscription[];
+  reviews?: StoredReview[];
   vapid?: { publicKey: string; privateKey: string };
 };
 
@@ -208,6 +227,7 @@ function mergeLedgers(base: DbShape, next: DbShape): DbShape {
         [...(base.pushSubscriptions || []), ...(next.pushSubscriptions || [])].map((item) => [item.endpoint, item]),
       ).values(),
     ],
+    reviews: mergeById(base.reviews, next.reviews),
     otps: next.otps || [],
     vapid: next.vapid || base.vapid,
   };
@@ -247,6 +267,7 @@ async function empty(): Promise<DbShape> {
     deletedLinkIds: [],
     logs: [],
     pushSubscriptions: [],
+    reviews: [],
   };
 }
 
@@ -264,6 +285,7 @@ function withCollections(db: DbShape): DbShape {
     deletedLinkIds: db.deletedLinkIds || [],
     logs: db.logs || [],
     pushSubscriptions: db.pushSubscriptions || [],
+    reviews: db.reviews || [],
     vapid: db.vapid,
   };
 }
@@ -1290,4 +1312,71 @@ export async function removePushEndpoint(endpoint: string) {
   db.pushSubscriptions = (db.pushSubscriptions || []).filter((item) => item.endpoint !== endpoint);
   await saveDb(db);
 }
+
+function clampRating(value: number) {
+  if (!Number.isFinite(value)) return 0;
+  return Math.min(5, Math.max(1, Math.round(value)));
+}
+
+export function sanitizeReviewBody(raw: string) {
+  return raw.replace(/\s+/g, " ").trim();
+}
+
+export async function findReviewByUser(userId: string) {
+  const db = await getDb();
+  return (db.reviews || []).find((item) => item.userId === userId) || null;
+}
+
+export async function upsertReview(userId: string, input: { rating: number; body: string }) {
+  const rating = clampRating(input.rating);
+  const body = sanitizeReviewBody(input.body);
+  if (rating < 1) throw new Error("Pick a star rating.");
+  if (body.length < 12) throw new Error("Write a little more so people can understand.");
+  if (body.length > 320) throw new Error("Keep the review under 320 characters.");
+
+  const db = await getDb();
+  const now = new Date().toISOString();
+  const existing = (db.reviews || []).find((item) => item.userId === userId);
+  if (existing) {
+    existing.rating = rating;
+    existing.body = body;
+    existing.updatedAt = now;
+    await saveDb(db);
+    return existing;
+  }
+  const review: StoredReview = {
+    id: uid("rev"),
+    userId,
+    rating,
+    body,
+    createdAt: now,
+    updatedAt: now,
+  };
+  db.reviews = [...(db.reviews || []), review];
+  await saveDb(db);
+  return review;
+}
+
+export async function listPublicReviews(): Promise<PublicReview[]> {
+  const db = await getDb();
+  const rows = [...(db.reviews || [])].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  if (rows.length <= 1) return [];
+  const users = new Map(db.users.map((user) => [user.id, user]));
+  return rows
+    .map((row) => {
+      const user = users.get(row.userId);
+      if (!user || user.status === "frozen") return null;
+      return {
+        id: row.id,
+        name: user.name,
+        avatar: user.avatar || "/illustrations/empty-wallet.png",
+        rating: row.rating,
+        body: row.body,
+        createdAt: row.createdAt,
+      };
+    })
+    .filter((item): item is PublicReview => Boolean(item))
+    .slice(0, 9);
+}
+
 

@@ -210,6 +210,55 @@ export async function uploadProductImage(input: {
   };
 }
 
+export async function uploadAvatarImage(input: {
+  buffer: Buffer;
+  userId: string;
+  mime: string;
+}) {
+  if (input.buffer.byteLength > MAX_KYC_UPLOAD_BYTES) {
+    throw new Error("Maximum upload is 10MB.");
+  }
+  const folder = `lbpay/avatars/${input.userId}`;
+  const uploaded = await new Promise<{
+    secure_url: string;
+    public_id: string;
+    bytes: number;
+    eager?: Array<{ secure_url?: string; bytes?: number }>;
+  }>((resolve, reject) => {
+    const stream = client().uploader.upload_stream(
+      {
+        folder,
+        resource_type: "image",
+        allowed_formats: ["jpg", "jpeg", "png", "webp"],
+        unique_filename: true,
+        overwrite: true,
+        transformation: [
+          { width: 512, height: 512, crop: "fill", gravity: "face" },
+          { quality: "auto:good", fetch_format: "jpg" },
+        ],
+        eager: [{ width: 512, height: 512, crop: "fill", gravity: "face", quality: "auto:good", fetch_format: "jpg" }],
+        eager_async: false,
+        tags: ["lbpay-avatar", input.userId],
+      },
+      (error, result) => {
+        if (error || !result?.secure_url) {
+          reject(error instanceof Error ? error : new Error("Cloudinary could not store that photo."));
+          return;
+        }
+        resolve(result as { secure_url: string; public_id: string; bytes: number; eager?: Array<{ secure_url?: string; bytes?: number }> });
+      },
+    );
+    stream.end(input.buffer);
+  });
+
+  const compressed = uploaded.eager?.[0];
+  return {
+    url: compressed?.secure_url || uploaded.secure_url,
+    publicId: uploaded.public_id,
+    bytes: compressed?.bytes || uploaded.bytes,
+  };
+}
+
 export async function deleteCloudinaryImage(urlOrPublicId: string | null | undefined, timeoutMs = 8000) {
   if (!urlOrPublicId) return false;
   const api = deleteClient(urlOrPublicId);
