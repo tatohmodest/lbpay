@@ -94,7 +94,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${geist.variable} ${geistMono.variable} h-full`}>
+    <html lang="en" data-scroll-behavior="smooth" className={`${geist.variable} ${geistMono.variable} h-full`}>
       <body className="min-h-full bg-canvas font-sans text-ink antialiased">
         <SiteJsonLd />
         <AppProviders>{children}</AppProviders>
