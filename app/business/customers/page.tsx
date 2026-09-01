@@ -1,6 +1,6 @@
 "use client";
 
-import { Card } from "@/components/ui/card";
+import { BusinessPageHeader } from "@/components/business/page-header";
 import { formatXAF } from "@/lib/format";
 import { useQuery } from "@tanstack/react-query";
 
@@ -27,24 +27,25 @@ export default function BusinessCustomersPage() {
   );
 
   return (
-    <div>
-      <h1 className="text-2xl font-black">Customers</h1>
-      <p className="text-sm text-muted">Everyone who has paid you.</p>
-      <Card className="mt-6 divide-y divide-line">
+    <div className="mx-auto max-w-lg lg:mx-0 lg:max-w-3xl">
+      <BusinessPageHeader title="Customers" copy="Everyone who has paid you." />
+      <div className="overflow-hidden rounded-[2rem] bg-white p-2 shadow-[0_1px_2px_rgba(12,25,19,0.04)]">
         {customers.length === 0 ? (
-          <p className="p-6 text-sm text-muted">No customers yet.</p>
+          <p className="px-4 py-10 text-center text-sm text-muted">None</p>
         ) : (
           customers.map((person) => (
-            <div key={person.name} className="flex items-center justify-between p-4">
-              <div>
-                <p className="font-semibold">{person.name}</p>
-                <p className="text-xs text-muted">{person.count} payments</p>
+            <div key={person.name} className="flex items-center justify-between gap-3 rounded-2xl px-3 py-3">
+              <div className="min-w-0">
+                <p className="truncate font-bold">{person.name}</p>
+                <p className="text-xs text-muted">
+                  {person.count} {person.count === 1 ? "payment" : "payments"}
+                </p>
               </div>
-              <p className="font-mono text-sm">{formatXAF(person.total)}</p>
+              <p className="font-mono text-sm font-black">{formatXAF(person.total, { withCurrency: false })}</p>
             </div>
           ))
         )}
-      </Card>
+      </div>
     </div>
   );
 }

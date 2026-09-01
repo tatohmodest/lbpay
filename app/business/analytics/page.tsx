@@ -1,6 +1,6 @@
 "use client";
 
-import { Card } from "@/components/ui/card";
+import { BusinessPageHeader } from "@/components/business/page-header";
 import { formatXAF } from "@/lib/format";
 import { useQuery } from "@tanstack/react-query";
 
@@ -13,23 +13,25 @@ export default function BusinessAnalyticsPage() {
   const collections = data.data?.collections || [];
   const links = data.data?.links || [];
 
+  const stats = [
+    { label: "Revenue", value: formatXAF(revenue, { withCurrency: false }) },
+    { label: "Payments", value: String(collections.length) },
+    { label: "Links", value: String(links.length) },
+  ];
+
   return (
-    <div>
-      <h1 className="text-2xl font-black">Analytics</h1>
-      <p className="text-sm text-muted">A simple view of how your business is growing.</p>
-      <div className="mt-6 grid gap-4 md:grid-cols-3">
-        <Card className="p-5">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted">Revenue</p>
-          <p className="mt-2 font-mono text-2xl font-bold">{formatXAF(revenue)}</p>
-        </Card>
-        <Card className="p-5">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted">Payments</p>
-          <p className="mt-2 font-mono text-2xl font-bold">{collections.length}</p>
-        </Card>
-        <Card className="p-5">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted">Active links</p>
-          <p className="mt-2 font-mono text-2xl font-bold">{links.length}</p>
-        </Card>
+    <div className="mx-auto max-w-lg lg:mx-0 lg:max-w-3xl">
+      <BusinessPageHeader title="Analytics" copy="A simple view of how the shop is doing." />
+      <div className="grid grid-cols-3 gap-2">
+        {stats.map((stat) => (
+          <div
+            key={stat.label}
+            className="rounded-[1.5rem] bg-white px-3 py-4 shadow-[0_1px_2px_rgba(12,25,19,0.04)]"
+          >
+            <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">{stat.label}</p>
+            <p className="mt-2 truncate font-mono text-lg font-black md:text-xl">{stat.value}</p>
+          </div>
+        ))}
       </div>
     </div>
   );

@@ -34,8 +34,8 @@ export function RoleGate({
 
     if (kind === "business" && personal !== "verified") {
       return (
-        <Card className="mx-auto mt-10 max-w-lg p-8 text-center">
-          <h1 className="text-2xl font-semibold tracking-tight">Verify your account first</h1>
+        <Card className="mx-auto mt-6 max-w-lg rounded-[2rem] p-6 text-center">
+          <h1 className="text-xl font-black tracking-tight">Verify your account first</h1>
           <p className="mt-2 text-sm leading-6 text-muted">
             {personal === "pending"
               ? "We are still looking this over. Business tools open after that."
@@ -50,8 +50,8 @@ export function RoleGate({
 
     if (state === "pending") {
       return (
-        <Card className="mx-auto mt-10 max-w-lg p-8 text-center">
-          <h1 className="text-2xl font-semibold tracking-tight">
+        <Card className="mx-auto mt-6 max-w-lg rounded-[2rem] p-6 text-center">
+          <h1 className="text-xl font-black tracking-tight">
             {kind === "business" ? "Business application received" : "Developer application received"}
           </h1>
           <p className="mt-2 text-sm text-muted">
@@ -65,8 +65,11 @@ export function RoleGate({
     }
 
     return (
-      <div className={cn("mx-auto py-8", kind === "business" ? "max-w-2xl" : "max-w-lg")}>
-        <h1 className="text-3xl font-semibold tracking-tight">
+      <div className={cn("mx-auto py-4", kind === "business" ? "max-w-2xl" : "max-w-lg")}>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand">
+          {kind === "business" ? "Business" : "Developers"}
+        </p>
+        <h1 className="mt-1 text-2xl font-black tracking-tight">
           {kind === "business" ? "Register your business" : "Add payments to your product"}
         </h1>
         <p className="mt-2 text-sm text-muted">

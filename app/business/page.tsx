@@ -1,22 +1,23 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Card } from "@/components/ui/card";
-import { MethodDot, StatusBadge } from "@/components/ui/badge";
-import { PayQR } from "@/components/qr";
-import { PaymentLinkForm } from "@/components/payment-link-form";
-import { PaymentLinkManageList } from "@/components/payment-link-manage";
+import Link from "next/link";
+import { Link2, QrCode, Receipt, Users } from "lucide-react";
+import { StatusBadge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { formatDate, formatXAF } from "@/lib/format";
-import { useNotify } from "@/lib/notify";
 import { useMe } from "@/lib/hooks/wallet";
-import { payHandleUrl } from "@/lib/origin";
-import { useBrowserOrigin } from "@/lib/use-origin";
+import { useQuery } from "@tanstack/react-query";
+import { payLinkPath } from "@/lib/origin";
+
+const actions = [
+  { href: "/business/links", label: "New link", copy: "A checkout anyone can pay", icon: Link2 },
+  { href: "/business/qr", label: "My QR", copy: "Let a customer scan and pay", icon: QrCode },
+  { href: "/business/payments", label: "Sales", copy: "Every collection in one list", icon: Receipt },
+  { href: "/business/customers", label: "Customers", copy: "People who have paid you", icon: Users },
+];
 
 export default function BusinessPage() {
-  const notify = useNotify();
-  const client = useQueryClient();
   const me = useMe();
-  const origin = useBrowserOrigin();
   const data = useQuery({
     queryKey: ["business"],
     queryFn: async () => {
@@ -32,7 +33,6 @@ export default function BusinessPage() {
           title: string;
           amount: number | null;
           imageUrl?: string;
-          template?: string;
         }>;
         collections: Array<{
           id: string;
@@ -45,138 +45,135 @@ export default function BusinessPage() {
       };
     },
   });
-  const create = useMutation({
-    mutationFn: (input: {
-      title: string;
-      amount: string;
-      imageUrl?: string;
-      imagePublicId?: string;
-      template: string;
-    }) =>
-      fetch("/api/business", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: input.title,
-          amount: input.amount ? Number(input.amount) : null,
-          imageUrl: input.imageUrl,
-          imagePublicId: input.imagePublicId,
-          template: input.template,
-        }),
-      }).then(async (res) => {
-        const json = await res.json();
-        if (!res.ok) throw new Error(json.error || "Failed");
-        return json;
-      }),
-    onSuccess: () => {
-      client.invalidateQueries({ queryKey: ["business"] });
-      notify.success("Link created", "Share the checkout URL.");
-    },
-    onError: (err: Error) => notify.error("Failed", err.message),
-  });
 
   const links = data.data?.links || [];
   const collections = data.data?.collections || [];
-  const handle = me.data?.user?.lbpayId || "";
-  const payUrl = handle && origin ? payHandleUrl(handle, origin) : "";
+  const shop = data.data?.businessName || me.data?.user?.businessName || "Business";
 
   return (
-    <div>
-      <header className="mb-8">
-        <h1 className="text-3xl font-black">Business overview</h1>
-        <p className="text-muted">Create a product link, pick a template, and get paid.</p>
-      </header>
-      <div className="mb-6">
-        <Card className="p-5 md:p-6">
-          <h2 className="text-lg font-black">Product payment link</h2>
-          <p className="mt-1 text-sm text-muted">
-            Add a photo, pick a finance template, then share the checkout link.
+    <div className="mx-auto max-w-lg space-y-4 lg:mx-0 lg:max-w-3xl">
+      <section className="relative overflow-hidden rounded-[2rem] bg-forest p-5 text-white shadow-[0_24px_80px_rgba(6,38,28,0.18)]">
+        <div className="pointer-events-none absolute -right-16 -top-16 h-44 w-44 rounded-full bg-brand/25 blur-3xl" />
+        <div className="relative z-10">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand">{shop}</p>
+          <p className="mt-3 text-xs text-white/65">Collected</p>
+          <h1 className="mt-1 font-mono text-3xl font-black tracking-tight md:text-4xl">
+            {formatXAF(data.data?.revenue || 0, { withCurrency: false })}{" "}
+            <span className="text-lg font-bold text-white/70">XAF</span>
+          </h1>
+          <p className="mt-2 text-xs text-white/60">
+            {links.length} {links.length === 1 ? "link" : "links"} · {collections.length}{" "}
+            {collections.length === 1 ? "sale" : "sales"}
           </p>
-          <div className="mt-5">
-            <PaymentLinkForm
-              merchantName={data.data?.businessName}
-              submitting={create.isPending}
-              onSubmit={(input) => create.mutateAsync(input)}
-            />
+          <div className="mt-5 grid grid-cols-2 gap-2">
+            <Link href="/business/links">
+              <Button className="h-11 w-full rounded-full bg-white text-brand hover:bg-brand-soft">
+                New link
+              </Button>
+            </Link>
+            <Link href="/business/qr">
+              <Button className="h-11 w-full rounded-full border-0 bg-white/10 text-white hover:bg-white/15">
+                My QR
+              </Button>
+            </Link>
           </div>
-        </Card>
-      </div>
-      <div className="mb-6 grid gap-4 md:grid-cols-2">
-        <Card className="p-5">
-          <p className="text-xs font-bold uppercase tracking-wide text-muted">Revenue (XAF)</p>
-          <p className="mt-3 font-mono text-3xl font-bold">
-            {formatXAF(data.data?.revenue || 0, { withCurrency: false })}
-          </p>
-        </Card>
-        <Card className="p-5">
-          <p className="text-xs font-bold uppercase tracking-wide text-muted">Active links</p>
-          <p className="mt-3 font-mono text-3xl font-bold">{links.length}</p>
-        </Card>
-      </div>
-      {links.length > 0 ? (
-        <div className="mb-6">
-          <h2 className="mb-3 text-lg font-black">Your product links</h2>
-          <p className="mb-3 text-sm text-muted">Edit the title, amount, photo, or template. Delete a link to take it offline.</p>
-          <PaymentLinkManageList
-            links={links}
-            merchantName={data.data?.businessName}
-            apiPath="/api/business"
-            queryKeys={[["business"], ["wallet-links"]]}
-          />
         </div>
-      ) : null}
-      <div className="mb-6">
-        <Card className="flex flex-col items-center bg-navy p-6 text-white">
-          <h2 className="text-2xl font-bold">Scan to pay</h2>
-          <div className="mt-4">
-            {payUrl ? (
-              <PayQR value={payUrl} />
-            ) : (
-              <div className="h-[180px] w-[180px] rounded-2xl bg-white/10" />
-            )}
+      </section>
+
+      <section className="rounded-[2rem] bg-white p-1.5 shadow-[0_1px_2px_rgba(12,25,19,0.04)]">
+        <div className="grid grid-cols-2 gap-1">
+          {actions.map((action) => (
+            <Link
+              key={action.href}
+              href={action.href}
+              className="flex flex-col gap-2.5 rounded-[1.5rem] p-3.5 transition hover:bg-paper"
+            >
+              <span className="grid h-9 w-9 place-items-center rounded-2xl bg-brand-soft text-brand">
+                <action.icon className="h-4 w-4" />
+              </span>
+              <span>
+                <span className="block text-sm font-bold text-ink">{action.label}</span>
+                <span className="mt-0.5 block text-xs leading-4 text-muted">{action.copy}</span>
+              </span>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <section className="rounded-[2rem] bg-white p-4 shadow-[0_1px_2px_rgba(12,25,19,0.04)]">
+        <div className="mb-1 flex items-center justify-between">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand">Checkout</p>
+            <h2 className="mt-1 text-lg font-black">Links</h2>
           </div>
-          <p className="mt-3 break-all font-mono text-xs text-white/70">{payUrl}</p>
-        </Card>
-      </div>
-      <Card className="overflow-hidden">
-        <div className="border-b border-line p-4">
-          <h2 className="text-xs font-bold uppercase tracking-wide">Recent collections</h2>
+          <Link href="/business/links" className="text-sm font-bold text-brand">
+            {links.length ? "See all" : "Create"}
+          </Link>
+        </div>
+        {links.length === 0 ? (
+          <p className="mt-3 rounded-2xl bg-paper px-4 py-8 text-center text-sm text-muted">None</p>
+        ) : (
+          <div className="mt-2 space-y-0.5">
+            {links.slice(0, 4).map((link) => (
+              <Link
+                key={link.id}
+                href={payLinkPath(link.slug)}
+                className="flex items-center gap-3 rounded-2xl px-2 py-2.5 transition hover:bg-paper"
+              >
+                {link.imageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={link.imageUrl} alt="" className="h-11 w-11 rounded-2xl object-cover" />
+                ) : (
+                  <div className="grid h-11 w-11 place-items-center rounded-2xl bg-brand-soft text-[10px] font-bold text-brand-deep">
+                    Pay
+                  </div>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-bold">{link.title}</p>
+                  <p className="text-xs text-muted">Open checkout</p>
+                </div>
+                <p className="shrink-0 font-mono text-sm font-black">
+                  {link.amount ? formatXAF(link.amount, { withCurrency: false }) : "Open"}
+                </p>
+              </Link>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="rounded-[2rem] bg-white p-4 shadow-[0_1px_2px_rgba(12,25,19,0.04)]">
+        <div className="mb-1 flex items-center justify-between">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand">Activity</p>
+            <h2 className="mt-1 text-lg font-black">Recent sales</h2>
+          </div>
+          {collections.length ? (
+            <Link href="/business/payments" className="text-sm font-bold text-brand">
+              See all
+            </Link>
+          ) : null}
         </div>
         {collections.length === 0 ? (
-          <p className="p-6 text-sm text-muted">No collections yet.</p>
+          <p className="mt-3 rounded-2xl bg-paper px-4 py-8 text-center text-sm text-muted">None</p>
         ) : (
-          <table className="w-full text-left text-sm">
-            <thead className="bg-paper text-xs uppercase tracking-wide text-muted">
-              <tr>
-                <th className="p-3">ID</th>
-                <th className="p-3">Date</th>
-                <th className="p-3">Customer</th>
-                <th className="p-3">Method</th>
-                <th className="p-3 text-right">Amount</th>
-                <th className="p-3 text-center">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-line">
-              {collections.map((tx) => (
-                <tr key={tx.id}>
-                  <td className="p-3 font-mono text-xs">{tx.id}</td>
-                  <td className="p-3 text-muted">{formatDate(tx.createdAt)}</td>
-                  <td className="p-3">{tx.counterparty}</td>
-                  <td className="p-3">
-                    <MethodDot method={tx.method} />
-                  </td>
-                  <td className="p-3 text-right font-mono font-bold">
-                    {formatXAF(tx.amount, { withCurrency: false })}
-                  </td>
-                  <td className="p-3 text-center">
-                    <StatusBadge status={tx.status} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="mt-2 space-y-0.5">
+            {collections.slice(0, 5).map((tx) => (
+              <div key={tx.id} className="flex items-center justify-between gap-3 rounded-2xl px-2 py-2.5">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-bold">{tx.counterparty}</p>
+                  <p className="text-xs text-muted">{formatDate(tx.createdAt)}</p>
+                </div>
+                <div className="shrink-0 text-right">
+                  <p className="font-mono text-sm font-black">
+                    +{formatXAF(tx.amount, { withCurrency: false })}
+                  </p>
+                  <StatusBadge status={tx.status} />
+                </div>
+              </div>
+            ))}
+          </div>
         )}
-      </Card>
+      </section>
     </div>
   );
 }

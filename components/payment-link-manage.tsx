@@ -124,7 +124,7 @@ export function PaymentLinkManageList({
         const template = linkTemplateMeta(link.template);
         const isEditing = editing?.id === link.id;
         return (
-          <Card key={link.id} className={layout === "cards" ? "overflow-hidden p-3" : "p-4"}>
+          <Card key={link.id} className={layout === "cards" ? "overflow-hidden rounded-[1.75rem] p-3" : "rounded-[1.75rem] p-4"}>
             {isEditing ? (
               <div>
                 <p className="text-sm font-semibold">Edit payment link</p>
@@ -148,24 +148,26 @@ export function PaymentLinkManageList({
                 </Button>
               </div>
             ) : layout === "rows" ? (
-              <div className="flex items-center gap-4">
-                <div className="w-28 shrink-0">
-                  <ProductLinkFrame
-                    compact
-                    template={link.template}
-                    title={link.title}
-                    amount={link.amount}
-                    merchantName={merchantName}
-                    imageUrl={link.imageUrl}
-                  />
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <div className="flex min-w-0 items-center gap-3">
+                  <div className="w-24 shrink-0 sm:w-28">
+                    <ProductLinkFrame
+                      compact
+                      template={link.template}
+                      title={link.title}
+                      amount={link.amount}
+                      merchantName={merchantName}
+                      imageUrl={link.imageUrl}
+                    />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-semibold">{link.title}</p>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted">{template.name}</p>
+                    <p className="truncate font-mono text-xs text-muted">{url}</p>
+                  </div>
                 </div>
-                <div className="min-w-0 flex-1">
-                  <p className="font-semibold">{link.title}</p>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted">{template.name}</p>
-                  <p className="truncate font-mono text-xs text-muted">{url}</p>
-                </div>
-                <div className="text-right">
-                  <p className="font-mono text-sm">{link.amount ? formatXAF(link.amount) : "Open"}</p>
+                <div className="sm:ml-auto sm:text-right">
+                  <p className="font-mono text-sm font-black">{link.amount ? formatXAF(link.amount) : "Open"}</p>
                   <LinkActions
                     url={url}
                     slug={link.slug}

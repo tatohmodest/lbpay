@@ -74,7 +74,7 @@ export function ConsoleShell({
         />
         <main
           className={cn(
-            "px-4 pb-24 pt-[calc(var(--header-h)+1.25rem)] md:px-8 md:pb-8 lg:ml-64 lg:pt-8",
+            "px-4 pb-24 pt-[calc(var(--header-h)+0.75rem)] md:px-8 md:pb-8 lg:ml-64 lg:pt-8",
           )}
         >
           {children}

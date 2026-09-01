@@ -1,6 +1,6 @@
 "use client";
 
-import { Card } from "@/components/ui/card";
+import { BusinessPageHeader } from "@/components/business/page-header";
 import { useQuery } from "@tanstack/react-query";
 import { businessKindLabel } from "@/lib/kyc";
 
@@ -10,26 +10,23 @@ export default function BusinessSettingsPage() {
     queryFn: async () => (await fetch("/api/business")).json(),
   });
 
+  const rows = [
+    { label: "Business name", value: data.data?.businessName || "n/a" },
+    { label: "Type", value: data.data?.businessKind ? businessKindLabel(data.data.businessKind) : "Business" },
+    { label: "Status", value: data.data?.kyc || "verified" },
+  ];
+
   return (
-    <div className="max-w-lg">
-      <h1 className="text-2xl font-black">Settings</h1>
-      <p className="text-sm text-muted">How your business appears to customers.</p>
-      <Card className="mt-6 space-y-3 p-6">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted">Business name</p>
-          <p className="mt-1 font-semibold">{data.data?.businessName || "n/a"}</p>
-        </div>
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted">Type</p>
-          <p className="mt-1 font-semibold">
-            {data.data?.businessKind ? businessKindLabel(data.data.businessKind) : "Business"}
-          </p>
-        </div>
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted">Status</p>
-          <p className="mt-1 font-semibold">{data.data?.kyc || "verified"}</p>
-        </div>
-      </Card>
+    <div className="mx-auto max-w-lg">
+      <BusinessPageHeader title="Settings" copy="How your business appears to customers." />
+      <div className="space-y-3 rounded-[2rem] bg-white p-5 shadow-[0_1px_2px_rgba(12,25,19,0.04)]">
+        {rows.map((row) => (
+          <div key={row.label}>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">{row.label}</p>
+            <p className="mt-1 font-bold">{row.value}</p>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

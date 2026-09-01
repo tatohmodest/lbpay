@@ -85,8 +85,8 @@ export function KycApplyForm({
   }
 
   return (
-    <Card className="p-6">
-      <h2 className="text-xl font-black">{title}</h2>
+    <Card className="rounded-[2rem] p-4 md:p-6">
+      <h2 className="text-lg font-black">{title}</h2>
       <p className="mt-1 text-sm text-muted">{subtitle}</p>
       <form className="mt-5 flex flex-col gap-4" onSubmit={submit}>
         {track === "business" ? (
@@ -114,7 +114,7 @@ export function KycApplyForm({
                         alt=""
                         width={768}
                         height={512}
-                        className="h-36 w-full object-cover"
+                        className="h-24 w-full object-cover sm:h-32"
                       />
                       <span className="block p-3">
                         <span className="block text-sm font-semibold">{item.name}</span>

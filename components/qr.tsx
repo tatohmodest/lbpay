@@ -3,6 +3,7 @@
 import { QRCodeSVG } from "qrcode.react";
 
 export function PayQR({ value, size = 180 }: { value: string; size?: number }) {
+  const mark = size < 160 ? 28 : 36;
   return (
     <div className="rounded-2xl bg-white p-3">
       <QRCodeSVG
@@ -13,8 +14,8 @@ export function PayQR({ value, size = 180 }: { value: string; size?: number }) {
         level="M"
         imageSettings={{
           src: "/illustrations/lbpay-mark.webp",
-          height: 36,
-          width: 36,
+          height: mark,
+          width: mark,
           excavate: true,
         }}
       />
