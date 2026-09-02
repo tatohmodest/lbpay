@@ -77,7 +77,7 @@ export default function QuickTransferPage() {
     { label: "From", value: `${fromNetwork === "orange" ? "Orange" : "MTN"} ${fromPhone}` },
     { label: "To", value: `${toNetwork === "orange" ? "Orange" : "MTN"} ${toPhone}` },
     { label: "They receive", value: formatXAF(value) },
-    ...(fee ? [{ label: "Charge", value: formatXAF(fee) }] : []),
+    ...(fee ? [{ label: "Deducted", value: formatXAF(fee) }] : []),
     { label: "You pay", value: formatXAF(payAmount) },
   ];
 
@@ -270,6 +270,7 @@ export default function QuickTransferPage() {
               kind="momo"
               receive={value}
               fee={fee}
+              feeLabel="Deducted"
               pay={payAmount}
             />
             <Button type="submit" disabled={!ready}>

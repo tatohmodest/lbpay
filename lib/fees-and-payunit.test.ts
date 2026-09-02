@@ -19,7 +19,12 @@ test("deposit is 2 percent and withdrawal is 3 percent", () => {
   assert.equal(depositFee(10_000), 200);
   assert.equal(momoOutFee(10_000), 300);
   assert.equal(directTransferFee(10_000, "mtn", "mtn"), 300);
-  assert.equal(directTransferFee(10_000, "mtn", "orange"), 600);
+});
+
+test("quick transfer across networks is 5 percent of the amount they receive", () => {
+  assert.equal(FEE_RATES.crossNetwork, 0.05);
+  assert.equal(directTransferFee(10_000, "mtn", "orange"), 500);
+  assert.equal(directTransferFee(10_000, "orange", "mtn"), 500);
 });
 
 test("withdrawal minimum is 1000 XAF, not 100", () => {

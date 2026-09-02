@@ -1,4 +1,5 @@
-import { resolveAvatar } from "@/lib/avatar";
+import { isDefaultAvatar, resolveAvatar } from "@/lib/avatar";
+import { cn } from "@/lib/cn";
 
 export function AppImg({
   src,
@@ -14,9 +15,16 @@ export function AppImg({
   height?: number;
 }) {
   const value = resolveAvatar(src);
+  const fallback = isDefaultAvatar(src);
   return (
     // User photos and remote URLs must not go through next/image. A bad src throws and takes the whole page down.
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={value} alt={alt} width={width} height={height} className={className} />
+    <img
+      src={value}
+      alt={alt}
+      width={width}
+      height={height}
+      className={cn(className, fallback && "bg-[#e7f6ee] object-contain p-1")}
+    />
   );
 }
