@@ -56,7 +56,7 @@ export function CashFlow({
           return (
             <div key={bar.label} className="flex h-full min-h-[9.5rem] flex-1 flex-col items-center justify-end gap-2">
               <div
-                className={cn("w-full max-w-9 rounded-t-lg", tall ? "bg-brand" : "bg-brand-soft")}
+                className={cn("w-full rounded-t-lg", tall ? "bg-brand" : "bg-brand-soft")}
                 style={{ height: `${height}%` }}
               />
               <span className="text-[10px] font-medium text-muted">{bar.label}</span>

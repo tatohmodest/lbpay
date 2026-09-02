@@ -53,7 +53,7 @@ export function HouseCard({
   return (
     <section
       className={cn(
-        "lb-house-card relative flex h-full min-h-[15.5rem] flex-col overflow-hidden rounded-[1.25rem] p-5 text-white",
+        "lb-house-card relative flex h-full min-h-[13.5rem] flex-col overflow-hidden rounded-[1.25rem] p-5 text-white sm:min-h-[15.5rem]",
       )}
     >
       <svg className="pointer-events-none absolute inset-0 h-full w-full opacity-[0.28]" aria-hidden>
@@ -131,12 +131,12 @@ export function MetricCard({
   return (
     <Link
       href={href}
-      className="flex h-full min-h-[15.5rem] flex-col rounded-[1.25rem] border border-line/80 bg-white p-5 shadow-[0_1px_2px_rgba(12,25,19,0.04)] transition hover:border-brand/30"
+      className="flex h-full min-h-[11.25rem] flex-col rounded-[1.25rem] border border-line/80 bg-white p-4 shadow-[0_1px_2px_rgba(12,25,19,0.04)] transition hover:border-brand/30 sm:min-h-[15.5rem] sm:p-5"
     >
       <span className={cn("grid h-11 w-11 place-items-center rounded-full", iconWrap)}>
         <Icon className="h-5 w-5" />
       </span>
-      <p className="mt-6 text-sm text-muted">{label}</p>
+      <p className="mt-4 text-sm text-muted sm:mt-6">{label}</p>
       <p className="mt-2 truncate text-[1.65rem] font-black leading-none tracking-tight text-ink">{value}</p>
       {hint ? <p className="mt-2 text-xs leading-5 text-muted">{hint}</p> : null}
       {status ? <p className="mt-auto pt-5 text-xs font-semibold text-brand">{status}</p> : <span className="mt-auto" />}

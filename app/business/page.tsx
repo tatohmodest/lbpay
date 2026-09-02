@@ -81,8 +81,8 @@ export default function BusinessPage() {
         <p className="mt-1 text-sm text-muted">Here is the summary of your till.</p>
       </div>
 
-      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <div className="sm:col-span-2 lg:col-span-1">
+      <section className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+        <div className="col-span-2 lg:col-span-1">
           <HouseCard
             title="My till"
             subtitle="What you have collected"
