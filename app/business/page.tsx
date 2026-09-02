@@ -4,26 +4,19 @@ import Link from "next/link";
 import { Link2, QrCode, Receipt, Users } from "lucide-react";
 import { StatusBadge } from "@/components/ui/badge";
 import { AppImg } from "@/components/app-img";
-import { HouseCard } from "@/components/house-card";
+import { HouseCard, MetricCard, WalletTile } from "@/components/house-card";
+import { CashFlow, monthlyInflow } from "@/components/cash-flow";
 import { firstName, formatDate, formatXAF } from "@/lib/format";
 import { useMe } from "@/lib/hooks/wallet";
 import { useQuery } from "@tanstack/react-query";
 import { payLinkPath } from "@/lib/origin";
-import { cn } from "@/lib/cn";
 
-const actions = [
-  { href: "/business/links", label: "Link", copy: "New checkout", icon: Link2, tone: "leaf" },
-  { href: "/business/qr", label: "QR", copy: "Scan to pay", icon: QrCode, tone: "mist" },
-  { href: "/business/payments", label: "Sales", copy: "Collections", icon: Receipt, tone: "lilac" },
-  { href: "/business/customers", label: "People", copy: "Who paid", icon: Users, tone: "blush" },
+const tiles = [
+  { href: "/business/links", label: "Link", copy: "New checkout", icon: Link2, wrap: "bg-brand-soft text-brand-deep" },
+  { href: "/business/qr", label: "QR", copy: "Scan to pay", icon: QrCode, wrap: "bg-[#e4eef8] text-[#3a5f86]" },
+  { href: "/business/payments", label: "Sales", copy: "Collections", icon: Receipt, wrap: "bg-[#ece6f8] text-[#5b4a8a]" },
+  { href: "/business/customers", label: "People", copy: "Who paid", icon: Users, wrap: "bg-[#f8e6e6] text-[#8a4545]" },
 ] as const;
-
-const tones: Record<(typeof actions)[number]["tone"], string> = {
-  leaf: "bg-brand-soft text-brand-deep",
-  mist: "bg-[#e4eef8] text-[#3a5f86]",
-  lilac: "bg-[#ece6f8] text-[#5b4a8a]",
-  blush: "bg-[#f8e6e6] text-[#8a4545]",
-};
 
 export default function BusinessPage() {
   const me = useMe();
@@ -59,14 +52,18 @@ export default function BusinessPage() {
   const collections = data.data?.collections || [];
   const shop = data.data?.businessName || me.data?.user?.businessName || "Your shop";
   const person = firstName(me.data?.user?.name) || shop;
-  const series = collections
-    .filter((tx) => tx.status === "success")
-    .slice(0, 8)
-    .map((tx) => tx.amount)
-    .reverse();
+  const revenue = data.data?.revenue || 0;
+  const bars = monthlyInflow(
+    collections.map((tx) => ({
+      amount: tx.amount,
+      status: tx.status,
+      kind: "collection",
+      createdAt: tx.createdAt,
+    })),
+  );
 
   return (
-    <div className="mx-auto max-w-lg space-y-5 lg:mx-0 lg:max-w-3xl">
+    <div className="mx-auto max-w-lg space-y-5 lg:mx-0 lg:max-w-none">
       <header className="flex items-center gap-3">
         <AppImg
           src={me.data?.user?.avatar}
@@ -79,57 +76,84 @@ export default function BusinessPage() {
         </div>
       </header>
 
-      <HouseCard
-        label="Total collected"
-        amount={data.data?.revenue || 0}
-        holder={shop}
-        handle={me.data?.user?.lbpayId}
-        series={series}
-      />
+      <div>
+        <h1 className="text-2xl font-black tracking-tight text-ink">Overview</h1>
+        <p className="mt-1 text-sm text-muted">Here is the summary of your till.</p>
+      </div>
 
-      <section className="grid grid-cols-4 gap-2">
-        {actions.map((action) => (
-          <Link
-            key={action.href}
-            href={action.href}
-            className="flex flex-col items-center gap-2 rounded-[1.25rem] bg-white px-1.5 py-3 shadow-[0_1px_2px_rgba(12,25,19,0.04)] transition hover:bg-[#faf8f4]"
-          >
-            <span className={cn("grid h-10 w-10 place-items-center rounded-2xl", tones[action.tone])}>
-              <action.icon className="h-4 w-4" />
-            </span>
-            <span className="text-center">
-              <span className="block text-[12px] font-bold text-ink">{action.label}</span>
-              <span className="mt-0.5 block text-[10px] leading-3 text-muted">{action.copy}</span>
-            </span>
-          </Link>
-        ))}
+      <section className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+        <div className="col-span-2 lg:col-span-1">
+          <HouseCard
+            title="My till"
+            subtitle="What you have collected"
+            amount={revenue}
+            handle={me.data?.user?.lbpayId}
+            detailsHref="/business/payments"
+          />
+        </div>
+        <MetricCard
+          href="/business/links"
+          icon={Link2}
+          iconWrap="bg-[#ece6f8] text-[#5b4a8a]"
+          label="Payment links"
+          value={String(links.length)}
+          hint={links.length ? "Live checkouts" : "Create a checkout link"}
+          status={links.length ? "See all" : "Create"}
+        />
+        <MetricCard
+          href="/business/payments"
+          icon={Receipt}
+          iconWrap="bg-[#e4eef8] text-[#3a5f86]"
+          label="Sales"
+          value={String(collections.length)}
+          hint="Customer collections"
+          status="See all"
+        />
       </section>
 
-      <section className="grid grid-cols-3 gap-2">
-        <Stat label="Till" value={formatXAF(data.data?.revenue || 0, { withCurrency: false })} />
-        <Stat label="Links" value={String(links.length)} />
-        <Stat label="Sales" value={String(collections.length)} />
+      <section className="grid gap-3 lg:grid-cols-12">
+        <div className="rounded-[1.25rem] border border-line/80 bg-white p-4 shadow-[0_1px_2px_rgba(12,25,19,0.04)] lg:col-span-7">
+          <div className="mb-3">
+            <h2 className="text-base font-black">Collect</h2>
+            <p className="mt-0.5 text-xs text-muted">Links, QR, and people who paid.</p>
+          </div>
+          <div className="grid grid-cols-2 gap-2.5">
+            {tiles.map((tile) => (
+              <WalletTile
+                key={tile.href}
+                href={tile.href}
+                icon={tile.icon}
+                iconWrap={tile.wrap}
+                label={tile.label}
+                copy={tile.copy}
+              />
+            ))}
+          </div>
+        </div>
+        <div className="lg:col-span-5">
+          <CashFlow title="Collections" bars={bars} />
+        </div>
       </section>
 
-      <section className="rounded-[1.5rem] bg-white p-4 shadow-[0_1px_2px_rgba(12,25,19,0.04)]">
+      <section className="rounded-[1.25rem] border border-line/80 bg-white p-4 shadow-[0_1px_2px_rgba(12,25,19,0.04)]">
         <div className="mb-1 flex items-center justify-between">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">Checkout</p>
-            <h2 className="mt-1 text-base font-black">Links</h2>
+            <h2 className="text-base font-black">Links</h2>
+            <p className="mt-0.5 text-xs text-muted">Checkout pages customers open.</p>
           </div>
           <Link href="/business/links" className="text-sm font-bold text-ink/70">
             {links.length ? "See all" : "Create"}
           </Link>
         </div>
         {links.length === 0 ? (
-          <p className="mt-3 rounded-2xl bg-[#f6f3ec] px-4 py-8 text-center text-sm text-muted">None</p>
+          <p className="mt-3 rounded-2xl bg-paper px-4 py-8 text-center text-sm text-muted">None</p>
         ) : (
           <div className="mt-2 space-y-0.5">
             {links.slice(0, 4).map((link) => (
               <Link
                 key={link.id}
                 href={payLinkPath(link.slug)}
-                className="flex items-center gap-3 rounded-2xl px-1.5 py-2.5 transition hover:bg-[#f6f3ec]"
+                className="flex items-center gap-3 rounded-2xl px-1.5 py-2.5 transition hover:bg-paper"
               >
                 {link.imageUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -152,11 +176,11 @@ export default function BusinessPage() {
         )}
       </section>
 
-      <section className="rounded-[1.5rem] bg-white p-4 shadow-[0_1px_2px_rgba(12,25,19,0.04)]">
+      <section className="rounded-[1.25rem] border border-line/80 bg-white p-4 shadow-[0_1px_2px_rgba(12,25,19,0.04)]">
         <div className="mb-1 flex items-center justify-between">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">Ledger</p>
-            <h2 className="mt-1 text-base font-black">Recent sales</h2>
+            <h2 className="text-base font-black">Recent activities</h2>
+            <p className="mt-0.5 text-xs text-muted">Latest collections.</p>
           </div>
           {collections.length ? (
             <Link href="/business/payments" className="text-sm font-bold text-ink/70">
@@ -165,10 +189,10 @@ export default function BusinessPage() {
           ) : null}
         </div>
         {collections.length === 0 ? (
-          <p className="mt-3 rounded-2xl bg-[#f6f3ec] px-4 py-8 text-center text-sm text-muted">None</p>
+          <p className="mt-3 rounded-2xl bg-paper px-4 py-8 text-center text-sm text-muted">None</p>
         ) : (
           <div className="mt-2 space-y-0.5">
-            {collections.slice(0, 5).map((tx) => (
+            {collections.slice(0, 6).map((tx) => (
               <div key={tx.id} className="flex items-center justify-between gap-3 rounded-2xl px-1.5 py-2.5">
                 <div className="flex min-w-0 items-center gap-3">
                   <Initial name={tx.counterparty} />
@@ -192,19 +216,10 @@ export default function BusinessPage() {
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-[1.25rem] bg-white px-3 py-3 shadow-[0_1px_2px_rgba(12,25,19,0.04)]">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted">{label}</p>
-      <p className="mt-1 truncate font-mono text-base font-black text-ink">{value}</p>
-    </div>
-  );
-}
-
 function Initial({ name }: { name: string }) {
   const letter = (name.trim()[0] || "?").toUpperCase();
   return (
-    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#ece6f8] text-sm font-black text-[#5b4a8a]">
+    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#ece6f8] text-sm font-black text-[#5b4a8a]">
       {letter}
     </span>
   );
