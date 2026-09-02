@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
+import { CopyHandle } from "@/components/copy-handle";
 import { formatXAF } from "@/lib/format";
 import { cn } from "@/lib/cn";
 
@@ -88,11 +89,16 @@ export function HouseCard({
             <p className="text-[10px] uppercase tracking-[0.16em] text-white/35">Cardholder</p>
             <p className="truncate text-sm font-semibold tracking-wide text-white/90">{holder}</p>
           </div>
-          <div className="text-right">
+          <div className="shrink-0 text-right">
             <p className="text-[10px] uppercase tracking-[0.16em] text-white/35">Pay ID</p>
-            <p className="font-mono text-sm tracking-[0.18em] text-brand">
-              {handle ? `@${handle.replace(/^@/, "")}` : "LBPAY"}
-            </p>
+            {handle ? (
+              <CopyHandle
+                handle={handle}
+                className="-mr-1 mt-0.5 max-w-full rounded-lg px-1 py-1 font-mono text-sm tracking-[0.18em] text-brand hover:bg-white/10 hover:text-white"
+              />
+            ) : (
+              <p className="font-mono text-sm tracking-[0.18em] text-brand">LBPAY</p>
+            )}
           </div>
         </div>
       </div>

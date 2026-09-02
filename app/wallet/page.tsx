@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/badge";
 import { AppImg } from "@/components/app-img";
 import { HouseCard } from "@/components/house-card";
+import { CopyHandle } from "@/components/copy-handle";
 import { firstName, formatDate, formatXAF, isMoneyOut } from "@/lib/format";
 import { useApp } from "@/lib/store";
 import { useMe } from "@/lib/hooks/wallet";
@@ -83,7 +84,11 @@ export default function WalletPage() {
           />
           <div className="min-w-0">
             <p className="text-lg font-black tracking-tight text-ink">Hello, {person}</p>
-            <p className="truncate text-sm text-muted">{handle ? `@${handle.replace(/^@/, "")}` : "Your wallet"}</p>
+            {handle ? (
+              <CopyHandle handle={handle} className="-ml-1 text-sm text-muted hover:text-ink" />
+            ) : (
+              <p className="truncate text-sm text-muted">Your wallet</p>
+            )}
           </div>
         </header>
 
