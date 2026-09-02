@@ -1,5 +1,6 @@
 import webpush from "web-push";
 import { formatXAF } from "@/lib/format";
+import { txHref } from "@/lib/tx";
 import {
   getVapidKeys,
   listPushSubscriptions,
@@ -91,7 +92,7 @@ export async function pushForTransaction(tx: StoredTx) {
   const who = tx.counterparty || "LBPay";
   const failed = tx.status !== "success";
   const payload = payloadForTx(tx.kind, amount, who, failed);
-  return sendPushToUser(tx.userId, { ...payload, tag: `tx:${tx.id}` });
+  return sendPushToUser(tx.userId, { ...payload, url: txHref(tx.id), tag: `tx:${tx.id}` });
 }
 
 function payloadForTx(kind: string, amount: string, who: string, failed: boolean): PushPayload {

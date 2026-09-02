@@ -12,6 +12,7 @@ import { sendOtpEmail } from "@/lib/server/mail";
 import { setPreauth } from "@/lib/server/session";
 import { defaultKyc, isBootstrapAdmin } from "@/lib/roles";
 import { uid } from "@/lib/format";
+import { DEFAULT_AVATAR } from "@/lib/avatar";
 import { isReservedHandle, normalizeHandle } from "@/lib/handle";
 import { cameroonMsisdn } from "@/lib/phone";
 import type { AccountKind } from "@/lib/types";
@@ -54,7 +55,7 @@ export async function POST(request: Request) {
       lbpayId: handle,
       email,
       phone,
-      avatar: "/illustrations/empty-wallet.webp",
+      avatar: DEFAULT_AVATAR,
       passwordHash: "",
       pinHash: null,
       emailVerified: false,

@@ -42,6 +42,18 @@ export type UserProfile = {
   businessKind?: "small" | "branded";
 };
 
+export type TransactionMeta = {
+  from?: string;
+  to?: string;
+  fromNetwork?: "mtn" | "orange";
+  toNetwork?: "mtn" | "orange";
+  stage?: "collecting" | "paying" | "done";
+  payoutRef?: string;
+  linkSlug?: string;
+  handle?: string;
+  refunded?: boolean;
+};
+
 export type Transaction = {
   id: string;
   kind: TransactionKind;
@@ -53,6 +65,8 @@ export type Transaction = {
   note?: string;
   createdAt: string;
   railRef?: string;
+  rail?: "internal" | "payunit" | "sandbox";
+  meta?: TransactionMeta;
 };
 
 export type Beneficiary = {

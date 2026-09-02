@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { findUserByHandle } from "@/lib/server/db";
+import { resolveAvatar } from "@/lib/avatar";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -12,7 +13,7 @@ export async function GET(request: Request) {
     user: {
       name: user.name,
       lbpayId: user.lbpayId,
-      avatar: user.avatar,
+      avatar: resolveAvatar(user.avatar),
     },
   });
 }

@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { AdminHeader, AdminPanel } from "@/components/admin/ui";
 import { Field, Input } from "@/components/ui/input";
 import { useNotify } from "@/lib/notify";
 import { businessKindLabel } from "@/lib/kyc";
@@ -74,15 +74,20 @@ export default function AdminKycPage() {
   });
 
   return (
-    <div>
-      <h1 className="text-2xl font-black">KYC review</h1>
-      <p className="text-sm text-muted">
-        Check personal ID photos. For business, approve small or branded shops. Tax ID is optional.
-      </p>
-      <div className="mt-6 space-y-3">
-        {(apps.data?.applications || []).map((app: KycApp) => (
-          <Card key={app.id} className="p-5">
-            <div className="flex justify-between gap-3">
+    <div className="space-y-4">
+      <AdminHeader
+        title="KYC review"
+        copy="Check personal ID photos. For business, approve small or branded shops. Tax ID is optional."
+      />
+      <div className="space-y-3">
+        {(apps.data?.applications || []).length === 0 ? (
+          <AdminPanel>
+            <p className="px-4 py-8 text-center text-sm text-muted">None</p>
+          </AdminPanel>
+        ) : (
+          (apps.data?.applications || []).map((app: KycApp) => (
+          <AdminPanel key={app.id}>
+            <div className="px-3 py-3">
               <div>
                 <p className="text-xs font-bold uppercase text-brand">
                   {app.track} · {app.status}
@@ -121,7 +126,6 @@ export default function AdminKycPage() {
                   </>
                 )}
               </div>
-            </div>
             {app.documents ? (
               <div className="mt-4 grid gap-3 sm:grid-cols-3">
                 <DocThumb url={app.documents.idFrontUrl} label="Front" />
@@ -156,8 +160,10 @@ export default function AdminKycPage() {
                 </div>
               </div>
             ) : null}
-          </Card>
-        ))}
+            </div>
+          </AdminPanel>
+          ))
+        )}
       </div>
     </div>
   );

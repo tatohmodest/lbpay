@@ -32,6 +32,22 @@ export function formatDate(iso: string) {
   }).format(new Date(iso));
 }
 
+export function formatDay(iso: string) {
+  return new Intl.DateTimeFormat("en-GB", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(new Date(iso));
+}
+
+export function formatTime(iso: string) {
+  return new Intl.DateTimeFormat("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(iso));
+}
+
 export function formatRelative(iso: string) {
   const delta = Date.now() - new Date(iso).getTime();
   const minutes = Math.round(delta / 60_000);

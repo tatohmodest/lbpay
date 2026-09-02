@@ -6,7 +6,6 @@ import { Download } from "lucide-react";
 import { MethodDot, StatusBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { contactFromTransaction, contactSendHref } from "@/lib/contacts";
 import { formatDate, formatXAF, isMoneyOut } from "@/lib/format";
 import {
   downloadStatement,
@@ -17,6 +16,7 @@ import {
   type HistoryPeriod,
   type HistoryStatusFilter,
 } from "@/lib/history-filter";
+import { txHref } from "@/lib/tx";
 import { cn } from "@/lib/cn";
 import type { Transaction } from "@/lib/types";
 
@@ -170,33 +170,27 @@ function Chip({
 }
 
 function HistoryRow({ tx }: { tx: Transaction }) {
-  const contact = contactFromTransaction(tx);
-  const body = (
-    <div className="flex items-center justify-between gap-3 rounded-2xl px-3 py-3">
-      <div className="min-w-0">
-        <p className="truncate font-bold">{tx.counterparty}</p>
-        <p className="text-xs text-muted">
-          {tx.kind.replace("_", " ")} · {formatDate(tx.createdAt)}
-          {tx.fee > 0 ? ` · fee ${formatXAF(tx.fee, { withCurrency: false })}` : ""}
-        </p>
-        <div className="mt-1">
-          <MethodDot method={tx.method} />
+  return (
+    <Link href={txHref(tx.id)} className="block rounded-2xl transition hover:bg-paper">
+      <div className="flex items-center justify-between gap-3 rounded-2xl px-3 py-3">
+        <div className="min-w-0">
+          <p className="truncate font-bold">{tx.counterparty}</p>
+          <p className="text-xs text-muted">
+            {tx.kind.replace("_", " ")} · {formatDate(tx.createdAt)}
+            {tx.fee > 0 ? ` · fee ${formatXAF(tx.fee, { withCurrency: false })}` : ""}
+          </p>
+          <div className="mt-1">
+            <MethodDot method={tx.method} />
+          </div>
+        </div>
+        <div className="ml-2 shrink-0 text-right">
+          <p className="font-mono text-sm font-black">
+            {isMoneyOut(tx.kind) ? "−" : "+"}
+            {formatXAF(tx.amount, { withCurrency: false })}
+          </p>
+          <StatusBadge status={tx.status} />
         </div>
       </div>
-      <div className="ml-2 shrink-0 text-right">
-        <p className="font-mono text-sm font-black">
-          {isMoneyOut(tx.kind) ? "−" : "+"}
-          {formatXAF(tx.amount, { withCurrency: false })}
-        </p>
-        <StatusBadge status={tx.status} />
-      </div>
-    </div>
-  );
-
-  if (!contact) return body;
-  return (
-    <Link href={contactSendHref(contact)} className="block rounded-2xl transition hover:bg-paper">
-      {body}
     </Link>
   );
 }
