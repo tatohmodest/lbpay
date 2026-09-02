@@ -438,7 +438,11 @@ export function CheckoutPay({
           </div>
         ) : null}
         {error ? <p className="mt-4 text-sm font-semibold text-danger">{error}</p> : null}
-        {!walletNeedsAccount ? (
+        {method === "wallet" && !sessionKnown ? (
+          <Button className="mt-6 w-full" disabled>
+            Checking wallet…
+          </Button>
+        ) : walletNeedsAccount ? null : (
           <Button
             className="mt-6 w-full"
             disabled={!ready || busy}
@@ -455,7 +459,7 @@ export function CheckoutPay({
             <Lock className="h-4 w-4" />
             {busy ? "Starting…" : value ? `Pay ${formatXAF(payAmount)}` : "Pay"}
           </Button>
-        ) : null}
+        )}
         <p className="mt-3 flex items-center justify-center gap-1 text-xs text-muted">
           <ShieldCheck className="h-3.5 w-3.5" /> Secured by LBPay
         </p>
