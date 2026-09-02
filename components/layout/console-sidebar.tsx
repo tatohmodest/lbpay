@@ -91,8 +91,8 @@ function SidebarLinks({
             className={cn(
               "flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-medium transition",
               active
-                ? "bg-brand text-white"
-                : "text-muted hover:bg-brand-soft hover:text-brand-deep",
+                ? "bg-ink text-white"
+                : "text-muted hover:bg-paper hover:text-ink",
             )}
           >
             <Icon className="h-4 w-4" />
