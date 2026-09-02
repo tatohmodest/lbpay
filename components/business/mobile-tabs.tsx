@@ -31,7 +31,7 @@ export function BusinessMobileTabs() {
               href={tab.href}
               className={cn(
                 "shrink-0 rounded-full px-3 py-1.5 text-xs font-bold transition",
-                active ? "bg-forest text-white" : "bg-white text-muted",
+                active ? "bg-graphite text-white" : "bg-white text-muted",
               )}
             >
               {tab.label}
