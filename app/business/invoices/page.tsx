@@ -34,10 +34,10 @@ export default function BusinessInvoicesPage() {
               <div key={link.id} className="flex items-center gap-3 rounded-2xl px-3 py-3">
                 {link.imageUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={link.imageUrl} alt="" className="h-11 w-11 rounded-2xl object-cover" />
+                  <img src={link.imageUrl} alt={link.title} className="h-14 w-14 rounded-2xl object-cover" />
                 ) : (
-                  <div className="grid h-11 w-11 place-items-center rounded-2xl bg-brand-soft text-[10px] font-bold text-brand-deep">
-                    Pay
+                  <div className="grid h-14 w-14 place-items-center rounded-2xl bg-brand-soft px-1 text-center text-[10px] font-bold leading-tight text-brand-deep">
+                    {link.title.slice(0, 8)}
                   </div>
                 )}
                 <div className="min-w-0 flex-1">

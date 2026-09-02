@@ -76,7 +76,19 @@ export function PaymentLinkForm({
       }}
     >
       <div className="grid gap-5 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] lg:items-start lg:gap-8">
-        <div className="flex min-w-0 flex-col gap-3.5">
+        <div className="min-w-0 lg:order-2 lg:sticky lg:top-8">
+          <p className="mb-1 text-sm font-semibold text-ink">Product preview</p>
+          <p className="mb-3 text-xs text-muted sm:text-sm">This is the photo customers see on the checkout.</p>
+          <ProductLinkFrame
+            size="default"
+            template={template}
+            title={title || "Your product"}
+            amount={amount ? Number(amount) : null}
+            merchantName={merchantName}
+            imageUrl={imageUrl}
+          />
+        </div>
+        <div className="flex min-w-0 flex-col gap-3.5 lg:order-1">
           <Field label="Product / service title">
             <Input value={title} onChange={(e) => setTitle(e.target.value)} required />
           </Field>
@@ -132,7 +144,7 @@ export function PaymentLinkForm({
                               item.id === "voucher" || item.id === "display" ? "text-white/80" : "text-brand-deep",
                             )}
                           >
-                            LBPay
+                            {title.trim() || "Product"}
                           </span>
                         </div>
                       )}
@@ -146,30 +158,6 @@ export function PaymentLinkForm({
               </div>
               <div className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-card to-transparent sm:hidden" />
             </div>
-          </div>
-        </div>
-        <div className="min-w-0 lg:sticky lg:top-8">
-          <p className="mb-1 text-sm font-semibold text-ink">Preview</p>
-          <p className="mb-3 hidden text-sm text-muted lg:block">This is the wrap customers see.</p>
-          <div className="lg:hidden">
-            <ProductLinkFrame
-              size="compact"
-              template={template}
-              title={title || "Your product"}
-              amount={amount ? Number(amount) : null}
-              merchantName={merchantName}
-              imageUrl={imageUrl}
-            />
-          </div>
-          <div className="hidden lg:block">
-            <ProductLinkFrame
-              size="default"
-              template={template}
-              title={title || "Your product"}
-              amount={amount ? Number(amount) : null}
-              merchantName={merchantName}
-              imageUrl={imageUrl}
-            />
           </div>
         </div>
       </div>

@@ -299,6 +299,7 @@ export function CheckoutPay({
       {slug ? (
         <div className="mb-4">
           <ProductLinkFrame
+            size="hero"
             template={template}
             title={title}
             amount={fixedAmount}

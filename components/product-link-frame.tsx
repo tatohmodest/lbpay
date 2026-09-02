@@ -40,21 +40,21 @@ export function ProductLinkFrame({
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={imageUrl}
-          alt=""
+          alt={name}
           className={cn(
             "w-full object-cover",
-            mini ? "h-24" : hero ? "h-[22rem] sm:h-[26rem] md:h-[28rem]" : "h-36 sm:h-48 lg:h-56",
+            mini ? "h-28" : hero ? "h-[18rem] sm:h-[22rem]" : "h-48 sm:h-56 lg:h-64",
           )}
         />
       ) : (
         <div
           className={cn(
-            "grid place-items-center bg-gradient-to-br from-brand-soft to-paper",
-            mini ? "h-24" : hero ? "h-64 sm:h-80" : "h-36 sm:h-48",
+            "grid place-items-center bg-gradient-to-br from-brand-soft to-paper px-4 text-center",
+            mini ? "h-28" : hero ? "h-56 sm:h-72" : "h-44 sm:h-52",
           )}
         >
-          <span className={cn("font-semibold text-brand-deep", mini ? "text-lg" : hero ? "text-4xl" : "text-3xl")}>
-            LBPay
+          <span className={cn("font-semibold text-brand-deep", mini ? "text-sm" : hero ? "text-2xl" : "text-xl")}>
+            {name}
           </span>
         </div>
       )}

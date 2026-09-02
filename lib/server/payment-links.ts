@@ -1,5 +1,6 @@
 import { slugify, uid } from "@/lib/format";
 import { cloudinaryPublicId, isOurCloudinaryUrl } from "@/lib/server/cloudinary";
+import { isSafeProductImageUrl } from "@/lib/product-image";
 import { DEFAULT_LINK_TEMPLATE, normalizeLinkTemplate, type LinkTemplateId } from "@/lib/link-templates";
 import type { StoredLink } from "@/lib/server/db";
 
@@ -41,7 +42,7 @@ export function parsePaymentLinkInput(body: Record<string, unknown>):
   }
 
   const imageUrl = String(body.imageUrl || "").trim();
-  if (imageUrl && !isOurCloudinaryUrl(imageUrl)) {
+  if (imageUrl && !isSafeProductImageUrl(imageUrl) && !isOurCloudinaryUrl(imageUrl)) {
     return { ok: false, error: "Upload the product photo from this page." };
   }
 
@@ -83,7 +84,7 @@ export function parsePaymentLinkPatch(body: Record<string, unknown>):
 
   if (body.imageUrl !== undefined) {
     const imageUrl = String(body.imageUrl || "").trim();
-    if (imageUrl && !isOurCloudinaryUrl(imageUrl)) {
+    if (imageUrl && !isSafeProductImageUrl(imageUrl) && !isOurCloudinaryUrl(imageUrl)) {
       return { ok: false, error: "Upload the product photo from this page." };
     }
     value.imageUrl = imageUrl || undefined;

@@ -62,7 +62,7 @@ export default function WalletLinksPage() {
       <BusinessPageHeader
         kicker="Checkout"
         title="Payment links"
-        copy="Create a checkout anyone can open and pay."
+        copy="Add a product photo. Customers see it on the checkout before they pay."
       />
       <section className="rounded-[2rem] bg-white p-4 shadow-[0_1px_2px_rgba(12,25,19,0.04)] md:p-6">
         <h2 className="text-base font-black md:text-lg">New product link</h2>

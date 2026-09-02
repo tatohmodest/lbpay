@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { formatXAF } from "@/lib/format";
 import { findLinkBySlug, findUserById } from "@/lib/server/db";
-import { SITE_OG_IMAGE } from "@/lib/site";
+import { SITE_OG_IMAGE, SITE_URL } from "@/lib/site";
+import { publicProductImageUrl } from "@/lib/product-image";
 import { PayLinkClient } from "./pay-client";
 
 type Props = { params: Promise<{ slug: string }> };
@@ -18,6 +19,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const amount = link.amount ? ` · ${formatXAF(link.amount)}` : "";
   const title = `${link.title}${amount}`;
   const description = `Pay ${merchant} on LBPay.`;
+  const productImage = publicProductImageUrl(link.imageUrl, SITE_URL);
+  const images = productImage
+    ? [{ url: productImage, alt: link.title }]
+    : [SITE_OG_IMAGE];
   return {
     title,
     description,
@@ -26,13 +31,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title,
       description,
       type: "website",
-      images: [SITE_OG_IMAGE],
+      images,
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
-      images: [SITE_OG_IMAGE.url],
+      images: [productImage || SITE_OG_IMAGE.url],
     },
   };
 }

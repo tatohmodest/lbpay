@@ -158,10 +158,10 @@ export default function BusinessPage() {
               >
                 {link.imageUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={link.imageUrl} alt="" className="h-10 w-10 rounded-xl object-cover" />
+                  <img src={link.imageUrl} alt={link.title} className="h-12 w-12 rounded-xl object-cover" />
                 ) : (
-                  <div className="grid h-10 w-10 place-items-center rounded-xl bg-[#f4ead2] text-[10px] font-bold text-[#8a691f]">
-                    Pay
+                  <div className="grid h-12 w-12 place-items-center rounded-xl bg-[#f4ead2] px-1 text-center text-[10px] font-bold leading-tight text-[#8a691f]">
+                    {link.title.slice(0, 8)}
                   </div>
                 )}
                 <div className="min-w-0 flex-1">

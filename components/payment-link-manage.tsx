@@ -149,22 +149,24 @@ export function PaymentLinkManageList({
               </div>
             ) : layout === "rows" ? (
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                <div className="flex min-w-0 items-center gap-3">
-                  <div className="w-24 shrink-0 sm:w-28">
+                <div className="h-44 w-full shrink-0 overflow-hidden rounded-2xl bg-paper sm:h-28 sm:w-36">
+                  {link.imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={link.imageUrl} alt={link.title} className="h-full w-full object-cover" />
+                  ) : (
                     <ProductLinkFrame
                       compact
                       template={link.template}
                       title={link.title}
                       amount={link.amount}
                       merchantName={merchantName}
-                      imageUrl={link.imageUrl}
                     />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-semibold">{link.title}</p>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-muted">{template.name}</p>
-                    <p className="truncate font-mono text-xs text-muted">{url}</p>
-                  </div>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-semibold">{link.title}</p>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted">{template.name}</p>
+                  <p className="truncate font-mono text-xs text-muted">{url}</p>
                 </div>
                 <div className="sm:ml-auto sm:text-right">
                   <p className="font-mono text-sm font-black">{link.amount ? formatXAF(link.amount) : "Open"}</p>

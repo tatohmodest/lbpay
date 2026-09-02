@@ -41,5 +41,6 @@ yarn-error.log*
 
 # local ledger
 /data/*.json
+/public/uploads
 next-env.d.ts
 tsconfig.tsbuildinfo

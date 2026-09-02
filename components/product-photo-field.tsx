@@ -56,9 +56,9 @@ export function ProductPhotoField({
         )}
         <span className="min-w-0 text-left">
           <span className="block text-sm font-semibold">
-            {busy ? "Compressing and uploading…" : url ? "Change photo" : "Add a photo"}
+            {busy ? "Compressing and uploading…" : url ? "Change photo" : "Add a product photo"}
           </span>
-          <span className="mt-0.5 block text-xs text-muted">Optional. Up to 10MB.</span>
+          <span className="mt-0.5 block text-xs text-muted">Shows on the checkout preview. Up to 10MB.</span>
         </span>
       </span>
       <input

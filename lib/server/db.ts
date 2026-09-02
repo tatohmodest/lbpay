@@ -7,6 +7,7 @@ import { handleBase, isReservedHandle, normalizeHandle, numberedHandle } from "@
 import { cameroonMsisdn } from "@/lib/phone";
 import { normalizeLinkTemplate } from "@/lib/link-templates";
 import { resolveAvatar } from "@/lib/avatar";
+import { isSafeProductImageUrl } from "@/lib/product-image";
 import { cloudinaryPublicId } from "@/lib/server/cloudinary";
 import { isDeletedLinkId, mergeById, mergePaymentLinks, uniqueIds } from "@/lib/server/ledger-merge";
 import { supabaseAdmin } from "@/lib/supabase/admin";
@@ -1112,7 +1113,7 @@ export async function findKeyBySecret(secret: string) {
 
 function normalizeStoredLink(link: StoredLink): StoredLink {
   const imageUrl = typeof link.imageUrl === "string" ? link.imageUrl.trim() : "";
-  const safeUrl = imageUrl.startsWith("https://") ? imageUrl : undefined;
+  const safeUrl = isSafeProductImageUrl(imageUrl) ? imageUrl : undefined;
   const imagePublicId =
     (typeof link.imagePublicId === "string" && link.imagePublicId.trim()) || cloudinaryPublicId(safeUrl) || undefined;
   return {
