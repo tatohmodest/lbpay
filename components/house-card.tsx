@@ -137,7 +137,7 @@ export function MetricCard({
         <Icon className="h-5 w-5" />
       </span>
       <p className="mt-4 text-sm text-muted sm:mt-6">{label}</p>
-      <p className="mt-2 truncate text-[1.65rem] font-black leading-none tracking-tight text-ink">{value}</p>
+      <p className="mt-2 text-[1.2rem] font-black leading-none tracking-tight text-ink sm:text-[1.65rem]">{value}</p>
       {hint ? <p className="mt-2 text-xs leading-5 text-muted">{hint}</p> : null}
       {status ? <p className="mt-auto pt-5 text-xs font-semibold text-brand">{status}</p> : <span className="mt-auto" />}
     </Link>
