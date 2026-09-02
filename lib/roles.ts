@@ -1,4 +1,5 @@
 import type { AccountKind, UserProfile } from "@/lib/types";
+import { DEFAULT_AVATAR } from "@/lib/avatar";
 
 export const PRODUCT_ROLES: AccountKind[] = ["personal", "business", "developer"];
 
@@ -58,7 +59,7 @@ export function emptyProfile(): UserProfile {
     lbpayId: "",
     email: "",
     phone: "",
-    avatar: "/illustrations/empty-wallet.webp",
+    avatar: DEFAULT_AVATAR,
     kycStatus: "unverified",
     roles: ["personal"],
     status: "active",

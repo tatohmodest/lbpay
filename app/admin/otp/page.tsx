@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Field, Input } from "@/components/ui/input";
 import { useNotify } from "@/lib/notify";
 
@@ -53,15 +52,19 @@ export default function AdminOtpPage() {
   }
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6">
-      <Logo href="/wallet" />
-      <h1 className="mt-10 text-3xl font-black">Admin verification</h1>
-      <p className="mt-2 text-sm text-muted">
-        Send a code to the admin email, then enter it here. Checking that inbox will not lock you out
-        with a PIN screen.
-      </p>
-      <Card className="mt-8 p-6">
-        <form className="flex flex-col gap-4" onSubmit={verify}>
+    <div className="min-h-screen bg-paper px-6 py-10">
+      <div className="mx-auto w-full max-w-md">
+        <Logo href="/wallet" />
+        <p className="mt-10 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">Admin</p>
+        <h1 className="mt-1 text-3xl font-black tracking-tight">Verification</h1>
+        <p className="mt-2 text-sm text-muted">
+          Send a code to the admin email, then enter it here. Checking that inbox will not lock you out with a PIN
+          screen.
+        </p>
+        <form
+          className="mt-6 space-y-4 rounded-[1.25rem] border border-line/80 bg-white p-5 shadow-[0_1px_2px_rgba(12,25,19,0.04)]"
+          onSubmit={verify}
+        >
           <Field label="6-digit code">
             <Input
               inputMode="numeric"
@@ -73,14 +76,14 @@ export default function AdminOtpPage() {
             />
           </Field>
           {error ? <p className="text-sm font-semibold text-danger">{error}</p> : null}
-          <Button type="submit" disabled={loading || otp.length !== 6}>
+          <Button type="submit" className="w-full" disabled={loading || otp.length !== 6}>
             Open admin
           </Button>
-          <Button type="button" variant="ghost" disabled={sending} onClick={() => void requestCode()}>
+          <Button type="button" variant="ghost" className="w-full" disabled={sending} onClick={() => void requestCode()}>
             {sending ? "Sending…" : "Send code to my email"}
           </Button>
         </form>
-      </Card>
+      </div>
     </div>
   );
 }

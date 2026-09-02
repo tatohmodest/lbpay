@@ -6,6 +6,7 @@ import { uid } from "@/lib/format";
 import { handleBase, isReservedHandle, normalizeHandle, numberedHandle } from "@/lib/handle";
 import { cameroonMsisdn } from "@/lib/phone";
 import { normalizeLinkTemplate } from "@/lib/link-templates";
+import { resolveAvatar } from "@/lib/avatar";
 import { cloudinaryPublicId } from "@/lib/server/cloudinary";
 import { isDeletedLinkId, mergeById, mergePaymentLinks, uniqueIds } from "@/lib/server/ledger-merge";
 import { supabaseAdmin } from "@/lib/supabase/admin";
@@ -246,6 +247,7 @@ function normalizeUser(user: StoredUser): StoredUser {
   return {
     ...user,
     phone: cameroonMsisdn(user.phone) || user.phone,
+    avatar: resolveAvatar(user.avatar),
     roles,
     status: user.status ?? "active",
     kyc,
@@ -1369,7 +1371,7 @@ export async function listPublicReviews(): Promise<PublicReview[]> {
       return {
         id: row.id,
         name: user.name,
-        avatar: user.avatar || "/illustrations/empty-wallet.webp",
+        avatar: resolveAvatar(user.avatar),
         rating: row.rating,
         body: row.body,
         createdAt: row.createdAt,

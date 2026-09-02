@@ -36,6 +36,19 @@ export type MeResponse = {
     counterparty: string;
     note?: string;
     createdAt: string;
+    railRef?: string;
+    rail?: string;
+    meta?: {
+      from?: string;
+      to?: string;
+      fromNetwork?: string;
+      toNetwork?: string;
+      stage?: string;
+      payoutRef?: string;
+      linkSlug?: string;
+      handle?: string;
+      refunded?: boolean;
+    };
   }>;
 };
 

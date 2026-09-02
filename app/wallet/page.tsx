@@ -23,8 +23,9 @@ import { useMe } from "@/lib/hooks/wallet";
 import { VerifyPrompt } from "@/components/verify-prompt";
 import { InviteSomeone } from "@/components/invite-someone";
 import { ContactsStrip } from "@/components/wallet-contacts";
-import { contactsFromTransactions, contactFromTransaction, contactSendHref } from "@/lib/contacts";
+import { contactsFromTransactions } from "@/lib/contacts";
 import { cn } from "@/lib/cn";
+import { txHref } from "@/lib/tx";
 import type { Transaction } from "@/lib/types";
 
 const tiles = [
@@ -172,9 +173,12 @@ export default function WalletPage() {
           {transactions.length === 0 ? (
             <p className="rounded-2xl bg-paper px-4 py-8 text-center text-sm text-muted">None</p>
           ) : (
-            transactions.slice(0, 6).map((tx) => {
-              const contact = contactFromTransaction(tx);
-              const row = (
+            transactions.slice(0, 6).map((tx) => (
+              <Link
+                key={tx.id}
+                href={txHref(tx.id)}
+                className="block rounded-2xl transition hover:bg-paper"
+              >
                 <div className="flex items-center justify-between rounded-2xl px-1.5 py-2.5">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-bold">{tx.counterparty}</p>
@@ -196,24 +200,8 @@ export default function WalletPage() {
                     <StatusBadge status={tx.status} />
                   </div>
                 </div>
-              );
-              if (!contact) {
-                return (
-                  <div key={tx.id} className="rounded-2xl">
-                    {row}
-                  </div>
-                );
-              }
-              return (
-                <Link
-                  key={tx.id}
-                  href={contactSendHref(contact)}
-                  className="block rounded-2xl transition hover:bg-paper"
-                >
-                  {row}
-                </Link>
-              );
-            })
+              </Link>
+            ))
           )}
         </div>
       </section>

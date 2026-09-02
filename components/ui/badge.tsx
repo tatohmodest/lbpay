@@ -13,7 +13,11 @@ export function StatusBadge({ status }: { status: TransactionStatus }) {
         status === "expired" && "bg-zinc-100 text-zinc-500",
       )}
     >
-      {status}
+        {status === "success" && "Paid"}
+        {status === "pending" && "Pending"}
+        {status === "failed" && "Failed"}
+        {status === "cancelled" && "Cancelled"}
+        {status === "expired" && "Expired"}
     </span>
   );
 }

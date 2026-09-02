@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { catchRoute } from "@/lib/server/api";
 import { findUserById, getWallet, listKeys, listLinks, listTx, publicUser } from "@/lib/server/db";
+import { publicTx } from "@/lib/tx";
 import { readAdminSession, readSession } from "@/lib/server/session";
 import { isAdmin } from "@/lib/roles";
 
@@ -19,7 +20,7 @@ export async function GET() {
       session: true,
       user: publicUser(user),
       balance: wallet.balance,
-      transactions,
+      transactions: transactions.map(publicTx),
       keys: keys.map((key) => ({
         id: key.id,
         env: key.env,

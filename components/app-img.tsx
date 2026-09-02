@@ -1,4 +1,4 @@
-const FALLBACK = "/illustrations/empty-wallet.webp";
+import { resolveAvatar } from "@/lib/avatar";
 
 export function AppImg({
   src,
@@ -13,7 +13,7 @@ export function AppImg({
   width?: number;
   height?: number;
 }) {
-  const value = (src || "").trim() || FALLBACK;
+  const value = resolveAvatar(src);
   return (
     // User photos and remote URLs must not go through next/image. A bad src throws and takes the whole page down.
     // eslint-disable-next-line @next/next/no-img-element

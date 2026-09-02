@@ -4,6 +4,8 @@ import { MethodDot, StatusBadge } from "@/components/ui/badge";
 import { BusinessPageHeader } from "@/components/business/page-header";
 import { formatDate, formatXAF } from "@/lib/format";
 import { useMe } from "@/lib/hooks/wallet";
+import { txHref } from "@/lib/tx";
+import Link from "next/link";
 import type { PaymentMethod, TransactionStatus } from "@/lib/types";
 
 export default function BusinessPaymentsPage() {
@@ -20,7 +22,11 @@ export default function BusinessPaymentsPage() {
           <p className="px-4 py-10 text-center text-sm text-muted">None</p>
         ) : (
           payments.map((tx) => (
-            <div key={tx.id} className="flex items-center justify-between gap-3 rounded-2xl px-3 py-3">
+            <Link
+              key={tx.id}
+              href={txHref(tx.id)}
+              className="flex items-center justify-between gap-3 rounded-2xl px-3 py-3 transition hover:bg-paper"
+            >
               <div className="min-w-0">
                 <p className="truncate font-bold">{tx.counterparty}</p>
                 <p className="text-xs text-muted">{formatDate(tx.createdAt)}</p>
@@ -30,7 +36,7 @@ export default function BusinessPaymentsPage() {
                 <p className="font-mono text-sm font-black">{formatXAF(tx.amount, { withCurrency: false })}</p>
                 <StatusBadge status={tx.status as TransactionStatus} />
               </div>
-            </div>
+            </Link>
           ))
         )}
       </div>

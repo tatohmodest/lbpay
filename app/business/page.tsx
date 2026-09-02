@@ -10,6 +10,7 @@ import { firstName, formatDate, formatXAF } from "@/lib/format";
 import { useMe } from "@/lib/hooks/wallet";
 import { useQuery } from "@tanstack/react-query";
 import { payLinkPath } from "@/lib/origin";
+import { txHref } from "@/lib/tx";
 
 const tiles = [
   { href: "/business/links", label: "Link", copy: "New checkout", icon: Link2, wrap: "bg-brand-soft text-brand-deep" },
@@ -193,7 +194,11 @@ export default function BusinessPage() {
         ) : (
           <div className="mt-2 space-y-0.5">
             {collections.slice(0, 6).map((tx) => (
-              <div key={tx.id} className="flex items-center justify-between gap-3 rounded-2xl px-1.5 py-2.5">
+              <Link
+                key={tx.id}
+                href={txHref(tx.id)}
+                className="flex items-center justify-between gap-3 rounded-2xl px-1.5 py-2.5 transition hover:bg-paper"
+              >
                 <div className="flex min-w-0 items-center gap-3">
                   <Initial name={tx.counterparty} />
                   <div className="min-w-0">
@@ -207,7 +212,7 @@ export default function BusinessPage() {
                   </p>
                   <StatusBadge status={tx.status} />
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         )}
