@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Link2, QrCode, Receipt, Users } from "lucide-react";
 import { StatusBadge } from "@/components/ui/badge";
 import { AppImg } from "@/components/app-img";
-import { HouseCard } from "@/components/business/house-card";
+import { HouseCard } from "@/components/house-card";
 import { firstName, formatDate, formatXAF } from "@/lib/format";
 import { useMe } from "@/lib/hooks/wallet";
 import { useQuery } from "@tanstack/react-query";
@@ -12,14 +12,14 @@ import { payLinkPath } from "@/lib/origin";
 import { cn } from "@/lib/cn";
 
 const actions = [
-  { href: "/business/links", label: "Link", copy: "New checkout", icon: Link2, tone: "sand" },
+  { href: "/business/links", label: "Link", copy: "New checkout", icon: Link2, tone: "leaf" },
   { href: "/business/qr", label: "QR", copy: "Scan to pay", icon: QrCode, tone: "mist" },
   { href: "/business/payments", label: "Sales", copy: "Collections", icon: Receipt, tone: "lilac" },
   { href: "/business/customers", label: "People", copy: "Who paid", icon: Users, tone: "blush" },
 ] as const;
 
 const tones: Record<(typeof actions)[number]["tone"], string> = {
-  sand: "bg-[#f4ead2] text-[#8a691f]",
+  leaf: "bg-brand-soft text-brand-deep",
   mist: "bg-[#e4eef8] text-[#3a5f86]",
   lilac: "bg-[#ece6f8] text-[#5b4a8a]",
   blush: "bg-[#f8e6e6] text-[#8a4545]",
@@ -178,7 +178,7 @@ export default function BusinessPage() {
                   </div>
                 </div>
                 <div className="shrink-0 text-right">
-                  <p className="font-mono text-sm font-black text-[#7a5b1e]">
+                  <p className="font-mono text-sm font-black text-brand-deep">
                     +{formatXAF(tx.amount, { withCurrency: false })}
                   </p>
                   <StatusBadge status={tx.status} />
