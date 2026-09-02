@@ -135,22 +135,23 @@ function Contactless() {
 }
 
 function Sparkline({ points }: { points: number[] }) {
-  const vals = points.length >= 2 ? points : [3, 5, 4, 8, 6, 10, 9];
+  const vals = points.length >= 4 ? points : [3, 5, 4, 8, 6, 11, 9, 13];
   const max = Math.max(...vals);
   const min = Math.min(...vals);
-  const w = 84;
-  const h = 34;
-  const path = vals
-    .map((value, index) => {
-      const x = (index / Math.max(vals.length - 1, 1)) * w;
-      const y = h - 3 - ((value - min) / (max - min || 1)) * (h - 6);
-      return `${index === 0 ? "M" : "L"}${x.toFixed(1)} ${y.toFixed(1)}`;
-    })
-    .join(" ");
+  const w = 88;
+  const h = 36;
+  const coords = vals.map((value, index) => {
+    const x = (index / Math.max(vals.length - 1, 1)) * w;
+    const y = h - 4 - ((value - min) / (max - min || 1)) * (h - 8);
+    return [x, y] as const;
+  });
+  const line = coords.map(([x, y], index) => `${index === 0 ? "M" : "L"}${x.toFixed(1)} ${y.toFixed(1)}`).join(" ");
+  const area = `${line} L${w} ${h} L0 ${h} Z`;
 
   return (
-    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} className="shrink-0 opacity-90" aria-hidden>
-      <path d={path} fill="none" stroke="rgba(201,164,92,0.9)" strokeWidth="1.7" strokeLinecap="round" />
+    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} className="shrink-0" aria-hidden>
+      <path d={area} fill="rgba(201,164,92,0.16)" />
+      <path d={line} fill="none" stroke="rgba(232,201,122,0.95)" strokeWidth="1.8" strokeLinecap="round" />
     </svg>
   );
 }
