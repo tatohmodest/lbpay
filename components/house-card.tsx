@@ -59,7 +59,7 @@ export function HouseCard({
             <CardChip paintId={chipId} />
             <Contactless />
           </div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-gold/90">LBPay</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-brand">LBPay</p>
         </div>
 
         <div className="mt-6 flex items-end justify-between gap-3">
@@ -77,7 +77,7 @@ export function HouseCard({
             </div>
             <p className="mt-1.5 font-mono text-[2rem] font-black leading-none tracking-tight sm:text-[2.35rem]">
               {shown}
-              {hidden ? null : <span className="ml-1.5 text-sm font-semibold tracking-normal text-gold/80">XAF</span>}
+              {hidden ? null : <span className="ml-1.5 text-sm font-semibold tracking-normal text-brand">XAF</span>}
             </p>
           </div>
           <Sparkline points={series || []} />
@@ -90,7 +90,7 @@ export function HouseCard({
           </div>
           <div className="text-right">
             <p className="text-[10px] uppercase tracking-[0.16em] text-white/35">Pay ID</p>
-            <p className="font-mono text-sm tracking-[0.18em] text-gold/90">
+            <p className="font-mono text-sm tracking-[0.18em] text-brand">
               {handle ? `@${handle.replace(/^@/, "")}` : "LBPAY"}
             </p>
           </div>
@@ -105,15 +105,15 @@ function CardChip({ paintId }: { paintId: string }) {
     <svg width="36" height="26" viewBox="0 0 36 26" aria-hidden className="shrink-0">
       <defs>
         <linearGradient id={paintId} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#f3e2b0" />
-          <stop offset="0.5" stopColor="#c9a45c" />
-          <stop offset="1" stopColor="#8d6b2e" />
+          <stop offset="0" stopColor="#8ef0c0" />
+          <stop offset="0.45" stopColor="#00b369" />
+          <stop offset="1" stopColor="#007a47" />
         </linearGradient>
       </defs>
       <rect width="36" height="26" rx="5" fill={`url(#${paintId})`} />
       <path
         d="M0 13h36M18 0v26M8 6.5h6.5M21.5 6.5H28M8 19.5h6.5M21.5 19.5H28"
-        stroke="rgba(70,42,8,0.28)"
+        stroke="rgba(6,38,28,0.28)"
         strokeWidth="1"
       />
     </svg>
@@ -122,7 +122,7 @@ function CardChip({ paintId }: { paintId: string }) {
 
 function Contactless() {
   return (
-    <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden className="text-gold/80">
+    <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden className="text-brand">
       <path
         d="M7 5.2c1.6 1.3 1.6 6.3 0 7.6M9.6 3.6c2.3 1.9 2.3 8.9 0 10.8M12.2 2c3 2.5 3 11.5 0 14"
         fill="none"
@@ -150,8 +150,8 @@ function Sparkline({ points }: { points: number[] }) {
 
   return (
     <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} className="shrink-0" aria-hidden>
-      <path d={area} fill="rgba(201,164,92,0.16)" />
-      <path d={line} fill="none" stroke="rgba(232,201,122,0.95)" strokeWidth="1.8" strokeLinecap="round" />
+      <path d={area} fill="rgba(0,179,105,0.2)" />
+      <path d={line} fill="none" stroke="#00b369" strokeWidth="1.8" strokeLinecap="round" />
     </svg>
   );
 }

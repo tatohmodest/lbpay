@@ -1,7 +1,7 @@
 "use client";
 
 import { BusinessPageHeader } from "@/components/business/page-header";
-import { HouseCard } from "@/components/business/house-card";
+import { HouseCard } from "@/components/house-card";
 import { LEGAL_NOTE } from "@/lib/flags";
 import { useMe } from "@/lib/hooks/wallet";
 

@@ -14,42 +14,31 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/badge";
-import { formatDate, formatXAF, isMoneyOut } from "@/lib/format";
+import { AppImg } from "@/components/app-img";
+import { HouseCard } from "@/components/house-card";
+import { firstName, formatDate, formatXAF, isMoneyOut } from "@/lib/format";
 import { useApp } from "@/lib/store";
 import { useMe } from "@/lib/hooks/wallet";
 import { VerifyPrompt } from "@/components/verify-prompt";
-import { CopyHandle } from "@/components/copy-handle";
 import { InviteSomeone } from "@/components/invite-someone";
 import { ContactsStrip } from "@/components/wallet-contacts";
 import { contactsFromTransactions, contactFromTransaction, contactSendHref } from "@/lib/contacts";
+import { cn } from "@/lib/cn";
 import type { Transaction } from "@/lib/types";
 
 const actions = [
-  {
-    href: "/wallet/quick",
-    label: "Quick Transfer",
-    copy: "Any Mobile Money network",
-    icon: Zap,
-  },
-  {
-    href: "/wallet/send",
-    label: "Send",
-    copy: "A friend, a shop, a number",
-    icon: Send,
-  },
-  {
-    href: "/wallet/request",
-    label: "Receive",
-    copy: "Share a link and get paid",
-    icon: WalletCards,
-  },
-  {
-    href: "/wallet/qr",
-    label: "My QR",
-    copy: "Let anyone scan and pay you",
-    icon: QrCode,
-  },
-];
+  { href: "/wallet/quick", label: "Quick", copy: "Any network", icon: Zap, tone: "leaf" },
+  { href: "/wallet/send", label: "Send", copy: "A friend", icon: Send, tone: "mist" },
+  { href: "/wallet/request", label: "Receive", copy: "Get paid", icon: WalletCards, tone: "sand" },
+  { href: "/wallet/qr", label: "QR", copy: "Scan me", icon: QrCode, tone: "lilac" },
+] as const;
+
+const tones: Record<(typeof actions)[number]["tone"], string> = {
+  leaf: "bg-brand-soft text-brand-deep",
+  mist: "bg-[#e4eef8] text-[#3a5f86]",
+  sand: "bg-[#f4ead2] text-[#8a691f]",
+  lilac: "bg-[#ece6f8] text-[#5b4a8a]",
+};
 
 const extras = [
   { href: "/wallet/airtime", label: "Airtime", copy: "Coming soon", icon: Phone },
@@ -64,6 +53,15 @@ export default function WalletPage() {
   const contacts = contactsFromTransactions(transactions);
   const frozen = (me.data?.user?.status || state.user.status) === "frozen";
   const personalKyc = me.data?.user?.kyc?.personal || "unverified";
+  const user = me.data?.user;
+  const person = firstName(user?.name || state.user.name) || "there";
+  const holder = user?.name || state.user.name || "LBPay";
+  const handle = user?.lbpayId || state.user.lbpayId;
+  const series = transactions
+    .filter((tx) => tx.status === "success")
+    .slice(0, 8)
+    .map((tx) => tx.amount)
+    .reverse();
 
   return (
     <div className="mx-auto max-w-lg space-y-5 lg:mx-0 lg:grid lg:max-w-none lg:grid-cols-12 lg:gap-6 lg:space-y-0">
@@ -77,61 +75,56 @@ export default function WalletPage() {
       </div>
 
       <div className="space-y-5 lg:col-span-8">
-        <section className="relative overflow-hidden rounded-[2rem] bg-forest p-6 text-white shadow-[0_24px_80px_rgba(6,38,28,0.18)]">
-          <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-brand/25 blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-20 left-10 h-40 w-40 rounded-full bg-white/5 blur-3xl" />
-          <div className="relative z-10 flex items-start justify-between gap-3">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand">Wallet</p>
-              <h1 className="mt-3 font-mono text-4xl font-black tracking-tight md:text-5xl">
-                {formatXAF(balance, { withCurrency: false })}{" "}
-                <span className="text-2xl font-bold text-white/70">XAF</span>
-              </h1>
-            </div>
-            <CopyHandle
-              handle={me.data?.user?.lbpayId || state.user.lbpayId}
-              className="rounded-full bg-white/10 px-3 py-1.5 text-sm text-white hover:bg-white/15"
-            />
+        <header className="flex items-center gap-3">
+          <AppImg
+            src={user?.avatar || state.user.avatar}
+            alt=""
+            className="h-12 w-12 rounded-full object-cover ring-2 ring-white shadow-[0_8px_20px_rgba(12,25,19,0.08)]"
+          />
+          <div className="min-w-0">
+            <p className="text-lg font-black tracking-tight text-ink">Hello, {person}</p>
+            <p className="truncate text-sm text-muted">{handle ? `@${handle.replace(/^@/, "")}` : "Your wallet"}</p>
           </div>
-          <div className="relative z-10 mt-8 grid grid-cols-2 gap-3">
-            <Link href="/wallet/deposit">
-              <Button className="h-12 w-full rounded-full bg-white text-brand hover:bg-brand-soft">
-                <ArrowDownLeft className="h-4 w-4" /> Deposit
-              </Button>
+        </header>
+
+        <HouseCard label="Available" amount={balance} holder={holder} handle={handle} series={series} />
+
+        <div className="grid grid-cols-2 gap-2">
+          <Link href="/wallet/deposit">
+            <Button className="h-11 w-full rounded-full">
+              <ArrowDownLeft className="h-4 w-4" /> Deposit
+            </Button>
+          </Link>
+          <Link href="/wallet/withdraw">
+            <Button className="h-11 w-full rounded-full" variant="secondary">
+              <ArrowUpRight className="h-4 w-4" /> Withdraw
+            </Button>
+          </Link>
+        </div>
+
+        <section className="grid grid-cols-4 gap-2">
+          {actions.map((action) => (
+            <Link
+              key={action.href}
+              href={action.href}
+              className="flex flex-col items-center gap-2 rounded-[1.25rem] bg-white px-1.5 py-3 shadow-[0_1px_2px_rgba(12,25,19,0.04)] transition hover:bg-[#faf8f4]"
+            >
+              <span className={cn("grid h-10 w-10 place-items-center rounded-2xl", tones[action.tone])}>
+                <action.icon className="h-4 w-4" />
+              </span>
+              <span className="text-center">
+                <span className="block text-[12px] font-bold text-ink">{action.label}</span>
+                <span className="mt-0.5 block text-[10px] leading-3 text-muted">{action.copy}</span>
+              </span>
             </Link>
-            <Link href="/wallet/withdraw">
-              <Button className="h-12 w-full rounded-full border-0 bg-white/10 text-white hover:bg-white/15">
-                <ArrowUpRight className="h-4 w-4" /> Withdraw
-              </Button>
-            </Link>
-          </div>
+          ))}
         </section>
 
-        <section className="rounded-[2rem] bg-white p-2 shadow-[0_1px_2px_rgba(12,25,19,0.04)]">
-          <div className="grid grid-cols-2 gap-1">
-            {actions.map((action) => (
-              <Link
-                key={action.href}
-                href={action.href}
-                className="flex flex-col gap-3 rounded-[1.5rem] p-4 transition hover:bg-paper"
-              >
-                <span className="grid h-11 w-11 place-items-center rounded-2xl bg-brand-soft text-brand">
-                  <action.icon className="h-5 w-5" />
-                </span>
-                <span>
-                  <span className="block text-sm font-bold text-ink">{action.label}</span>
-                  <span className="mt-0.5 block text-xs leading-5 text-muted">{action.copy}</span>
-                </span>
-              </Link>
-            ))}
-          </div>
-        </section>
-
-        <section className="rounded-[2rem] bg-white p-5 shadow-[0_1px_2px_rgba(12,25,19,0.04)]">
+        <section className="rounded-[1.5rem] bg-white p-4 shadow-[0_1px_2px_rgba(12,25,19,0.04)]">
           <div className="mb-1 flex items-center justify-between">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand">People</p>
-              <h2 className="mt-1 text-lg font-black">Contacts</h2>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">People</p>
+              <h2 className="mt-1 text-base font-black">Contacts</h2>
             </div>
             {contacts.length ? (
               <Link href="/wallet/contacts" className="text-sm font-bold text-brand">
@@ -142,11 +135,11 @@ export default function WalletPage() {
           <ContactsStrip contacts={contacts.slice(0, 8)} />
         </section>
 
-        <section className="rounded-[2rem] bg-white p-5 shadow-[0_1px_2px_rgba(12,25,19,0.04)]">
+        <section className="rounded-[1.5rem] bg-white p-4 shadow-[0_1px_2px_rgba(12,25,19,0.04)]">
           <div className="mb-1 flex items-center justify-between">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand">Activity</p>
-              <h2 className="mt-1 text-lg font-black">History</h2>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">Activity</p>
+              <h2 className="mt-1 text-base font-black">History</h2>
             </div>
             {transactions.length ? (
               <Link href="/wallet/history" className="text-sm font-bold text-brand">
@@ -154,23 +147,28 @@ export default function WalletPage() {
               </Link>
             ) : null}
           </div>
-          <div className="mt-3 space-y-1">
+          <div className="mt-2 space-y-0.5">
             {transactions.length === 0 ? (
               <p className="rounded-2xl bg-paper px-4 py-8 text-center text-sm text-muted">None</p>
             ) : (
               transactions.slice(0, 5).map((tx) => {
                 const contact = contactFromTransaction(tx);
                 const row = (
-                  <div className="flex items-center justify-between rounded-2xl px-3 py-3">
+                  <div className="flex items-center justify-between rounded-2xl px-1.5 py-2.5">
                     <div className="min-w-0">
-                      <p className="truncate font-bold">{tx.counterparty}</p>
+                      <p className="truncate text-sm font-bold">{tx.counterparty}</p>
                       <p className="text-xs text-muted">
                         {tx.kind.replace("_", " ")} · {formatDate(tx.createdAt)}
                         {tx.fee > 0 ? ` · fee ${formatXAF(tx.fee, { withCurrency: false })}` : ""}
                       </p>
                     </div>
                     <div className="ml-3 text-right">
-                      <p className="font-mono text-sm font-black">
+                      <p
+                        className={cn(
+                          "font-mono text-sm font-black",
+                          isMoneyOut(tx.kind) ? "text-ink" : "text-brand-deep",
+                        )}
+                      >
                         {isMoneyOut(tx.kind) ? "−" : "+"}
                         {formatXAF(tx.amount, { withCurrency: false })}
                       </p>
@@ -201,14 +199,14 @@ export default function WalletPage() {
 
         <InviteSomeone />
 
-        <section className="overflow-hidden rounded-[2rem] bg-white shadow-[0_1px_2px_rgba(12,25,19,0.04)]">
+        <section className="overflow-hidden rounded-[1.5rem] bg-white shadow-[0_1px_2px_rgba(12,25,19,0.04)]">
           {extras.map((item) => (
             <Link
               key={item.href}
               href={item.href}
               className="flex items-center gap-3 px-4 py-3.5 transition hover:bg-paper"
             >
-              <span className="grid h-11 w-11 place-items-center rounded-2xl bg-paper text-brand">
+              <span className="grid h-10 w-10 place-items-center rounded-2xl bg-paper text-brand">
                 <item.icon className="h-4 w-4" />
               </span>
               <span className="min-w-0">
@@ -221,7 +219,7 @@ export default function WalletPage() {
       </div>
 
       <div className="space-y-5 lg:col-span-4">
-        <section className="rounded-[2rem] bg-white p-6 shadow-[0_1px_2px_rgba(12,25,19,0.04)]">
+        <section className="rounded-[1.5rem] bg-white p-6 shadow-[0_1px_2px_rgba(12,25,19,0.04)]">
           <p className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-brand">
             <Zap className="h-3.5 w-3.5" /> Fast transfer
           </p>
@@ -237,7 +235,7 @@ export default function WalletPage() {
           </Link>
         </section>
 
-        <section className="overflow-hidden rounded-[2rem] bg-white shadow-[0_1px_2px_rgba(12,25,19,0.04)]">
+        <section className="overflow-hidden rounded-[1.5rem] bg-white shadow-[0_1px_2px_rgba(12,25,19,0.04)]">
           <Image
             src="/illustrations/cross-network.webp"
             alt="MTN to Orange"
