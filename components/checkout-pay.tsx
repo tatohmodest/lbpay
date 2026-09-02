@@ -93,7 +93,6 @@ export function CheckoutPay({
   const me = useMe();
   const search = useSearchParams();
   const signedIn = Boolean(me.data?.session);
-  const sessionKnown = me.isFetched;
   const [method, setMethod] = useState<Method>("wallet");
   const [phone, setPhone] = useState("");
   const [amount, setAmount] = useState(fixedAmount ? String(fixedAmount) : "");
@@ -112,13 +111,12 @@ export function CheckoutPay({
   const payAmount = value + fee;
   const amountKind = method === "wallet" ? "wallet" : "deposit";
   const ussdCode = method === "orange" ? "#150#" : "*126#";
-  const walletNeedsAccount = method === "wallet" && sessionKnown && !signedIn;
+  const walletNeedsAccount = method === "wallet" && !signedIn;
   const ready =
     !amountIssue(value, amountKind) &&
     value > 0 &&
     (method === "wallet" || isCameroonMsisdn(clean)) &&
-    !walletNeedsAccount &&
-    (method !== "wallet" || sessionKnown);
+    !walletNeedsAccount;
 
   const startedTx = useRef("");
   const verifyLock = useRef(false);
@@ -438,11 +436,7 @@ export function CheckoutPay({
           </div>
         ) : null}
         {error ? <p className="mt-4 text-sm font-semibold text-danger">{error}</p> : null}
-        {method === "wallet" && !sessionKnown ? (
-          <Button className="mt-6 w-full" disabled>
-            Checking wallet…
-          </Button>
-        ) : walletNeedsAccount ? null : (
+        {walletNeedsAccount ? null : (
           <Button
             className="mt-6 w-full"
             disabled={!ready || busy}
