@@ -16,6 +16,7 @@ import { cameroonMsisdn } from "@/lib/phone";
 import { secondsLeft, useNow } from "@/lib/use-now";
 import { normalizeHandle } from "@/lib/handle";
 import { slugify } from "@/lib/format";
+import { consumeAuthNext } from "@/lib/auth-next";
 
 export function AuthForm({
   mode,
@@ -59,7 +60,7 @@ export function AuthForm({
     login();
     unlockPin();
     notify.success("You're in", "Welcome back to LBPay.");
-    router.push("/wallet");
+    router.push(consumeAuthNext("/wallet"));
   }
 
   async function submitSignup(chosenId?: string) {

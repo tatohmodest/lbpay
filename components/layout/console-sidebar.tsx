@@ -8,6 +8,7 @@ import { cn } from "@/lib/cn";
 import { Logo } from "@/components/logo";
 import { RightDrawer } from "@/components/ui/right-drawer";
 import { NotificationsButton } from "@/components/notifications-button";
+import { ChatWithUsButton } from "@/components/chat-with-us-button";
 import { useMe } from "@/lib/hooks/wallet";
 import { productUnlocked } from "@/lib/roles";
 
@@ -130,7 +131,10 @@ export function ConsoleSidebar({
             <p className="mt-3 text-sm font-semibold text-ink">{title}</p>
             <p className="text-xs text-muted">{subtitle}</p>
           </div>
-          <NotificationsButton className="mt-1" />
+          <div className="flex items-center gap-1">
+            <ChatWithUsButton className="mt-1" />
+            <NotificationsButton className="mt-1" />
+          </div>
         </div>
         {cta ? (
           <Link

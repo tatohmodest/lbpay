@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { catchRoute } from "@/lib/server/api";
 import { findUserById, getWallet, listKeys, listLinks, listTx, publicUser } from "@/lib/server/db";
+import { supportUnreadForUser } from "@/lib/server/support";
 import { publicTx } from "@/lib/tx";
 import { readAdminSession, readSession } from "@/lib/server/session";
 import { isAdmin } from "@/lib/roles";
@@ -16,6 +17,7 @@ export async function GET() {
     const keys = await listKeys(user.id);
     const links = await listLinks(user.id);
     const adminStep = isAdmin(user) ? Boolean((await readAdminSession())?.userId === user.id) : false;
+    const supportUnread = await supportUnreadForUser(user.id);
     return NextResponse.json({
       session: true,
       user: publicUser(user),
@@ -30,6 +32,7 @@ export async function GET() {
       })),
       links,
       adminStep,
+      supportUnread,
     });
   } catch (error) {
     return catchRoute("me", error);

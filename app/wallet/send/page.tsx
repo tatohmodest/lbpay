@@ -78,6 +78,7 @@ function SendInner() {
       ? [
           { label: "To", value: `@${lookup.data?.user?.lbpayId || to.replace(/^@/, "")}` },
           { label: "They receive", value: formatXAF(value) },
+          { label: "Charge", value: "No fee" },
         ]
       : [
           { label: "Network", value: network === "orange" ? "Orange" : "MTN" },
@@ -152,6 +153,9 @@ function SendInner() {
                     <NetworkMark network={item.id} className="mx-auto mb-1 h-9 w-9 rounded-xl text-[9px]" />
                   )}
                   {item.label}
+                  <span className={`mt-1 block text-[10px] ${item.id === "wallet" ? "font-semibold text-brand" : "font-medium text-muted"}`}>
+                    {item.id === "wallet" ? "No fee" : "Charge 3%"}
+                  </span>
                 </button>
               ))}
             </div>

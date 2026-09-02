@@ -7,6 +7,7 @@ import { Code2, Download, History, Menu, Shield, Store, UserRound, Users, Wallet
 import { Logo } from "@/components/logo";
 import { RightDrawer } from "@/components/ui/right-drawer";
 import { NotificationsButton } from "@/components/notifications-button";
+import { ChatWithUsButton } from "@/components/chat-with-us-button";
 import { useApp } from "@/lib/store";
 import { useMe } from "@/lib/hooks/wallet";
 import { cn } from "@/lib/cn";
@@ -87,6 +88,7 @@ export function AppHeader({ onOpenMenu }: { onOpenMenu?: () => void }) {
               <Download className="h-5 w-5" />
             </button>
           ) : null}
+          <ChatWithUsButton />
           <NotificationsButton />
           <Link
             href="/wallet/profile"
@@ -218,8 +220,16 @@ function isBottomNavActive(href: string, pathname: string) {
   if (href === "/wallet") {
     if (pathname === "/wallet") return true;
     if (!pathname.startsWith("/wallet/")) return false;
-    return !["/wallet/contacts", "/wallet/history", "/wallet/profile"].some(
+    return !["/wallet/contacts", "/wallet/history", "/wallet/profile", "/wallet/support"].some(
       (tab) => pathname === tab || pathname.startsWith(`${tab}/`),
+    );
+  }
+  if (href === "/wallet/profile") {
+    return (
+      pathname === href ||
+      pathname.startsWith(`${href}/`) ||
+      pathname === "/wallet/support" ||
+      pathname.startsWith("/wallet/support/")
     );
   }
   return pathname === href || pathname.startsWith(`${href}/`);

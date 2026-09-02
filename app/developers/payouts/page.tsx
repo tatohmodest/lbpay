@@ -7,52 +7,89 @@ import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/badge";
 import { ConfirmSheet } from "@/components/confirm-sheet";
 import { formatDate, formatXAF } from "@/lib/format";
-import { useDisburse, useMe } from "@/lib/hooks/wallet";
+import { useDisburse, useMe, useTransfer } from "@/lib/hooks/wallet";
 import { useNotify } from "@/lib/notify";
 import { NetworkMark } from "@/components/network-mark";
 import { cameroonMsisdn, isCameroonMsisdn } from "@/lib/phone";
-import { FEE_RATES, feePercentLabel, momoOutFee } from "@/lib/fees";
+import { feePercentLabel, FEE_RATES } from "@/lib/fees";
 import { AmountField } from "@/components/amount-field";
 import { amountIssue } from "@/lib/limits";
+import {
+  PAYOUT_DESTINATIONS,
+  payoutDestinationFee,
+  payoutFeeBadge,
+  type PayoutDestinationId,
+} from "@/lib/checkout-methods";
+import { normalizeHandle } from "@/lib/handle";
+import { cn } from "@/lib/cn";
 
 export default function PayoutsPage() {
   const me = useMe();
   const notify = useNotify();
   const disburse = useDisburse();
+  const transfer = useTransfer();
   const [amount, setAmount] = useState("");
   const [phone, setPhone] = useState("");
-  const [network, setNetwork] = useState<"mtn" | "orange">("mtn");
+  const [handle, setHandle] = useState("");
+  const [destination, setDestination] = useState<PayoutDestinationId>("wallet");
   const [open, setOpen] = useState(false);
   const [pinError, setPinError] = useState("");
 
   const value = Number(amount) || 0;
   const clean = cameroonMsisdn(phone);
-  const fee = momoOutFee(value);
+  const payId = normalizeHandle(handle);
+  const fee = payoutDestinationFee(value, destination);
   const debit = value + fee;
   const balance = me.data?.balance ?? 0;
-  const ready = !amountIssue(value, "withdraw") && value > 0 && debit <= balance && isCameroonMsisdn(clean);
+  const walletReady = destination === "wallet" && !amountIssue(value, "wallet") && value > 0 && debit <= balance && Boolean(payId);
+  const momoReady =
+    destination !== "wallet" &&
+    !amountIssue(value, "withdraw") &&
+    value > 0 &&
+    debit <= balance &&
+    isCameroonMsisdn(clean);
+  const ready = walletReady || momoReady;
   const payouts = (me.data?.transactions || []).filter(
-    (tx) => tx.kind === "withdraw" || tx.kind === "payout",
+    (tx) => tx.kind === "withdraw" || tx.kind === "payout" || tx.note === "Developer payout",
   );
-
-  const details = [
-    { label: "To", value: `${network === "orange" ? "Orange" : "MTN"} ${clean}` },
-    { label: "They receive", value: formatXAF(value) },
-    ...(fee ? [{ label: "Charge", value: formatXAF(fee) }] : []),
-    { label: "You pay", value: formatXAF(debit) },
-  ];
+  const busy = disburse.isPending || transfer.isPending;
+  const details =
+    destination === "wallet"
+      ? [
+          { label: "To", value: `@${payId}` },
+          { label: "They receive", value: formatXAF(value) },
+          { label: "Charge", value: "No fee" },
+        ]
+      : [
+          { label: "To", value: `${destination === "orange" ? "Orange" : "MTN"} ${clean}` },
+          { label: "They receive", value: formatXAF(value) },
+          ...(fee ? [{ label: "Charge", value: formatXAF(fee) }] : []),
+          { label: "You pay", value: formatXAF(debit) },
+        ];
 
   async function confirm(pin: string) {
     setPinError("");
     try {
-      await disburse.mutateAsync({ amount: value, phone: clean, network, pin, note: "Developer payout" });
-      notify.moneyOut(debit, `Payout queued to ${clean}`);
+      if (destination === "wallet") {
+        await transfer.mutateAsync({ amount: value, to: payId, pin, note: "Developer payout" });
+        notify.moneyOut(value, `Paid @${payId}`);
+      } else {
+        await disburse.mutateAsync({
+          amount: value,
+          phone: clean,
+          network: destination,
+          pin,
+          note: "Developer payout",
+        });
+        notify.moneyOut(debit, `Payout queued to ${clean}`);
+      }
       setOpen(false);
       setAmount("");
       setPhone("");
+      setHandle("");
     } catch (err) {
       setPinError(err instanceof Error ? err.message : "Payout failed");
-      notify.error("Payout failed", err instanceof Error ? err.message : "Could not disburse");
+      notify.error("Payout failed", err instanceof Error ? err.message : "Could not send");
     }
   }
 
@@ -60,7 +97,9 @@ export default function PayoutsPage() {
     <div className="grid gap-6 lg:grid-cols-2">
       <div>
         <h1 className="text-2xl font-black">Payouts</h1>
-        <p className="mt-1 text-sm text-muted">Send money to any Mobile Money number.</p>
+        <p className="mt-1 text-sm text-muted">
+          Send to an LBPay wallet for free, or cash out to Mobile Money.
+        </p>
         <Card className="mt-6 p-6">
           <form
             className="flex flex-col gap-3"
@@ -71,30 +110,72 @@ export default function PayoutsPage() {
               setOpen(true);
             }}
           >
-            <AmountField value={amount} onChange={setAmount} kind="withdraw" receive={value} fee={fee} feeLabel={feePercentLabel(FEE_RATES.withdraw)} pay={debit} />
-            <Field label="Number">
-              <Input
-                inputMode="numeric"
-                value={phone}
-                onChange={(e) => setPhone(cameroonMsisdn(e.target.value))}
-                placeholder="677000000"
-              />
-            </Field>
-            <div className="grid grid-cols-2 gap-2">
-              {(["mtn", "orange"] as const).map((item) => (
-                <button
-                  key={item}
-                  type="button"
-                  onClick={() => setNetwork(item)}
-                  className={`flex items-center justify-center gap-2 rounded-xl border py-3 font-semibold ${
-                    network === item ? "border-brand bg-brand-soft" : "border-line"
-                  }`}
-                >
-                  <NetworkMark network={item} className="h-9 w-9 rounded-xl text-[9px]" />
-                  {item === "mtn" ? "MTN" : "Orange"}
-                </button>
-              ))}
+            <AmountField
+              value={amount}
+              onChange={setAmount}
+              kind={destination === "wallet" ? "wallet" : "withdraw"}
+              receive={value}
+              fee={fee}
+              feeLabel={destination === "wallet" ? "No fee" : feePercentLabel(FEE_RATES.withdraw)}
+              pay={destination === "wallet" ? undefined : debit}
+            />
+            {destination === "wallet" && value > 0 && !amountIssue(value, "wallet") ? (
+              <p className="text-sm font-semibold text-brand">No fee on LBPay wallet.</p>
+            ) : null}
+            <div className="grid gap-2">
+              {PAYOUT_DESTINATIONS.map((item) => {
+                const selected = destination === item.id;
+                const free = item.id === "wallet";
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setDestination(item.id)}
+                    className={cn(
+                      "flex items-center gap-3 rounded-[1.1rem] border p-3 text-left",
+                      selected ? "border-brand bg-brand-soft" : "border-line",
+                    )}
+                  >
+                    <NetworkMark network={item.id} className="h-9 w-9 rounded-xl text-[9px]" />
+                    <span className="min-w-0 flex-1">
+                      <span className="block font-semibold">{item.label}</span>
+                      <span className={cn("text-xs", free ? "font-semibold text-brand" : "text-muted")}>
+                        {payoutFeeBadge(item.id)}
+                      </span>
+                    </span>
+                    {free ? (
+                      <span className="rounded-full bg-brand px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white">
+                        Free
+                      </span>
+                    ) : null}
+                  </button>
+                );
+              })}
             </div>
+            {destination === "wallet" ? (
+              <Field label="Pay ID" hint="The person must already have an LBPay wallet.">
+                <div className="relative">
+                  <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 font-mono text-sm text-muted">
+                    @
+                  </span>
+                  <Input
+                    className="pl-8 font-mono"
+                    value={handle}
+                    onChange={(e) => setHandle(normalizeHandle(e.target.value))}
+                    placeholder="amina"
+                  />
+                </div>
+              </Field>
+            ) : (
+              <Field label="Number">
+                <Input
+                  inputMode="numeric"
+                  value={phone}
+                  onChange={(e) => setPhone(cameroonMsisdn(e.target.value))}
+                  placeholder="677000000"
+                />
+              </Field>
+            )}
             <Button type="submit" disabled={!ready}>
               Review payout
             </Button>
@@ -103,7 +184,7 @@ export default function PayoutsPage() {
       </div>
       <Card className="divide-y divide-line self-start">
         {payouts.length === 0 ? (
-          <p className="p-6 text-sm text-muted">No payouts yet.</p>
+          <p className="p-6 text-sm text-muted">None</p>
         ) : (
           payouts.map((payout) => (
             <div key={payout.id} className="flex items-center justify-between p-4">
@@ -123,10 +204,10 @@ export default function PayoutsPage() {
       <ConfirmSheet
         open={open}
         title="Confirm payout"
-        subtitle={`${network === "orange" ? "Orange" : "MTN"} ${clean}`}
+        subtitle={destination === "wallet" ? `@${payId}` : `${destination === "orange" ? "Orange" : "MTN"} ${clean}`}
         amount={debit}
         details={details}
-        loading={disburse.isPending}
+        loading={busy}
         error={pinError}
         confirmLabel="Enter PIN to pay out"
         onClose={() => setOpen(false)}

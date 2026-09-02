@@ -9,6 +9,7 @@ import { readApiJson } from "@/lib/http";
 import { useNotify } from "@/lib/notify";
 import { useApp } from "@/lib/store";
 import { useQueryClient } from "@tanstack/react-query";
+import { consumeAuthNext } from "@/lib/auth-next";
 
 export default function PinSetupPage() {
   const router = useRouter();
@@ -39,7 +40,7 @@ export default function PinSetupPage() {
       login();
       unlockPin();
       notify.success("PIN set", "Use it to confirm sends and to reopen the app.");
-      router.push("/wallet");
+      router.push(consumeAuthNext("/wallet"));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not save PIN");
       setPin("");

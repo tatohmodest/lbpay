@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeftRight, FileCheck, Users, Wallet } from "lucide-react";
+import { ArrowLeftRight, FileCheck, MessageSquare, Users, Wallet } from "lucide-react";
 import { AppImg } from "@/components/app-img";
 import { AdminHeader, AdminPanel, AdminStat } from "@/components/admin/ui";
 import { StatusBadge } from "@/components/ui/badge";
@@ -10,6 +10,7 @@ import { formatDate, formatXAF } from "@/lib/format";
 import { kindTitle } from "@/lib/tx";
 
 const shortcuts = [
+  { href: "/admin/support", label: "Chat with us", copy: "Reply to people in the app", icon: MessageSquare },
   { href: "/admin/kyc", label: "Review KYC", copy: "Approve identity and shops", icon: FileCheck },
   { href: "/admin/users", label: "Users", copy: "Freeze, restore, grant roles", icon: Users },
   { href: "/admin/transactions", label: "Transactions", copy: "Reverse or mark status", icon: ArrowLeftRight },
@@ -38,6 +39,7 @@ export default function AdminHome() {
           createdAt: string;
         }>;
         people: Array<{ id: string; name: string; lbpayId: string; avatar: string; status: string }>;
+        supportUnread?: number;
       }>;
     },
   });
@@ -71,7 +73,11 @@ export default function AdminHome() {
               <item.icon className="h-4 w-4" />
             </span>
             <p className="mt-4 text-sm font-bold text-ink">{item.label}</p>
-            <p className="mt-1 text-xs text-muted">{item.copy}</p>
+            <p className="mt-1 text-xs text-muted">
+              {item.href === "/admin/support" && data?.supportUnread
+                ? `${data.supportUnread} waiting`
+                : item.copy}
+            </p>
           </Link>
         ))}
       </section>

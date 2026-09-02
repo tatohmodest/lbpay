@@ -3,19 +3,21 @@
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import {
+  ArrowLeftRight,
+  FileCheck,
   LayoutDashboard,
+  MessageSquare,
+  ScrollText,
   ShieldAlert,
   Users,
-  FileCheck,
-  ArrowLeftRight,
   Wallet,
-  ScrollText,
 } from "lucide-react";
 import { ConsoleShell } from "@/components/layout/shells";
 import { useAdminSession } from "@/components/role-gate";
 
 const items = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard },
+  { href: "/admin/support", label: "Chat with us", icon: MessageSquare },
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/kyc", label: "KYC", icon: FileCheck },
   { href: "/admin/transactions", label: "Transactions", icon: ArrowLeftRight },

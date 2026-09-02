@@ -106,3 +106,73 @@ export async function sendOtpEmail(
   });
   return { delivered: true as const };
 }
+
+export async function sendHtmlEmail(input: {
+  to: string | string[];
+  subject: string;
+  html: string;
+  text: string;
+  replyTo?: string;
+}): Promise<{ delivered: boolean; error?: string }> {
+  const mailer = transport();
+  if (!mailer) return { delivered: false, error: "Email is not configured." };
+  try {
+    const from = fromAddress();
+    const to = Array.isArray(input.to) ? input.to.filter(Boolean).join(", ") : input.to;
+    if (!to) return { delivered: false, error: "No recipient." };
+    await mailer.sendMail({
+      from,
+      to,
+      subject: input.subject,
+      html: input.html,
+      text: input.text,
+      replyTo: input.replyTo,
+    });
+    return { delivered: true };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Could not send email.";
+    console.error("[lbpay] mail send failed", message);
+    return { delivered: false, error: message };
+  }
+}
+
+function supportShell(title: string, intro: string, body: string, href: string, cta: string) {
+  const safeBody = body.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return `<!doctype html>
+<html>
+<body style="margin:0;background:#f3faf6;font-family:ui-sans-serif,system-ui,-apple-system,sans-serif;color:#0f1f17;">
+  <div style="max-width:480px;margin:32px auto;background:#fff;border-radius:20px;overflow:hidden;border:1px solid #d7e8de;">
+    <div style="background:#00b369;color:#fff;padding:24px 28px;">
+      <div style="font-weight:900;font-size:22px;">LBPay</div>
+      <div style="opacity:.9;font-size:13px;margin-top:4px;">${title}</div>
+    </div>
+    <div style="padding:28px;">
+      <p style="margin:0 0 12px;color:#5c6f66;">${intro}</p>
+      <div style="background:#e6f8ef;border-radius:16px;padding:16px;white-space:pre-wrap;line-height:1.5;">${safeBody}</div>
+      <p style="margin:20px 0 0;">
+        <a href="${href}" style="color:#007a47;font-weight:700;">${cta}</a>
+      </p>
+    </div>
+  </div>
+</body>
+</html>`;
+}
+
+export async function sendSupportNotice(input: {
+  to: string | string[];
+  title: string;
+  intro: string;
+  body: string;
+  href: string;
+  cta: string;
+  replyTo?: string;
+}) {
+  const html = supportShell(input.title, input.intro, input.body, input.href, input.cta);
+  return sendHtmlEmail({
+    to: input.to,
+    subject: input.title,
+    html,
+    text: `${input.intro}\n\n${input.body}\n\n${input.href}`,
+    replyTo: input.replyTo,
+  });
+}

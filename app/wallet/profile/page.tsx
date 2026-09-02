@@ -63,6 +63,20 @@ export default function ProfilePage() {
           </p>
         ) : null}
         <div className="mt-6 flex flex-col gap-2">
+          <Link
+            href="/wallet/support"
+            className="flex items-center justify-between rounded-2xl bg-brand-soft px-4 py-3 text-left"
+          >
+            <span>
+              <span className="block text-sm font-bold text-ink">Chat with us</span>
+              <span className="block text-xs text-muted">Message the LBPay team</span>
+            </span>
+            {me.data?.supportUnread ? (
+              <span className="rounded-full bg-brand px-2 py-0.5 text-[10px] font-bold uppercase text-white">
+                {me.data.supportUnread}
+              </span>
+            ) : null}
+          </Link>
           <PushSettings />
           <Link href="/pin/forgot" className="text-sm font-bold text-brand">
             Forgot PIN

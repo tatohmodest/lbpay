@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getWallet, listAllTx, listKyc, listUsers } from "@/lib/server/db";
+import { supportUnreadAdminCount } from "@/lib/server/support";
 import { requireAdmin } from "@/lib/server/guard";
 import { publicUser } from "@/lib/server/db";
 
@@ -9,6 +10,7 @@ export async function GET() {
   const users = await listUsers();
   const txs = await listAllTx();
   const kyc = await listKyc("pending");
+  const supportUnread = await supportUnreadAdminCount();
   let volume = 0;
   let ledger = 0;
   for (const user of users) {
@@ -27,5 +29,6 @@ export async function GET() {
     ledger,
     recent: txs.slice(0, 8),
     people: users.slice(0, 8).map(publicUser),
+    supportUnread,
   });
 }

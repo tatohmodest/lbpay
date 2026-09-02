@@ -151,6 +151,28 @@ export type StoredReview = {
   updatedAt: string;
 };
 
+export type SupportAuthor = "user" | "admin";
+
+export type StoredSupportThread = {
+  id: string;
+  userId: string;
+  status: "open" | "closed";
+  createdAt: string;
+  updatedAt: string;
+  userLastReadAt?: string;
+  adminLastReadAt?: string;
+};
+
+export type StoredSupportMessage = {
+  id: string;
+  threadId: string;
+  author: SupportAuthor;
+  authorId: string;
+  body: string;
+  createdAt: string;
+  emailedAt?: string | null;
+};
+
 export type PublicReview = {
   id: string;
   name: string;
@@ -174,6 +196,8 @@ export type DbShape = {
   logs: StoredLog[];
   pushSubscriptions: StoredPushSubscription[];
   reviews?: StoredReview[];
+  supportThreads?: StoredSupportThread[];
+  supportMessages?: StoredSupportMessage[];
   vapid?: { publicKey: string; privateKey: string };
 };
 
@@ -229,6 +253,8 @@ function mergeLedgers(base: DbShape, next: DbShape): DbShape {
       ).values(),
     ],
     reviews: mergeById(base.reviews, next.reviews),
+    supportThreads: mergeById(base.supportThreads, next.supportThreads),
+    supportMessages: mergeById(base.supportMessages, next.supportMessages),
     otps: next.otps || [],
     vapid: next.vapid || base.vapid,
   };
@@ -270,6 +296,8 @@ async function empty(): Promise<DbShape> {
     logs: [],
     pushSubscriptions: [],
     reviews: [],
+    supportThreads: [],
+    supportMessages: [],
   };
 }
 
@@ -288,6 +316,8 @@ function withCollections(db: DbShape): DbShape {
     logs: db.logs || [],
     pushSubscriptions: db.pushSubscriptions || [],
     reviews: db.reviews || [],
+    supportThreads: db.supportThreads || [],
+    supportMessages: db.supportMessages || [],
     vapid: db.vapid,
   };
 }

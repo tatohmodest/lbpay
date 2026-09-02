@@ -24,6 +24,7 @@ export type MeResponse = {
   };
   balance?: number;
   adminStep?: boolean;
+  supportUnread?: number;
   keys?: Array<{ id: string; env: string; publicKey: string; secretMasked: string; createdAt: string }>;
   links?: Array<{ id: string; slug: string; title: string; amount: number | null; status: string }>;
   transactions?: Array<{
