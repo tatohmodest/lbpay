@@ -1,6 +1,8 @@
-import nodemailer from "nodemailer";
-import { isWorkersRuntime, sendSmtpOverSockets } from "@/lib/server/smtp-socket";
 import type { Locale } from "@/lib/i18n/locale";
+
+function isWorkersRuntime() {
+  return typeof (globalThis as { WebSocketPair?: unknown }).WebSocketPair === "function";
+}
 
 function smtpPort() {
   return Number(process.env.SMTP_PORT || 587);
@@ -32,8 +34,9 @@ export function mailConfigured() {
   return smtpConfigured() || resendConfigured() || brevoConfigured();
 }
 
-function transport() {
+async function nodeTransport() {
   if (!smtpConfigured()) return null;
+  const nodemailer = (await import("nodemailer")).default;
   return nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: smtpPort(),
@@ -188,21 +191,9 @@ async function sendBrevo(input: { to: string; subject: string; html: string; tex
 
 async function sendSmtp(input: { to: string; subject: string; html: string; text: string }) {
   if (isWorkersRuntime()) {
-    await sendSmtpOverSockets({
-      host: process.env.SMTP_HOST || "",
-      port: smtpPort(),
-      secure: smtpSecure(),
-      user: process.env.SMTP_USER || "",
-      pass: process.env.SMTP_PASS || "",
-      from: fromAddress(),
-      to: input.to,
-      subject: input.subject,
-      text: input.text,
-      html: input.html,
-    });
-    return;
+    throw new MailSendError("SMTP is not available on Cloudflare Workers. Set RESEND_API_KEY or BREVO_API_KEY.");
   }
-  const mailer = transport();
+  const mailer = await nodeTransport();
   if (!mailer) throw new MailSendError("Email is not configured.");
   await mailer.sendMail({
     from: fromAddress(),
