@@ -23,7 +23,7 @@ import { getRequestLocale } from "@/lib/i18n/server";
 import { translate } from "@/lib/i18n/messages";
 
 export const metadata: Metadata = {
-  title: SITE_TITLE,
+  title: { absolute: SITE_TITLE },
   description: SITE_DESCRIPTION,
   alternates: { canonical: SITE_URL },
   openGraph: {
