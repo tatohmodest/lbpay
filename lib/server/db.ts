@@ -608,7 +608,13 @@ export async function nextAvailableHandle(desired: string, exceptUserId?: string
 
 export async function findUserById(id: string) {
   const db = await getDb();
-  const user = db.users.find((u) => u.id === id) ?? null;
+  let user = db.users.find((u) => u.id === id) ?? null;
+  if (!user && !remoteConfigured()) {
+    cache = null;
+    seeding = null;
+    const fresh = await getDb();
+    user = fresh.users.find((u) => u.id === id) ?? null;
+  }
   if (user) return normalizeUser(user);
   const rows = await loadAccountRows();
   const row = rows.find((item) => item.user.id === id);

@@ -3,7 +3,7 @@ import { catchRoute, jsonError } from "@/lib/server/api";
 import { findUserByEmail, saveOtp } from "@/lib/server/db";
 import { hashSecret, randomOtp, verifySecret } from "@/lib/server/crypto";
 import { sendOtpEmail } from "@/lib/server/mail";
-import { setPreauth } from "@/lib/server/session";
+import { applyPreauthCookie } from "@/lib/server/session";
 import { localeFromRequest } from "@/lib/i18n/locale";
 
 export async function POST(request: Request) {
@@ -29,19 +29,22 @@ export async function POST(request: Request) {
         attempts: 0,
       });
       await sendOtpEmail(user.email, otp, user.name, "verify", locale);
-      await setPreauth(user.id, "otp");
-      return NextResponse.json({
+      const response = NextResponse.json({
         ok: true,
         step: "otp",
         email: user.email,
       });
+      applyPreauthCookie(response, user.id, "otp");
+      return response;
     }
     if (!user.pinHash) {
-      await setPreauth(user.id, "pin-setup");
-      return NextResponse.json({ ok: true, step: "pin-setup", email: user.email });
+      const response = NextResponse.json({ ok: true, step: "pin-setup", email: user.email });
+      applyPreauthCookie(response, user.id, "pin-setup");
+      return response;
     }
-    await setPreauth(user.id, "pin");
-    return NextResponse.json({ ok: true, step: "pin", email: user.email });
+    const response = NextResponse.json({ ok: true, step: "pin", email: user.email });
+    applyPreauthCookie(response, user.id, "pin");
+    return response;
   } catch (error) {
     return catchRoute("login", error);
   }

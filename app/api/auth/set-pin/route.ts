@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { catchRoute, jsonError } from "@/lib/server/api";
 import { findUserById, publicUser, upsertUser } from "@/lib/server/db";
 import { hashSecret } from "@/lib/server/crypto";
-import { clearPreauth, createSession, readPreauth, SESSION_TTL_SEC } from "@/lib/server/session";
+import { applySessionCookie, clearAuthCookies, readPreauth, SESSION_TTL_SEC } from "@/lib/server/session";
 
 export async function POST(request: Request) {
   try {
@@ -25,9 +25,10 @@ export async function POST(request: Request) {
 
     user.pinHash = await hashSecret(pin);
     await upsertUser(user);
-    await clearPreauth();
-    await createSession(user.id, SESSION_TTL_SEC);
-    return NextResponse.json({ ok: true, user: publicUser(user) });
+    const response = NextResponse.json({ ok: true, user: publicUser(user) });
+    clearAuthCookies(response);
+    applySessionCookie(response, user.id, SESSION_TTL_SEC);
+    return response;
   } catch (error) {
     return catchRoute("set-pin", error);
   }

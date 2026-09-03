@@ -217,7 +217,12 @@ export function AuthForm({
               subtitle={mode === "login" ? t("auth.subtitleLogin") : t("auth.subtitleSignup")}
             />
             <AuthCard>
-              <form className="flex flex-col gap-4" onSubmit={submitForm}>
+              <form
+                className="flex flex-col gap-4"
+                method="post"
+                action="/signup"
+                onSubmit={submitForm}
+              >
                 {mode === "signup" ? (
                   <>
                     <Field label={t("auth.fullName")}>

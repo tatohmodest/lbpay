@@ -9,7 +9,7 @@ import {
 } from "@/lib/server/db";
 import { hashSecret, randomOtp } from "@/lib/server/crypto";
 import { MailSendError, mailConfigured, sendOtpEmail } from "@/lib/server/mail";
-import { setPreauth } from "@/lib/server/session";
+import { applyPreauthCookie } from "@/lib/server/session";
 import { defaultKyc, isBootstrapAdmin } from "@/lib/roles";
 import { uid } from "@/lib/format";
 import { DEFAULT_AVATAR } from "@/lib/avatar";
@@ -100,13 +100,14 @@ export async function POST(request: Request) {
     }
 
     if (skipEmail) {
-      await setPreauth(user.id, user.pinHash ? "pin" : "pin-setup");
-      return NextResponse.json({
+      const response = NextResponse.json({
         ok: true,
         step: user.pinHash ? "pin" : "pin-setup",
         email,
         lbpayId: handle,
       });
+      applyPreauthCookie(response, user.id, user.pinHash ? "pin" : "pin-setup");
+      return response;
     }
 
     const otp = randomOtp();
@@ -122,14 +123,14 @@ export async function POST(request: Request) {
       console.error("[lbpay] signup mail failed", err);
       return jsonError(t("errors.emailSend"), 503);
     }
-    await setPreauth(user.id, "otp");
-
-    return NextResponse.json({
+    const response = NextResponse.json({
       ok: true,
       step: "otp",
       email,
       lbpayId: handle,
     });
+    applyPreauthCookie(response, user.id, "otp");
+    return response;
   } catch (error) {
     if (error instanceof MailSendError) {
       return jsonError(t("errors.emailSend"), 503);
