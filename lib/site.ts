@@ -75,37 +75,14 @@ export const SITE_OG_IMAGE = {
   url: "/og.png",
   width: 1200,
   height: 630,
-  alt: "LBPay",
+  alt: "LBPay. Send money in Cameroon.",
   type: "image/png",
 } as const;
 
-export const SITE_TITLE = "LBPay | Send money in Cameroon, MTN, Orange Money, XAF wallet";
+export const SITE_TITLE = "LBPay | Send money in Cameroon";
 
-export const SITE_DESCRIPTION = `🚀 **LBPay is officially LIVE.**
-
-Today, I’m incredibly proud to announce the launch of **LBPay: Looping Binary’s payment ecosystem built to make digital payments simpler, faster, and more accessible across Cameroon.** 🇨🇲
-
-With LBPay, users can:
-💸 Send & receive money
-📱 Manage their wallets
-🔄 Move money across mobile money networks
-🔗 Create payment links
-👨🏽‍💻 Build payment experiences with developer tools & APIs
-
-But for me, LBPay represents more than another product.
-
-It represents an idea we’ve been working on at **Looping Binary**: building technology that solves real problems around us and can eventually scale far beyond Cameroon.
-
-From an idea, to countless lines of code, debugging, testing, redesigning, and rebuilding. **LBPay is finally here.**
-
-And this is only the beginning. 🚀
-
-🔗 **Explore LBPay:** https://lbpay.loopingbinary.com
-
-**Built by Looping Binary.
-Built for Cameroon. 🇨🇲**
-
-#LBPay #LoopingBinary #Fintech #Cameroon #CameroonTech #Payments #Technology #Startup #Innovation #BuildInCameroon`;
+export const SITE_DESCRIPTION =
+  "Send and receive XAF in Cameroon. Transfer between MTN Mobile Money and Orange Money, collect with QR and payment links, and use a payments API.";
 
 export const SITE_KEYWORDS = [
   "LBPay",
