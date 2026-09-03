@@ -8,11 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/input";
 import { readApiJson, type AuthApiResponse } from "@/lib/http";
 import { useNotify } from "@/lib/notify";
+import { useI18n } from "@/lib/i18n/use-i18n";
 
 function VerifyInner() {
   const params = useSearchParams();
   const router = useRouter();
   const notify = useNotify();
+  const { t } = useI18n();
   const email = params.get("email") || "";
   const [otp, setOtp] = useState("");
   const [error, setError] = useState("");
@@ -33,7 +35,7 @@ function VerifyInner() {
         setError(data.error || "Could not verify");
         return;
       }
-      notify.success("Email verified", "Now set a 4-digit PIN.");
+      notify.success(t("auth.emailVerified"), t("auth.setPinNext"));
       router.push("/pin/setup");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not verify");
@@ -64,12 +66,12 @@ function VerifyInner() {
     <AuthScreen>
       <AuthTitle
         kicker="Inbox"
-        title="Check your email"
-        subtitle={`We sent a 6-digit code to ${email || "your inbox"}.`}
+        title={t("auth.verifyTitle")}
+        subtitle={t("auth.verifySubtitle", { email: email || "email" })}
       />
       <AuthCard>
         <form className="flex flex-col gap-4" onSubmit={verify}>
-          <Field label="Verification code">
+          <Field label={t("auth.verifyCode")}>
             <Input
               inputMode="numeric"
               autoComplete="one-time-code"
@@ -82,10 +84,10 @@ function VerifyInner() {
           </Field>
           {error ? <p className="text-sm font-semibold text-danger">{error}</p> : null}
           <Button type="submit" className="w-full" disabled={loading || otp.length !== 6}>
-            Verify email
+            {t("auth.verify")}
           </Button>
           <Button type="button" variant="ghost" onClick={resend}>
-            Resend code
+            {t("auth.resend")}
           </Button>
         </form>
       </AuthCard>

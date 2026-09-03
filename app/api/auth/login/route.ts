@@ -4,9 +4,11 @@ import { findUserByEmail, saveOtp } from "@/lib/server/db";
 import { hashSecret, randomOtp, verifySecret } from "@/lib/server/crypto";
 import { sendOtpEmail } from "@/lib/server/mail";
 import { setPreauth } from "@/lib/server/session";
+import { localeFromRequest } from "@/lib/i18n/locale";
 
 export async function POST(request: Request) {
   try {
+    const locale = localeFromRequest(request);
     const body = await request.json().catch(() => ({}));
     const email = String(body.email || "").trim().toLowerCase();
     const password = String(body.password || "");
@@ -26,7 +28,7 @@ export async function POST(request: Request) {
         exp: Date.now() + 10 * 60 * 1000,
         attempts: 0,
       });
-      await sendOtpEmail(user.email, otp, user.name);
+      await sendOtpEmail(user.email, otp, user.name, "verify", locale);
       await setPreauth(user.id, "otp");
       return NextResponse.json({
         ok: true,

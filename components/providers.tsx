@@ -9,8 +9,10 @@ import { InstallPrompt } from "@/components/pwa/install-prompt";
 import { PushPrompt } from "@/components/pwa/push-prompt";
 import { RegisterServiceWorker } from "@/components/pwa/register-sw";
 import { NotificationInbox } from "@/components/notification-inbox";
+import { I18nProvider } from "@/lib/i18n/use-i18n";
+import type { Locale } from "@/lib/i18n/locale";
 
-export function AppProviders({ children }: { children: ReactNode }) {
+export function AppProviders({ locale, children }: { locale: Locale; children: ReactNode }) {
   const [client] = useState(
     () =>
       new QueryClient({
@@ -22,15 +24,17 @@ export function AppProviders({ children }: { children: ReactNode }) {
 
   return (
     <QueryClientProvider client={client}>
-      <NotifyProvider>
-        <AppProvider>
-          <RegisterServiceWorker />
-          <SessionGuard>{children}</SessionGuard>
-          <InstallPrompt />
-          <PushPrompt />
-          <NotificationInbox />
-        </AppProvider>
-      </NotifyProvider>
+      <I18nProvider locale={locale}>
+        <NotifyProvider>
+          <AppProvider>
+            <RegisterServiceWorker />
+            <SessionGuard>{children}</SessionGuard>
+            <InstallPrompt />
+            <PushPrompt />
+            <NotificationInbox />
+          </AppProvider>
+        </NotifyProvider>
+      </I18nProvider>
     </QueryClientProvider>
   );
 }

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { AppProviders } from "@/components/providers";
 import { SiteJsonLd } from "@/components/json-ld";
+import { getRequestLocale } from "@/lib/i18n/server";
 import {
   SITE_DESCRIPTION,
   SITE_KEYWORDS,
@@ -88,16 +89,17 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = await getRequestLocale();
   return (
-    <html lang="en" data-scroll-behavior="smooth" className={`${geist.variable} ${geistMono.variable} h-full`}>
+    <html lang={locale} data-scroll-behavior="smooth" className={`${geist.variable} ${geistMono.variable} h-full`}>
       <body className="min-h-full bg-paper font-sans text-ink antialiased">
         <SiteJsonLd />
-        <AppProviders>{children}</AppProviders>
+        <AppProviders locale={locale}>{children}</AppProviders>
       </body>
     </html>
   );

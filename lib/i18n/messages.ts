@@ -1,0 +1,213 @@
+import type { Locale } from "./locale";
+
+type Tree = { [key: string]: string | Tree };
+
+export const messages: Record<Locale, Tree> = {
+  en: {
+    lang: {
+      name: "English",
+      switchTo: "Français",
+      choose: "Language",
+    },
+    nav: {
+      personal: "Personal",
+      business: "Business",
+      developers: "Developers",
+      docs: "Docs",
+      wallet: "Wallet",
+      admin: "Admin",
+      login: "Log in",
+      signup: "Sign up",
+      getApp: "Get app",
+      profile: "Profile",
+    },
+    home: {
+      heroTitle: "Cameroon payments, made easy.",
+      heroCopy: "Send, receive, and collect XAF. MTN, Orange, cards, and a wallet with an @handle. One ledger underneath.",
+      openAccount: "Open an account",
+      howItWorks: "How it works",
+    },
+    auth: {
+      kickerLogin: "Welcome back",
+      kickerSignup: "Get started",
+      titleLogin: "Sign in",
+      titleSignup: "Create your wallet",
+      subtitleLogin: "Email and password, then your PIN.",
+      subtitleSignup: "We will email a one-time code, then you set a PIN.",
+      asideLogin: "Your XAF wallet, ready.",
+      asideSignup: "Open a wallet in minutes.",
+      asideCopy: "Email, a one-time code, then a PIN. Send across MTN and Orange from one ledger.",
+      builtFor: "Built for Cameroon.",
+      fullName: "Full name",
+      phone: "Phone",
+      phoneHint: "9-digit number, no +237",
+      email: "Email",
+      password: "Password",
+      passwordHintLogin: "Your password",
+      passwordHintSignup: "At least 6 characters",
+      continue: "Continue",
+      createAccount: "Create account",
+      pleaseWait: "Please wait…",
+      forgotPassword: "Forgot password?",
+      newHere: "New here?",
+      alreadyHave: "Already have an account?",
+      createAnAccount: "Create an account",
+      signIn: "Sign in",
+      yourId: "Your LBPay ID",
+      idTaken: "@{taken} is already taken. @{suggestion} is free.",
+      useId: "Use @{id}",
+      changeId: "Change ID",
+      chooseId: "Choose another ID",
+      chooseIdHint: "This one must not already exist.",
+      invited: "@{handle} invited you to LBPay.",
+      checkEmail: "Check your email",
+      codeSent: "We sent a 6-digit code.",
+      somethingWrong: "Something went wrong",
+      enterPin: "Enter your PIN",
+      confirmItIsYou: "This confirms it is you.",
+      forgotPin: "Forgot PIN?",
+      pinWait: "Too many incorrect PINs. Wait {seconds}s.",
+      verifyTitle: "Check your email",
+      verifySubtitle: "We sent a 6-digit code to {email}.",
+      verifyCode: "Verification code",
+      verify: "Verify",
+      resend: "Resend code",
+      emailVerified: "Email verified",
+      setPinNext: "Now set a 4-digit PIN.",
+      createPin: "Create your PIN",
+      confirmPin: "Confirm your PIN",
+      pinCopy: "You will enter this PIN on login, when sending money, and when returning to the app on mobile.",
+      pinsMismatch: "PINs do not match",
+      pinSet: "PIN set",
+      pinSetCopy: "Use it to confirm sends and to reopen the app.",
+      youreIn: "You're in",
+      welcomeBack: "Welcome back to LBPay.",
+    },
+    errors: {
+      generic: "Something went wrong. Please try again in a few minutes.",
+      emailSend: "We could not send the verification email. Check the address and try again in a few minutes.",
+      emailNotConfigured: "We could not send the verification email. Try again in a few minutes.",
+      requiredSignup: "Name, email, phone, and a password of 6+ characters are required.",
+      handleShort: "Choose an LBPay ID of at least 2 characters.",
+      emailExists: "An account already exists for this email.",
+      phone: "Enter a valid Cameroon Mobile Money number.",
+      handleTaken: "@{handle} is already taken. @{suggestion} is free.",
+      couldNotContinue: "Could not continue",
+    },
+  },
+  fr: {
+    lang: {
+      name: "Français",
+      switchTo: "English",
+      choose: "Langue",
+    },
+    nav: {
+      personal: "Personnel",
+      business: "Business",
+      developers: "Développeurs",
+      docs: "Docs",
+      wallet: "Portefeuille",
+      admin: "Admin",
+      login: "Connexion",
+      signup: "Inscription",
+      getApp: "Installer",
+      profile: "Profil",
+    },
+    home: {
+      heroTitle: "Paiements au Cameroun, en toute simplicité.",
+      heroCopy: "Envoyez, recevez et encaissez en XAF. MTN, Orange, cartes, et un portefeuille avec un @identifiant. Un seul registre.",
+      openAccount: "Ouvrir un compte",
+      howItWorks: "Comment ça marche",
+    },
+    auth: {
+      kickerLogin: "Bon retour",
+      kickerSignup: "Commencer",
+      titleLogin: "Connexion",
+      titleSignup: "Créer votre portefeuille",
+      subtitleLogin: "Email et mot de passe, puis votre code PIN.",
+      subtitleSignup: "Nous envoyons un code à 6 chiffres par email, puis vous choisissez un PIN.",
+      asideLogin: "Votre portefeuille XAF, prêt.",
+      asideSignup: "Ouvrez un portefeuille en quelques minutes.",
+      asideCopy: "Email, un code unique, puis un PIN. Envoyez entre MTN et Orange depuis un seul registre.",
+      builtFor: "Fait pour le Cameroun.",
+      fullName: "Nom complet",
+      phone: "Téléphone",
+      phoneHint: "9 chiffres, sans +237",
+      email: "Email",
+      password: "Mot de passe",
+      passwordHintLogin: "Votre mot de passe",
+      passwordHintSignup: "Au moins 6 caractères",
+      continue: "Continuer",
+      createAccount: "Créer un compte",
+      pleaseWait: "Veuillez patienter…",
+      forgotPassword: "Mot de passe oublié ?",
+      newHere: "Nouveau ici ?",
+      alreadyHave: "Vous avez déjà un compte ?",
+      createAnAccount: "Créer un compte",
+      signIn: "Connexion",
+      yourId: "Votre identifiant LBPay",
+      idTaken: "@{taken} est déjà pris. @{suggestion} est libre.",
+      useId: "Utiliser @{id}",
+      changeId: "Changer l'identifiant",
+      chooseId: "Choisir un autre identifiant",
+      chooseIdHint: "Celui-ci ne doit pas déjà exister.",
+      invited: "@{handle} vous a invité sur LBPay.",
+      checkEmail: "Vérifiez votre email",
+      codeSent: "Nous avons envoyé un code à 6 chiffres.",
+      somethingWrong: "Un problème est survenu",
+      enterPin: "Entrez votre PIN",
+      confirmItIsYou: "Cela confirme que c'est bien vous.",
+      forgotPin: "PIN oublié ?",
+      pinWait: "Trop de PIN incorrects. Attendez {seconds}s.",
+      verifyTitle: "Vérifiez votre email",
+      verifySubtitle: "Nous avons envoyé un code à 6 chiffres à {email}.",
+      verifyCode: "Code de vérification",
+      verify: "Vérifier",
+      resend: "Renvoyer le code",
+      emailVerified: "Email vérifié",
+      setPinNext: "Choisissez maintenant un PIN à 4 chiffres.",
+      createPin: "Créer votre PIN",
+      confirmPin: "Confirmez votre PIN",
+      pinCopy: "Vous saisirez ce PIN à la connexion, pour envoyer de l'argent, et en rouvrant l'app sur mobile.",
+      pinsMismatch: "Les PIN ne correspondent pas",
+      pinSet: "PIN enregistré",
+      pinSetCopy: "Utilisez-le pour confirmer les envois et rouvrir l'app.",
+      youreIn: "Vous y êtes",
+      welcomeBack: "Bon retour sur LBPay.",
+    },
+    errors: {
+      generic: "Un problème est survenu. Réessayez dans quelques minutes.",
+      emailSend: "Impossible d'envoyer l'email de vérification. Vérifiez l'adresse et réessayez dans quelques minutes.",
+      emailNotConfigured: "Impossible d'envoyer l'email de vérification. Réessayez dans quelques minutes.",
+      requiredSignup: "Le nom, l'email, le téléphone et un mot de passe de 6 caractères ou plus sont requis.",
+      handleShort: "Choisissez un identifiant LBPay d'au moins 2 caractères.",
+      emailExists: "Un compte existe déjà pour cet email.",
+      phone: "Entrez un numéro Mobile Money camerounais valide.",
+      handleTaken: "@{handle} est déjà pris. @{suggestion} est libre.",
+      couldNotContinue: "Impossible de continuer",
+    },
+  },
+};
+
+export function translate(locale: Locale, path: string, vars?: Record<string, string | number>) {
+  const parts = path.split(".");
+  let current: string | Tree | undefined = messages[locale];
+  for (const part of parts) {
+    if (!current || typeof current === "string") {
+      current = undefined;
+      break;
+    }
+    current = current[part];
+  }
+  let text = typeof current === "string" ? current : undefined;
+  if (text === undefined && locale !== "en") {
+    return translate("en", path, vars);
+  }
+  if (typeof text !== "string") return path;
+  if (vars) {
+    for (const [key, value] of Object.entries(vars)) {
+      text = text.replaceAll(`{${key}}`, String(value));
+    }
+  }
+  return text;
+}

@@ -8,16 +8,20 @@ import {
   upsertUser,
 } from "@/lib/server/db";
 import { hashSecret, randomOtp } from "@/lib/server/crypto";
-import { sendOtpEmail } from "@/lib/server/mail";
+import { MailSendError, mailConfigured, sendOtpEmail } from "@/lib/server/mail";
 import { setPreauth } from "@/lib/server/session";
 import { defaultKyc, isBootstrapAdmin } from "@/lib/roles";
 import { uid } from "@/lib/format";
 import { DEFAULT_AVATAR } from "@/lib/avatar";
 import { isReservedHandle, normalizeHandle } from "@/lib/handle";
-import { cameroonMsisdn } from "@/lib/phone";
+import { cameroonMsisdn, isCameroonMsisdn } from "@/lib/phone";
 import type { AccountKind } from "@/lib/types";
+import { localeFromRequest } from "@/lib/i18n/locale";
+import { translate } from "@/lib/i18n/messages";
 
 export async function POST(request: Request) {
+  const locale = localeFromRequest(request);
+  const t = (path: string, vars?: Record<string, string | number>) => translate(locale, path, vars);
   try {
     const body = await request.json().catch(() => ({}));
     const name = String(body.name || "").trim();
@@ -27,21 +31,24 @@ export async function POST(request: Request) {
     const requested = normalizeHandle(String(body.lbpayId || name || email.split("@")[0]));
 
     if (!name || !email || !password || password.length < 6) {
-      return jsonError("Name, email, and a password of 6+ characters are required.");
+      return jsonError(t("errors.requiredSignup"));
+    }
+    if (!isCameroonMsisdn(phone)) {
+      return jsonError(t("errors.phone"));
     }
     if (!requested || requested.length < 2) {
-      return jsonError("Choose an LBPay ID of at least 2 characters.");
+      return jsonError(t("errors.handleShort"));
     }
     const existing = await findUserByEmail(email);
     if (existing?.emailVerified) {
-      return jsonError("An account already exists for this email.", 409);
+      return jsonError(t("errors.emailExists"), 409);
     }
 
     if (isReservedHandle(requested) || (await isHandleTaken(requested, existing?.id))) {
       const suggestion = await nextAvailableHandle(requested, existing?.id);
       return NextResponse.json(
         {
-          error: `@${requested} is already taken. @${suggestion} is free.`,
+          error: t("errors.handleTaken", { handle: requested, suggestion }),
           suggestion,
         },
         { status: 409 },
@@ -69,6 +76,12 @@ export async function POST(request: Request) {
     user.phone = phone;
     user.lbpayId = handle;
     user.passwordHash = await hashSecret(password);
+
+    const skipEmail = !mailConfigured() && process.env.NODE_ENV !== "production";
+    if (skipEmail) {
+      user.emailVerified = true;
+    }
+
     try {
       await upsertUser(user);
     } catch (err) {
@@ -77,13 +90,23 @@ export async function POST(request: Request) {
         const suggestion = await nextAvailableHandle(handle, user.id);
         return NextResponse.json(
           {
-            error: `@${handle} is already taken. @${suggestion} is free.`,
+            error: t("errors.handleTaken", { handle, suggestion }),
             suggestion,
           },
           { status: 409 },
         );
       }
       throw err;
+    }
+
+    if (skipEmail) {
+      await setPreauth(user.id, user.pinHash ? "pin" : "pin-setup");
+      return NextResponse.json({
+        ok: true,
+        step: user.pinHash ? "pin" : "pin-setup",
+        email,
+        lbpayId: handle,
+      });
     }
 
     const otp = randomOtp();
@@ -93,7 +116,12 @@ export async function POST(request: Request) {
       exp: Date.now() + 10 * 60 * 1000,
       attempts: 0,
     });
-    await sendOtpEmail(email, otp, name);
+    try {
+      await sendOtpEmail(email, otp, name, "verify", locale);
+    } catch (err) {
+      console.error("[lbpay] signup mail failed", err);
+      return jsonError(t("errors.emailSend"), 503);
+    }
     await setPreauth(user.id, "otp");
 
     return NextResponse.json({
@@ -103,6 +131,9 @@ export async function POST(request: Request) {
       lbpayId: handle,
     });
   } catch (error) {
+    if (error instanceof MailSendError) {
+      return jsonError(t("errors.emailSend"), 503);
+    }
     return catchRoute("signup", error);
   }
 }

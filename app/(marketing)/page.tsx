@@ -19,6 +19,8 @@ import { HomeReviews } from "@/components/marketing/home-reviews";
 import { SendWidget } from "@/components/marketing/send-widget";
 import { Button } from "@/components/ui/button";
 import { SITE_DESCRIPTION, SITE_OG_IMAGE, SITE_TITLE, SITE_URL } from "@/lib/site";
+import { getRequestLocale } from "@/lib/i18n/server";
+import { translate } from "@/lib/i18n/messages";
 
 export const metadata: Metadata = {
   title: SITE_TITLE,
@@ -66,7 +68,9 @@ function Tick({ children }: { children: React.ReactNode }) {
   );
 }
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  const locale = await getRequestLocale();
+  const t = (path: string) => translate(locale, path);
   return (
     <div className="bg-paper">
       <FaqJsonLd />
@@ -74,16 +78,15 @@ export default function LandingPage() {
       <section className="-mt-[var(--header-h)] bg-forest text-white">
         <Container className="pb-10 pt-[calc(var(--header-h)+3.5rem)] text-center md:pb-6 md:pt-[calc(var(--header-h)+4.5rem)]">
           <h1 className="mx-auto max-w-[16ch] text-[2.6rem] font-extrabold leading-[1.08] tracking-tight md:text-[4.25rem]">
-            Cameroon payments, made easy.
+            {t("home.heroTitle")}
           </h1>
           <p className="mx-auto mt-5 max-w-xl text-[16px] leading-8 text-hero-muted md:text-lg">
-            Send, receive, and collect XAF. MTN, Orange, cards, and a wallet with an @handle.
-            One ledger underneath.
+            {t("home.heroCopy")}
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <Link href="/signup">
               <Button size="lg" className="rounded-full px-7">
-                Open an account <ArrowRight className="h-4 w-4" />
+                {t("home.openAccount")} <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>
             <Link href="/#how-lbpay-works">
@@ -92,7 +95,7 @@ export default function LandingPage() {
                 variant="secondary"
                 className="rounded-full border-white/25 bg-transparent px-7 text-white hover:bg-white/10"
               >
-                <Play className="h-4 w-4 fill-current" /> How it works
+                <Play className="h-4 w-4 fill-current" /> {t("home.howItWorks")}
               </Button>
             </Link>
           </div>

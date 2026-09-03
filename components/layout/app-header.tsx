@@ -14,22 +14,25 @@ import { cn } from "@/lib/cn";
 import { isAdmin, productUnlocked } from "@/lib/roles";
 import { openInstallPrompt, useStandaloneDisplay } from "@/lib/pwa";
 import { AppImg } from "@/components/app-img";
+import { LanguageToggle } from "@/components/language-toggle";
+import { useI18n } from "@/lib/i18n/use-i18n";
 
 export function AppHeader({ onOpenMenu }: { onOpenMenu?: () => void }) {
   const pathname = usePathname();
   const { state } = useApp();
   const me = useMe();
   const user = me.data?.user;
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [openedPath, setOpenedPath] = useState(pathname);
   const standalone = useStandaloneDisplay();
   const showInstall = !standalone;
   const menuOpen = open && openedPath === pathname;
   const products = [
-    { href: "/wallet", label: "Wallet", icon: Wallet, copy: "Send, receive, and pay from one place", show: true },
+    { href: "/wallet", label: t("nav.wallet"), icon: Wallet, copy: "Send, receive, and pay from one place", show: true },
     {
       href: "/business",
-      label: "Business",
+      label: t("nav.business"),
       icon: Store,
       copy: productUnlocked(user, "business")
         ? "Get paid by your customers"
@@ -38,14 +41,14 @@ export function AppHeader({ onOpenMenu }: { onOpenMenu?: () => void }) {
     },
     {
       href: "/developers",
-      label: "Developers",
+      label: t("nav.developers"),
       icon: Code2,
       copy: productUnlocked(user, "developer")
         ? "Payments for your product"
         : "Add payments to your app or website",
       show: true,
     },
-    { href: "/admin", label: "Admin", icon: Shield, copy: "Keep the platform running", show: isAdmin(user) },
+    { href: "/admin", label: t("nav.admin"), icon: Shield, copy: "Keep the platform running", show: isAdmin(user) },
   ].filter((item) => item.show);
 
   return (
@@ -73,6 +76,7 @@ export function AppHeader({ onOpenMenu }: { onOpenMenu?: () => void }) {
           </nav>
         </div>
         <div className="flex items-center gap-2">
+          <LanguageToggle />
           {state.user.status === "frozen" ? (
             <span className="rounded-full bg-red-50 px-2 py-1 text-[10px] font-bold uppercase text-danger">
               Frozen

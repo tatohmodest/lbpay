@@ -17,6 +17,7 @@ import { secondsLeft, useNow } from "@/lib/use-now";
 import { normalizeHandle } from "@/lib/handle";
 import { slugify } from "@/lib/format";
 import { consumeAuthNext } from "@/lib/auth-next";
+import { useI18n } from "@/lib/i18n/use-i18n";
 
 export function AuthForm({
   mode,
@@ -48,6 +49,7 @@ export function AuthForm({
   const autoId = slugify(name);
   const previewId = idChoice || autoId;
   const inviteHandle = normalizeHandle(invitedBy || "");
+  const { t } = useI18n();
 
   function resetHandleConflict() {
     setIdChoice("");
@@ -59,7 +61,7 @@ export function AuthForm({
     await queryClient.invalidateQueries({ queryKey: ["me"] });
     login();
     unlockPin();
-    notify.success("You're in", "Welcome back to LBPay.");
+    notify.success(t("auth.youreIn"), t("auth.welcomeBack"));
     router.push(consumeAuthNext("/wallet"));
   }
 
@@ -88,7 +90,7 @@ export function AuthForm({
         setError("");
         return null;
       }
-      throw new Error(data.error || "Could not continue");
+      throw new Error(data.error || t("errors.couldNotContinue"));
     }
     resetHandleConflict();
     return data;
@@ -106,9 +108,9 @@ export function AuthForm({
           body: JSON.stringify({ email, password }),
         });
         const data = await readApiJson<AuthApiResponse>(res);
-        if (!res.ok) throw new Error(data.error || "Could not continue");
+        if (!res.ok) throw new Error(data.error || t("errors.couldNotContinue"));
         if (data.step === "otp") {
-          notify.info("Check your email", "We sent a 6-digit code.");
+          notify.info(t("auth.checkEmail"), t("auth.codeSent"));
           router.push(`/verify?email=${encodeURIComponent(email)}`);
           return;
         }
@@ -123,7 +125,7 @@ export function AuthForm({
       const data = await submitSignup();
       if (!data) return;
       if (data.step === "otp") {
-        notify.info("Check your email", "We sent a 6-digit code.");
+        notify.info(t("auth.checkEmail"), t("auth.codeSent"));
         router.push(`/verify?email=${encodeURIComponent(email)}`);
         return;
       }
@@ -133,7 +135,7 @@ export function AuthForm({
       }
       setStep("pin");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      setError(err instanceof Error ? err.message : t("auth.somethingWrong"));
     } finally {
       setLoading(false);
     }
@@ -147,7 +149,7 @@ export function AuthForm({
       const data = await submitSignup(idConflict.suggestion);
       if (!data) return;
       if (data.step === "otp") {
-        notify.info("Check your email", "We sent a 6-digit code.");
+        notify.info(t("auth.checkEmail"), t("auth.codeSent"));
         router.push(`/verify?email=${encodeURIComponent(email)}`);
         return;
       }
@@ -157,7 +159,7 @@ export function AuthForm({
       }
       setStep("pin");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      setError(err instanceof Error ? err.message : t("auth.somethingWrong"));
     } finally {
       setLoading(false);
     }
@@ -189,7 +191,7 @@ export function AuthForm({
 
   const formNotice =
     notice ||
-    (mode === "signup" && inviteHandle ? `@${inviteHandle} invited you to LBPay.` : undefined);
+    (mode === "signup" && inviteHandle ? t("auth.invited", { handle: inviteHandle }) : undefined);
 
   return (
     <div className="grid min-h-[calc(100svh-var(--header-h))] lg:grid-cols-2">
@@ -199,32 +201,26 @@ export function AuthForm({
         <div className="relative z-10">
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand">LBPay</p>
           <h2 className="mt-4 max-w-[11ch] text-4xl font-black leading-[1.08] xl:text-5xl">
-            {mode === "login" ? "Your XAF wallet, ready." : "Open a wallet in minutes."}
+            {mode === "login" ? t("auth.asideLogin") : t("auth.asideSignup")}
           </h2>
-          <p className="mt-4 max-w-sm text-sm leading-6 text-white/70">
-            Email, a one-time code, then a PIN. Send across MTN and Orange from one ledger.
-          </p>
+          <p className="mt-4 max-w-sm text-sm leading-6 text-white/70">{t("auth.asideCopy")}</p>
         </div>
-        <p className="relative z-10 text-sm text-white/45">Built for Cameroon.</p>
+        <p className="relative z-10 text-sm text-white/45">{t("auth.builtFor")}</p>
       </aside>
 
       <div className="flex flex-col justify-center bg-paper px-6 py-10 md:px-14 lg:px-16">
         {step === "form" ? (
           <div className="mx-auto w-full max-w-[420px]">
             <AuthTitle
-              kicker={mode === "login" ? "Welcome back" : "Get started"}
-              title={mode === "login" ? "Sign in" : "Create your wallet"}
-              subtitle={
-                mode === "login"
-                  ? "Email and password, then your PIN."
-                  : "We will email a one-time code, then you set a PIN."
-              }
+              kicker={mode === "login" ? t("auth.kickerLogin") : t("auth.kickerSignup")}
+              title={mode === "login" ? t("auth.titleLogin") : t("auth.titleSignup")}
+              subtitle={mode === "login" ? t("auth.subtitleLogin") : t("auth.subtitleSignup")}
             />
             <AuthCard>
               <form className="flex flex-col gap-4" onSubmit={submitForm}>
                 {mode === "signup" ? (
                   <>
-                    <Field label="Full name">
+                    <Field label={t("auth.fullName")}>
                       <Input
                         name="name"
                         autoComplete="name"
@@ -240,7 +236,7 @@ export function AuthForm({
                     {previewId ? (
                       <div className="rounded-2xl bg-paper px-4 py-3">
                         <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">
-                          Your LBPay ID
+                          {t("auth.yourId")}
                         </p>
                         <p className="mt-1 font-mono text-base font-black text-ink">@{previewId}</p>
                       </div>
@@ -248,11 +244,11 @@ export function AuthForm({
                     {idConflict ? (
                       <div className="space-y-3 rounded-2xl bg-amber-50 p-4">
                         <p className="text-sm font-medium text-ink">
-                          @{idConflict.taken} is already taken. @{idConflict.suggestion} is free.
+                          {t("auth.idTaken", { taken: idConflict.taken, suggestion: idConflict.suggestion })}
                         </p>
                         <div className="flex flex-wrap gap-2">
                           <Button type="button" disabled={loading} onClick={() => void applySuggestedId()}>
-                            Use @{idConflict.suggestion}
+                            {t("auth.useId", { id: idConflict.suggestion })}
                           </Button>
                           <Button
                             type="button"
@@ -263,11 +259,11 @@ export function AuthForm({
                               setIdChoice(idConflict.suggestion);
                             }}
                           >
-                            Change ID
+                            {t("auth.changeId")}
                           </Button>
                         </div>
                         {showHandleChange ? (
-                          <Field label="Choose another ID" hint="This one must not already exist.">
+                          <Field label={t("auth.chooseId")} hint={t("auth.chooseIdHint")}>
                             <div className="relative">
                               <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 font-mono text-sm text-muted">
                                 @
@@ -284,7 +280,7 @@ export function AuthForm({
                         ) : null}
                       </div>
                     ) : null}
-                    <Field label="Phone" hint="9-digit number, no +237">
+                    <Field label={t("auth.phone")} hint={t("auth.phoneHint")}>
                       <Input
                         name="tel"
                         type="tel"
@@ -298,7 +294,7 @@ export function AuthForm({
                     </Field>
                   </>
                 ) : null}
-                <Field label="Email">
+                <Field label={t("auth.email")}>
                   <Input
                     name="email"
                     type="email"
@@ -310,12 +306,12 @@ export function AuthForm({
                     required
                   />
                 </Field>
-                <Field label="Password">
+                <Field label={t("auth.password")}>
                   <Input
                     name="password"
                     type="password"
                     autoComplete={mode === "login" ? "current-password" : "new-password"}
-                    placeholder={mode === "login" ? "Your password" : "At least 6 characters"}
+                    placeholder={mode === "login" ? t("auth.passwordHintLogin") : t("auth.passwordHintSignup")}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
@@ -324,30 +320,30 @@ export function AuthForm({
                 {mode === "login" ? (
                   <div className="-mt-1 text-right">
                     <Link href="/forgot" className="text-xs font-bold text-brand">
-                      Forgot password?
+                      {t("auth.forgotPassword")}
                     </Link>
                   </div>
                 ) : null}
                 {formNotice ? <p className="text-sm font-semibold text-brand-deep">{formNotice}</p> : null}
                 {error ? <p className="text-sm font-medium text-danger">{error}</p> : null}
                 <Button type="submit" className="mt-1 w-full" disabled={loading}>
-                  {loading ? "Please wait…" : mode === "login" ? "Continue" : "Create account"}
+                  {loading ? t("auth.pleaseWait") : mode === "login" ? t("auth.continue") : t("auth.createAccount")}
                 </Button>
               </form>
             </AuthCard>
             <p className="mt-6 text-sm text-muted">
               {mode === "login" ? (
                 <>
-                  New here?{" "}
+                  {t("auth.newHere")}{" "}
                   <Link href="/signup" className="font-bold text-brand">
-                    Create an account
+                    {t("auth.createAnAccount")}
                   </Link>
                 </>
               ) : (
                 <>
-                  Already have an account?{" "}
+                  {t("auth.alreadyHave")}{" "}
                   <Link href="/login" className="font-bold text-brand">
-                    Sign in
+                    {t("auth.signIn")}
                   </Link>
                 </>
               )}
@@ -356,9 +352,9 @@ export function AuthForm({
         ) : (
           <div className="mx-auto w-full max-w-[420px]">
             <AuthTitle
-              kicker="Confirm"
-              title="Enter your PIN"
-              subtitle="This confirms it is you."
+              kicker="PIN"
+              title={t("auth.enterPin")}
+              subtitle={t("auth.confirmItIsYou")}
               align="center"
             />
             <AuthCard>
@@ -371,10 +367,10 @@ export function AuthForm({
                   if (next.length === 4 && pinWait <= 0) void submitPin(next);
                 }}
                 error={error}
-                hint={pinWait > 0 ? `Too many incorrect PINs. Wait ${pinWait}s.` : undefined}
+                hint={pinWait > 0 ? t("auth.pinWait", { seconds: pinWait }) : undefined}
               />
               <Link href="/pin/forgot" className="mt-6 block text-center text-sm font-bold text-brand">
-                Forgot PIN?
+                {t("auth.forgotPin")}
               </Link>
             </AuthCard>
           </div>

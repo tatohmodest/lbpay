@@ -10,12 +10,14 @@ import { useNotify } from "@/lib/notify";
 import { useApp } from "@/lib/store";
 import { useQueryClient } from "@tanstack/react-query";
 import { consumeAuthNext } from "@/lib/auth-next";
+import { useI18n } from "@/lib/i18n/use-i18n";
 
 export default function PinSetupPage() {
   const router = useRouter();
   const notify = useNotify();
   const queryClient = useQueryClient();
   const { login, unlockPin } = useApp();
+  const { t } = useI18n();
   const [pin, setPin] = useState("");
   const [confirm, setConfirm] = useState("");
   const [stage, setStage] = useState<"create" | "confirm">("create");
@@ -39,7 +41,7 @@ export default function PinSetupPage() {
       await queryClient.invalidateQueries({ queryKey: ["me"] });
       login();
       unlockPin();
-      notify.success("PIN set", "Use it to confirm sends and to reopen the app.");
+      notify.success(t("auth.pinSet"), t("auth.pinSetCopy"));
       router.push(consumeAuthNext("/wallet"));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not save PIN");
@@ -53,8 +55,8 @@ export default function PinSetupPage() {
     <AuthScreen>
       <AuthTitle
         kicker="Security"
-        title={stage === "create" ? "Create your PIN" : "Confirm your PIN"}
-        subtitle="You will enter this PIN on login, when sending money, and when returning to the app on mobile."
+        title={stage === "create" ? t("auth.createPin") : t("auth.confirmPin")}
+        subtitle={t("auth.pinCopy")}
         align="center"
       />
       <AuthCard>
@@ -75,7 +77,7 @@ export default function PinSetupPage() {
             setError("");
             if (next.length === 4) {
               if (next !== pin) {
-                setError("PINs do not match");
+                setError(t("auth.pinsMismatch"));
                 setConfirm("");
                 setStage("create");
                 setPin("");

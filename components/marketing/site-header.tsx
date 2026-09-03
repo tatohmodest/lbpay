@@ -10,13 +10,8 @@ import { RightDrawer } from "@/components/ui/right-drawer";
 import { Container } from "@/components/marketing/container";
 import { cn } from "@/lib/cn";
 import { openInstallPrompt, useStandaloneDisplay } from "@/lib/pwa";
-
-const links = [
-  { href: "/products/wallet", label: "Personal", icon: Wallet, copy: "XAF wallet and transfers" },
-  { href: "/products/business", label: "Business", icon: Store, copy: "Checkout, QR, and links" },
-  { href: "/products/developers", label: "Developers", icon: Code2, copy: "Payments API and keys" },
-  { href: "/docs", label: "Docs", icon: BookOpen, copy: "Reference and sandbox notes" },
-];
+import { useI18n } from "@/lib/i18n/use-i18n";
+import { LanguageToggle } from "@/components/language-toggle";
 
 export function SiteHeader() {
   const pathname = usePathname();
@@ -25,6 +20,13 @@ export function SiteHeader() {
   const standalone = useStandaloneDisplay();
   const showInstall = !standalone;
   const menuOpen = open && openedPath === pathname;
+  const { t } = useI18n();
+  const links = [
+    { href: "/products/wallet", label: t("nav.personal"), icon: Wallet, copy: "XAF wallet and transfers" },
+    { href: "/products/business", label: t("nav.business"), icon: Store, copy: "Checkout, QR, and links" },
+    { href: "/products/developers", label: t("nav.developers"), icon: Code2, copy: "Payments API and keys" },
+    { href: "/docs", label: t("nav.docs"), icon: BookOpen, copy: "Reference and sandbox notes" },
+  ];
 
   return (
     <>
@@ -49,25 +51,27 @@ export function SiteHeader() {
             })}
           </nav>
           <div className="hidden items-center gap-2 lg:flex">
+            <LanguageToggle tone="dark" />
             {showInstall ? (
               <button
                 type="button"
                 onClick={() => openInstallPrompt()}
                 className="px-3 text-sm font-medium text-white/70 hover:text-white"
               >
-                Get app
+                {t("nav.getApp")}
               </button>
             ) : null}
             <Link href="/login" className="px-3 text-sm font-medium text-white/80 hover:text-white">
-              Log in
+              {t("nav.login")}
             </Link>
             <Link href="/signup">
               <Button size="sm" className="rounded-full px-5">
-                Sign up
+                {t("nav.signup")}
               </Button>
             </Link>
           </div>
           <div className="flex items-center gap-2 lg:hidden">
+            <LanguageToggle tone="dark" />
             {showInstall ? (
               <button
                 type="button"
@@ -116,11 +120,11 @@ export function SiteHeader() {
             <div className="grid grid-cols-2 gap-2">
               <Link href="/login">
                 <Button variant="secondary" className="w-full rounded-full">
-                  Log in
+                  {t("nav.login")}
                 </Button>
               </Link>
               <Link href="/signup">
-                <Button className="w-full rounded-full">Sign up</Button>
+                <Button className="w-full rounded-full">{t("nav.signup")}</Button>
               </Link>
             </div>
           </div>
