@@ -10,23 +10,8 @@ import { cn } from "@/lib/cn";
 
 const HIDE_KEY = "lbpay.till.hide";
 
-export function HouseCard({
-  title,
-  subtitle,
-  amount,
-  handle,
-  detailsHref,
-  detailsLabel = "See details",
-}: {
-  title: string;
-  subtitle?: string;
-  amount: number;
-  handle?: string;
-  detailsHref?: string;
-  detailsLabel?: string;
-}) {
+export function useHiddenAmount() {
   const [hidden, setHidden] = useState(false);
-  const gridId = useId().replace(/:/g, "");
 
   useEffect(() => {
     try {
@@ -47,6 +32,27 @@ export function HouseCard({
       return next;
     });
   }
+
+  return { hidden, toggle };
+}
+
+export function HouseCard({
+  title,
+  subtitle,
+  amount,
+  handle,
+  detailsHref,
+  detailsLabel = "See details",
+}: {
+  title: string;
+  subtitle?: string;
+  amount: number;
+  handle?: string;
+  detailsHref?: string;
+  detailsLabel?: string;
+}) {
+  const { hidden, toggle } = useHiddenAmount();
+  const gridId = useId().replace(/:/g, "");
 
   const shown = hidden ? "••••••" : formatXAF(amount, { withCurrency: false });
 

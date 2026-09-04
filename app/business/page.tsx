@@ -1,26 +1,43 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Link2, QrCode, Receipt, Users } from "lucide-react";
+import { Link2, QrCode, Receipt, Store, Users } from "lucide-react";
 import { StatusBadge } from "@/components/ui/badge";
 import { AppImg } from "@/components/app-img";
-import { HouseCard, MetricCard, WalletTile } from "@/components/house-card";
-import { CashFlow, monthlyInflow } from "@/components/cash-flow";
+import {
+  ActionRail,
+  BalanceHero,
+  FeedTabs,
+  HubNone,
+  MoneyRow,
+  PromoBanner,
+  SearchJump,
+  SparkCard,
+} from "@/components/money-hub";
 import { firstName, formatDate, formatXAF } from "@/lib/format";
 import { useMe } from "@/lib/hooks/wallet";
 import { useQuery } from "@tanstack/react-query";
 import { payLinkPath } from "@/lib/origin";
 import { txHref } from "@/lib/tx";
 
-const tiles = [
-  { href: "/business/links", label: "Link", copy: "New checkout", icon: Link2, wrap: "bg-brand-soft text-brand-deep" },
-  { href: "/business/qr", label: "QR", copy: "Scan to pay", icon: QrCode, wrap: "bg-[#e4eef8] text-[#3a5f86]" },
-  { href: "/business/payments", label: "Sales", copy: "Collections", icon: Receipt, wrap: "bg-[#ece6f8] text-[#5b4a8a]" },
-  { href: "/business/customers", label: "People", copy: "Who paid", icon: Users, wrap: "bg-[#f8e6e6] text-[#8a4545]" },
+const actions = [
+  { href: "/business/links", label: "Link", icon: Link2 },
+  { href: "/business/qr", label: "QR", icon: QrCode },
+  { href: "/business/payments", label: "Sales", icon: Receipt },
+  { href: "/business/customers", label: "People", icon: Users },
+  { href: "/business/settings", label: "Shop", icon: Store },
 ] as const;
+
+const tabs = [
+  { id: "sales", label: "Sales" },
+  { id: "links", label: "Links" },
+  { id: "people", label: "People" },
+];
 
 export default function BusinessPage() {
   const me = useMe();
+  const [tab, setTab] = useState("sales");
   const data = useQuery({
     queryKey: ["business"],
     queryFn: async () => {
@@ -54,178 +71,157 @@ export default function BusinessPage() {
   const shop = data.data?.businessName || me.data?.user?.businessName || "Your shop";
   const person = firstName(me.data?.user?.name) || shop;
   const revenue = data.data?.revenue || 0;
-  const bars = monthlyInflow(
-    collections.map((tx) => ({
-      amount: tx.amount,
-      status: tx.status,
-      kind: "collection",
-      createdAt: tx.createdAt,
-    })),
+  const pending = collections.filter((tx) => tx.status === "pending");
+  const today = useMemo(
+    () =>
+      collections
+        .filter((tx) => {
+          if (tx.status !== "success") return false;
+          const at = new Date(tx.createdAt);
+          const now = new Date();
+          return (
+            at.getFullYear() === now.getFullYear() &&
+            at.getMonth() === now.getMonth() &&
+            at.getDate() === now.getDate()
+          );
+        })
+        .reduce((sum, tx) => sum + tx.amount, 0),
+    [collections],
   );
+  const payers = [...new Set(collections.map((tx) => tx.counterparty).filter(Boolean))];
 
   return (
-    <div className="mx-auto max-w-lg space-y-5 lg:mx-0 lg:max-w-none">
-      <header className="flex items-center gap-3">
-        <AppImg
-          src={me.data?.user?.avatar}
-          alt=""
-          className="h-12 w-12 rounded-full object-cover ring-2 ring-white shadow-[0_8px_20px_rgba(12,25,19,0.08)]"
+    <div className="mx-auto max-w-lg space-y-5 lg:mx-0 lg:grid lg:max-w-none lg:grid-cols-12 lg:items-start lg:gap-8 lg:space-y-0">
+      <div className="space-y-5 lg:col-span-5">
+        <header className="flex items-center gap-3">
+          <AppImg src={me.data?.user?.avatar} alt="" className="h-10 w-10 rounded-full object-cover" />
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[15px] font-bold text-ink">{person}</p>
+            <p className="truncate text-xs text-muted">{shop}</p>
+          </div>
+          <Link
+            href="/business/qr"
+            className="grid h-10 w-10 place-items-center rounded-full bg-white text-ink ring-1 ring-line/80"
+            aria-label="Shop QR"
+          >
+            <QrCode className="h-4 w-4" />
+          </Link>
+        </header>
+
+        <SearchJump href="/business/links" placeholder="Find a checkout or make one" name="q" />
+
+        <BalanceHero
+          label="Till (XAF)"
+          amount={revenue}
+          delta={today}
+          cta={{ href: "/business/links", label: "New link" }}
         />
-        <div className="min-w-0">
-          <p className="text-lg font-black tracking-tight text-ink">Hello, {person}</p>
-          <p className="truncate text-sm text-muted">{shop}</p>
-        </div>
-      </header>
 
-      <div>
-        <h1 className="text-2xl font-black tracking-tight text-ink">Overview</h1>
-        <p className="mt-1 text-sm text-muted">Here is the summary of your till.</p>
-      </div>
+        <ActionRail items={[...actions]} />
 
-      <section className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-        <div className="col-span-2 lg:col-span-1">
-          <HouseCard
-            title="My till"
-            subtitle="What you have collected"
-            amount={revenue}
-            handle={me.data?.user?.lbpayId}
-            detailsHref="/business/payments"
+        <PromoBanner
+          kicker="Collect"
+          title="Get paid with a link or QR."
+          href="/business/links"
+          cta="Create"
+        />
+
+        <div className="grid grid-cols-2 gap-2.5">
+          <SparkCard
+            href="/business/customers"
+            title="People"
+            value={payers.length ? String(payers.length) : "None"}
+            hint="Who paid"
+            faces={payers.slice(0, 3).map((name) => (name.trim().slice(0, 1) || "?").toUpperCase())}
+          />
+          <SparkCard
+            href="/business/payments"
+            title="Incoming"
+            value={pending.length ? String(pending.length) : "None"}
+            hint={pending.length ? "Still open" : "Nothing pending"}
           />
         </div>
-        <MetricCard
-          href="/business/links"
-          icon={Link2}
-          iconWrap="bg-[#ece6f8] text-[#5b4a8a]"
-          label="Payment links"
-          value={String(links.length)}
-          hint={links.length ? "Live checkouts" : "Create a checkout link"}
-          status={links.length ? "See all" : "Create"}
+      </div>
+
+      <div className="lg:col-span-7">
+        <FeedTabs
+          tabs={tabs}
+          active={tab}
+          onChange={setTab}
+          moreHref={tab === "links" ? "/business/links" : tab === "people" ? "/business/customers" : "/business/payments"}
         />
-        <MetricCard
-          href="/business/payments"
-          icon={Receipt}
-          iconWrap="bg-[#e4eef8] text-[#3a5f86]"
-          label="Sales"
-          value={String(collections.length)}
-          hint="Customer collections"
-          status="See all"
-        />
-      </section>
-
-      <section className="grid gap-3 lg:grid-cols-12">
-        <div className="rounded-[1.25rem] border border-line/80 bg-white p-4 shadow-[0_1px_2px_rgba(12,25,19,0.04)] lg:col-span-7">
-          <div className="mb-3">
-            <h2 className="text-base font-black">Collect</h2>
-            <p className="mt-0.5 text-xs text-muted">Links, QR, and people who paid.</p>
-          </div>
-          <div className="grid grid-cols-2 gap-2.5">
-            {tiles.map((tile) => (
-              <WalletTile
-                key={tile.href}
-                href={tile.href}
-                icon={tile.icon}
-                iconWrap={tile.wrap}
-                label={tile.label}
-                copy={tile.copy}
-              />
-            ))}
-          </div>
-        </div>
-        <div className="lg:col-span-5">
-          <CashFlow title="Collections" bars={bars} />
-        </div>
-      </section>
-
-      <section className="rounded-[1.25rem] border border-line/80 bg-white p-4 shadow-[0_1px_2px_rgba(12,25,19,0.04)]">
-        <div className="mb-1 flex items-center justify-between">
-          <div>
-            <h2 className="text-base font-black">Links</h2>
-            <p className="mt-0.5 text-xs text-muted">Checkout pages customers open.</p>
-          </div>
-          <Link href="/business/links" className="text-sm font-bold text-ink/70">
-            {links.length ? "See all" : "Create"}
-          </Link>
-        </div>
-        {links.length === 0 ? (
-          <p className="mt-3 rounded-2xl bg-paper px-4 py-8 text-center text-sm text-muted">None</p>
-        ) : (
-          <div className="mt-2 space-y-0.5">
-            {links.slice(0, 4).map((link) => (
-              <Link
-                key={link.id}
-                href={payLinkPath(link.slug)}
-                className="flex items-center gap-3 rounded-2xl px-1.5 py-2.5 transition hover:bg-paper"
-              >
-                {link.imageUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={link.imageUrl} alt={link.title} className="h-12 w-12 rounded-xl object-cover" />
-                ) : (
-                  <div className="grid h-12 w-12 place-items-center rounded-xl bg-[#f4ead2] px-1 text-center text-[10px] font-bold leading-tight text-[#8a691f]">
-                    {link.title.slice(0, 8)}
-                  </div>
-                )}
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-bold">{link.title}</p>
-                  <p className="text-xs text-muted">Open checkout</p>
-                </div>
-                <p className="shrink-0 font-mono text-sm font-black text-ink">
-                  {link.amount ? formatXAF(link.amount, { withCurrency: false }) : "Open"}
-                </p>
-              </Link>
-            ))}
-          </div>
-        )}
-      </section>
-
-      <section className="rounded-[1.25rem] border border-line/80 bg-white p-4 shadow-[0_1px_2px_rgba(12,25,19,0.04)]">
-        <div className="mb-1 flex items-center justify-between">
-          <div>
-            <h2 className="text-base font-black">Recent activities</h2>
-            <p className="mt-0.5 text-xs text-muted">Latest collections.</p>
-          </div>
-          {collections.length ? (
-            <Link href="/business/payments" className="text-sm font-bold text-ink/70">
-              See all
-            </Link>
+        <div className="pt-1">
+          {tab === "links" ? (
+            links.length ? (
+              links.slice(0, 8).map((link) => (
+                <Link
+                  key={link.id}
+                  href={payLinkPath(link.slug)}
+                  className="flex items-center gap-3 rounded-xl px-0.5 py-2.5 hover:bg-white"
+                >
+                  {link.imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={link.imageUrl} alt="" className="h-10 w-10 rounded-full object-cover" />
+                  ) : (
+                    <span className="grid h-10 w-10 place-items-center rounded-full bg-[#eef1ef] text-xs font-black text-ink">
+                      {link.title.slice(0, 2).toUpperCase()}
+                    </span>
+                  )}
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-bold text-ink">{link.title}</span>
+                    <span className="block text-[12px] text-muted">Open checkout</span>
+                  </span>
+                  <span className="font-mono text-sm font-black text-ink">
+                    {link.amount ? formatXAF(link.amount, { withCurrency: false }) : "Open"}
+                  </span>
+                </Link>
+              ))
+            ) : (
+              <HubNone />
+            )
+          ) : null}
+          {tab === "people" ? (
+            payers.length ? (
+              payers.slice(0, 8).map((name) => (
+                <Link
+                  key={name}
+                  href="/business/customers"
+                  className="flex items-center gap-3 rounded-xl px-0.5 py-2.5 hover:bg-white"
+                >
+                  <span className="grid h-10 w-10 place-items-center rounded-full bg-[#eef1ef] text-xs font-black text-ink">
+                    {(name.trim().slice(0, 1) || "?").toUpperCase()}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-bold text-ink">{name}</span>
+                    <span className="block text-[12px] text-muted">Customer</span>
+                  </span>
+                  <span className="text-sm font-bold text-brand">See</span>
+                </Link>
+              ))
+            ) : (
+              <HubNone />
+            )
+          ) : null}
+          {tab === "sales" ? (
+            collections.length ? (
+              collections.slice(0, 8).map((tx) => (
+                <MoneyRow
+                  key={tx.id}
+                  href={txHref(tx.id)}
+                  mark={(tx.counterparty.trim().slice(0, 1) || "?").toUpperCase()}
+                  title={tx.counterparty}
+                  meta={`${tx.method} · ${formatDate(tx.createdAt)}`}
+                  amount={`+${formatXAF(tx.amount, { withCurrency: false })}`}
+                  tone="in"
+                  badge={<StatusBadge status={tx.status} />}
+                />
+              ))
+            ) : (
+              <HubNone />
+            )
           ) : null}
         </div>
-        {collections.length === 0 ? (
-          <p className="mt-3 rounded-2xl bg-paper px-4 py-8 text-center text-sm text-muted">None</p>
-        ) : (
-          <div className="mt-2 space-y-0.5">
-            {collections.slice(0, 6).map((tx) => (
-              <Link
-                key={tx.id}
-                href={txHref(tx.id)}
-                className="flex items-center justify-between gap-3 rounded-2xl px-1.5 py-2.5 transition hover:bg-paper"
-              >
-                <div className="flex min-w-0 items-center gap-3">
-                  <Initial name={tx.counterparty} />
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-bold">{tx.counterparty}</p>
-                    <p className="text-xs text-muted">{formatDate(tx.createdAt)}</p>
-                  </div>
-                </div>
-                <div className="shrink-0 text-right">
-                  <p className="font-mono text-sm font-black text-brand-deep">
-                    +{formatXAF(tx.amount, { withCurrency: false })}
-                  </p>
-                  <StatusBadge status={tx.status} />
-                </div>
-              </Link>
-            ))}
-          </div>
-        )}
-      </section>
+      </div>
     </div>
-  );
-}
-
-function Initial({ name }: { name: string }) {
-  const letter = (name.trim()[0] || "?").toUpperCase();
-  return (
-    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#ece6f8] text-sm font-black text-[#5b4a8a]">
-      {letter}
-    </span>
   );
 }

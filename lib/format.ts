@@ -84,3 +84,19 @@ const MONEY_OUT: TransactionKind[] = [
 export function isMoneyOut(kind: string) {
   return MONEY_OUT.includes(kind as TransactionKind);
 }
+
+export function dayNet(
+  rows: Array<{ amount: number; status: string; kind: string; createdAt: string }>,
+  day = new Date(),
+) {
+  const start = new Date(day.getFullYear(), day.getMonth(), day.getDate()).getTime();
+  const end = start + 86_400_000;
+  let net = 0;
+  for (const row of rows) {
+    if (row.status !== "success") continue;
+    const at = new Date(row.createdAt).getTime();
+    if (at < start || at >= end) continue;
+    net += isMoneyOut(row.kind) ? -row.amount : row.amount;
+  }
+  return net;
+}
