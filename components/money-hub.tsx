@@ -90,6 +90,7 @@ export function BalanceHero({
         )}
       >
         Today {deltaLabel}
+        {hidden ? "" : " XAF"}
       </p>
     </section>
   );
