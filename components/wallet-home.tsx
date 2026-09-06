@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import type { LucideIcon } from "lucide-react";
 import { ArrowRight, ChevronRight, Eye, EyeOff, Flame, PiggyBank, Sparkles } from "lucide-react";
 import { PayQR } from "@/components/qr";
 import { COUNTRIES } from "@/lib/countries";
@@ -111,22 +110,27 @@ export function WalletBalance({
 
 /* ---------- Action grid ---------- */
 
-export type ActionTile = { href: string; label: string; icon: LucideIcon; tone: string; badge?: string };
+export type ActionTile = { href: string; label: string; art: string; badge?: string };
 
 export function ActionGrid({ items }: { items: ActionTile[] }) {
   return (
     <nav className="grid grid-cols-4 gap-2" aria-label="Quick actions">
       {items.map((item) => {
-        const Icon = item.icon;
         return (
           <Link
             key={item.href}
             href={item.href}
-            className="group relative flex flex-col items-center gap-2 rounded-2xl bg-white px-1 py-3 text-center ring-1 ring-line/80 transition hover:-translate-y-0.5 hover:shadow-[0_10px_24px_rgba(12,25,19,0.08)]"
+            className="group relative flex flex-col items-center gap-1 rounded-2xl bg-white px-1 py-2.5 text-center ring-1 ring-line/80 transition hover:-translate-y-0.5 hover:shadow-[0_10px_24px_rgba(12,25,19,0.08)]"
           >
-            <span className={cn("grid h-11 w-11 place-items-center rounded-2xl transition group-hover:scale-105", item.tone)}>
-              <Icon className="h-5 w-5" />
-            </span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={item.art}
+              alt=""
+              width={56}
+              height={56}
+              draggable={false}
+              className="h-14 w-14 object-contain transition group-hover:scale-105"
+            />
             <span className="text-[11.5px] font-bold text-ink">{item.label}</span>
             {item.badge ? (
               <span className="absolute -top-1.5 right-1.5 rounded-full bg-gold px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide text-ink">{item.badge}</span>

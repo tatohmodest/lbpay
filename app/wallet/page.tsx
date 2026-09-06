@@ -2,19 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import {
-  ArrowDownLeft,
-  ArrowUpRight,
-  Globe2,
-  Phone,
-  PiggyBank,
-  Plus,
-  QrCode,
-  Receipt,
-  Send,
-  WalletCards,
-  Zap,
-} from "lucide-react";
+import { Phone, Plus, QrCode, Receipt, Zap } from "lucide-react";
 import { StatusBadge } from "@/components/ui/badge";
 import { AppImg } from "@/components/app-img";
 import { CopyHandle } from "@/components/copy-handle";
@@ -25,6 +13,7 @@ import { VerifyPrompt } from "@/components/verify-prompt";
 import { InviteSomeone } from "@/components/invite-someone";
 import { ContactRow } from "@/components/wallet-contacts";
 import { BusinessPromo } from "@/components/business-promo";
+import { ACTION_ART } from "@/lib/assets";
 import { contactsFromTransactions } from "@/lib/contacts";
 import { dayNet, formatDate, formatXAF, isMoneyOut } from "@/lib/format";
 import { payHandleUrl } from "@/lib/origin";
@@ -36,14 +25,14 @@ import { useBrowserOrigin } from "@/lib/use-origin";
 import type { SavingsPlan, Transaction } from "@/lib/types";
 
 const actions = [
-  { href: "/wallet/send", label: "Send", icon: Send, tone: "bg-brand-soft text-brand-deep" },
-  { href: "/wallet/savings", label: "Save", icon: PiggyBank, tone: "bg-[#fff1d6] text-[#8a5a00]", badge: "New" },
-  { href: "/wallet/international", label: "Abroad", icon: Globe2, tone: "bg-[#e3ecff] text-[#1f3f9c]", badge: "Soon" },
-  { href: "/wallet/request", label: "Receive", icon: WalletCards, tone: "bg-[#eaf3ff] text-[#0f5fa3]" },
-  { href: "/wallet/deposit", label: "Deposit", icon: ArrowDownLeft, tone: "bg-[#e6f6ee] text-brand-dark" },
-  { href: "/wallet/withdraw", label: "Withdraw", icon: ArrowUpRight, tone: "bg-[#f3eefc] text-[#5b3aa3]" },
-  { href: "/wallet/quick", label: "Quick", icon: Zap, tone: "bg-[#fff4e5] text-[#b4530a]" },
-  { href: "/wallet/qr", label: "QR", icon: QrCode, tone: "bg-[#eef1ef] text-ink" },
+  { href: "/wallet/send", label: "Send", art: ACTION_ART.send },
+  { href: "/wallet/savings", label: "Save", art: ACTION_ART.save, badge: "New" },
+  { href: "/wallet/international", label: "Abroad", art: ACTION_ART.abroad, badge: "Soon" },
+  { href: "/wallet/request", label: "Receive", art: ACTION_ART.receive },
+  { href: "/wallet/deposit", label: "Deposit", art: ACTION_ART.deposit },
+  { href: "/wallet/withdraw", label: "Withdraw", art: ACTION_ART.withdraw },
+  { href: "/wallet/quick", label: "Quick", art: ACTION_ART.quick },
+  { href: "/wallet/qr", label: "QR", art: ACTION_ART.qr },
 ];
 
 const extras = [

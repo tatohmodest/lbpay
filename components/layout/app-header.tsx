@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Code2, Download, Globe2, History, Menu, PiggyBank, Shield, Store, UserRound, Wallet } from "lucide-react";
+import { Code2, Download, Globe2, Menu, PiggyBank, Shield, Store, Wallet } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { RightDrawer } from "@/components/ui/right-drawer";
 import { NotificationsButton } from "@/components/notifications-button";
@@ -16,6 +16,7 @@ import { openInstallPrompt, useStandaloneDisplay } from "@/lib/pwa";
 import { AppImg } from "@/components/app-img";
 import { LanguageToggle } from "@/components/language-toggle";
 import { useI18n } from "@/lib/i18n/use-i18n";
+import { ACTION_ART } from "@/lib/assets";
 
 export function AppHeader({ onOpenMenu }: { onOpenMenu?: () => void }) {
   const pathname = usePathname();
@@ -192,28 +193,35 @@ export function AppHeader({ onOpenMenu }: { onOpenMenu?: () => void }) {
 export function BottomNav() {
   const pathname = usePathname();
   const items = [
-    { href: "/wallet", label: "Wallet", icon: Wallet },
-    { href: "/wallet/savings", label: "Save", icon: PiggyBank },
-    { href: "/wallet/history", label: "History", icon: History },
-    { href: "/business", label: "Business", icon: Store },
-    { href: "/wallet/profile", label: "Profile", icon: UserRound },
+    { href: "/wallet", label: "Wallet", art: ACTION_ART.wallet },
+    { href: "/wallet/savings", label: "Save", art: ACTION_ART.save },
+    { href: "/wallet/history", label: "History", art: ACTION_ART.history },
+    { href: "/business", label: "Business", art: ACTION_ART.business },
+    { href: "/wallet/profile", label: "Profile", art: ACTION_ART.profile },
   ];
 
   return (
     <nav className="fixed bottom-0 left-0 z-50 flex h-[4.5rem] w-full items-center justify-around bg-white/95 pb-safe backdrop-blur-xl md:hidden">
       {items.map((item) => {
         const active = isBottomNavActive(item.href, pathname);
-        const Icon = item.icon;
         return (
           <Link
             key={item.href}
             href={item.href}
             className={cn(
-              "flex min-w-0 flex-1 flex-col items-center gap-1 text-[11px] font-medium tracking-wide",
+              "flex min-w-0 flex-1 flex-col items-center gap-0.5 text-[11px] font-medium tracking-wide",
               active ? "text-brand" : "text-muted",
             )}
           >
-            <Icon className={cn("h-5 w-5", active && "fill-brand/15")} />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={item.art}
+              alt=""
+              width={32}
+              height={32}
+              draggable={false}
+              className={cn("h-8 w-8 object-contain transition", active ? "scale-110" : "opacity-80")}
+            />
             {item.label}
           </Link>
         );
