@@ -2,7 +2,7 @@ import { ProductPage, productMetadata } from "@/components/marketing/product-pag
 
 export const metadata = productMetadata(
   "Business checkout for Cameroon",
-  "Collect MTN, Orange, and wallet through one QR and payment-link checkout. (Cards coming soon)",
+  "Create product links, share a shop page, and get paid with MTN, Orange, or wallet. (Cards coming soon)",
   "/products/business",
 );
 
@@ -10,16 +10,16 @@ export default function BusinessProductPage() {
   return (
     <ProductPage
       eyebrow="Business"
-      title="One counter for every way Cameroon pays."
-      description="QR codes, payment links, and one checkout. Customers pay with MTN, Orange, or wallet. Cards coming soon. You get paid in one place."
-      image="/illustrations/merchant-qr.webp"
-      alt="LBPay merchant QR checkout in Cameroon"
+      title="Run your business with LBPay."
+      description="Create product links and share them with your customers. Share the whole shop or just one product. They pay with MTN, Orange, or wallet. You get paid in one place."
+      image="/illustrations/business-banner.webp"
+      alt="Run your business with LBPay. Create product links and share them with customers to get paid."
       points={[
-        "MTN, Orange, cards, and LBPay wallet",
-        "Payment links you can share anywhere",
-        "Settlements on the same XAF ledger",
+        "Product links you can share on WhatsApp",
+        "A shop page for the whole catalogue, or one product at a time",
+        "MTN, Orange, and LBPay wallet in one checkout",
       ]}
-      cta={{ href: "/signup", label: "Apply as a business" }}
+      cta={{ href: "/signup", label: "Start selling" }}
       secondary={{ href: "/docs", label: "Read the docs" }}
     />
   );

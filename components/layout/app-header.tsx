@@ -31,7 +31,7 @@ export function AppHeader({ onOpenMenu }: { onOpenMenu?: () => void }) {
   const products = [
     { href: "/wallet", label: t("nav.wallet"), icon: Wallet, copy: "Send, receive, and pay from one place", show: true },
     { href: "/wallet/savings", label: t("nav.savings"), icon: PiggyBank, copy: "Daily, weekly or monthly pots with a streak", show: true },
-    { href: "/wallet/international", label: t("nav.abroad"), icon: Globe2, copy: "Send to 9 countries, receive from anywhere", show: true },
+    { href: "/wallet/international", label: t("nav.abroad"), icon: Globe2, copy: "Coming this Friday", show: true },
     {
       href: "/business",
       label: t("nav.business"),

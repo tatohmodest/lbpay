@@ -4,8 +4,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { PaymentLinkForm } from "@/components/payment-link-form";
 import { PaymentLinkManageList } from "@/components/payment-link-manage";
 import { BusinessPageHeader } from "@/components/business/page-header";
+import { ShareRow } from "@/components/share-row";
 import { useNotify } from "@/lib/notify";
 import { useMe } from "@/lib/hooks/wallet";
+import { shopShareText, shopUrl } from "@/lib/shop";
+import { useBrowserOrigin } from "@/lib/use-origin";
 
 type LinkRow = {
   id: string;
@@ -56,35 +59,52 @@ export default function WalletLinksPage() {
   });
 
   const links = data.data?.links || [];
+  const origin = useBrowserOrigin();
+  const handle = me.data?.user?.lbpayId || "";
+  const shopName = me.data?.user?.businessName || me.data?.user?.name || "Your shop";
+  const listingUrl = handle ? shopUrl(handle, origin) : "";
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div className="mx-auto max-w-5xl space-y-5">
       <BusinessPageHeader
-        kicker="Checkout"
-        title="Payment links"
-        copy="Add a product photo. Customers see it on the checkout before they pay."
+        kicker="Products"
+        title="Product listing"
+        copy="Create a product, share the whole shop, or send just one link. Customers pay you directly."
       />
-      <section className="rounded-[2rem] bg-white p-4 shadow-[0_1px_2px_rgba(12,25,19,0.04)] md:p-6">
-        <h2 className="text-base font-black md:text-lg">New product link</h2>
-        <p className="mt-1 text-sm text-muted">Add a photo and pick a wrap, then share.</p>
+      {handle ? (
+        <section className="rounded-[1.75rem] bg-white p-5 ring-1 ring-line/80 sm:p-6">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand">Share the shop</p>
+          <h2 className="mt-1 text-lg font-black">Your product page</h2>
+          <p className="mt-1 text-sm text-muted">
+            Send this page so customers can browse every product. Or copy a single product link below.
+          </p>
+          <p className="mt-2 truncate font-mono text-xs font-semibold text-ink">{listingUrl}</p>
+          <div className="mt-4">
+            <ShareRow url={listingUrl} text={shopShareText(shopName, listingUrl)} copyLabel="Copy shop link" />
+          </div>
+        </section>
+      ) : null}
+      <section className="rounded-[1.75rem] bg-white p-4 ring-1 ring-line/80 md:p-6">
+        <h2 className="text-base font-black md:text-lg">New product</h2>
+        <p className="mt-1 text-sm text-muted">Add a photo and a price, then share.</p>
         <div className="mt-4">
           <PaymentLinkForm
-            merchantName={me.data?.user?.businessName || me.data?.user?.name}
+            merchantName={shopName}
             submitting={create.isPending}
             onSubmit={(input) => create.mutateAsync(input)}
           />
         </div>
       </section>
       {links.length > 0 ? (
-        <div className="mt-5">
-          <h2 className="text-base font-black md:text-lg">Your links</h2>
-          <p className="mt-1 mb-3 text-sm text-muted">Edit the title, amount, photo, or wrap.</p>
+        <div>
+          <h2 className="text-base font-black md:text-lg">Your products</h2>
+          <p className="mt-1 mb-3 text-sm text-muted">Share one product, or send the whole listing.</p>
           <PaymentLinkManageList
             links={links}
-            merchantName={me.data?.user?.businessName || me.data?.user?.name}
+            merchantName={shopName}
             apiPath="/api/wallet/links"
             queryKeys={[["wallet-links"], ["business"]]}
-            layout="rows"
+            layout="cards"
           />
         </div>
       ) : null}

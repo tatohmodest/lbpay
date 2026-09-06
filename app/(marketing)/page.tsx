@@ -183,19 +183,19 @@ export default async function LandingPage() {
             >
               <div className="p-8 pb-4">
                 <p className="text-sm font-semibold text-brand">For businesses</p>
-                <h3 className="mt-2 text-2xl font-extrabold tracking-tight">One counter for every way Cameroon pays.</h3>
+                <h3 className="mt-2 text-2xl font-extrabold tracking-tight">Run your business with product links.</h3>
                 <p className="mt-3 text-sm leading-6 text-white/70">
-                  QR, payment links, MTN, Orange, cards, and wallet.
+                  Share a shop page or one product. Customers pay with MTN, Orange, or wallet.
                 </p>
                 <span className="mt-6 inline-flex items-center gap-2 rounded-full bg-brand px-4 py-2 text-sm font-semibold text-white">
                   See checkout <ArrowRight className="h-4 w-4" />
                 </span>
               </div>
               <Image
-                src="/illustrations/business-kit.webp"
-                alt="LBPay merchant QR, card, and dashboard"
-                width={1200}
-                height={900}
+                src="/illustrations/business-banner.webp"
+                alt="Run your business with LBPay. Create product links and share them with customers."
+                width={1536}
+                height={1024}
                 className="h-auto w-full"
               />
             </Link>

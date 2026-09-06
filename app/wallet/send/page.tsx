@@ -4,11 +4,11 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { ArrowLeftRight } from "lucide-react";
-import { Card } from "@/components/ui/card";
 import { Field, Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ConfirmSheet } from "@/components/confirm-sheet";
 import { NetworkMark } from "@/components/network-mark";
+import { MoneyCard, MoneyPage, RailTile } from "@/components/money-move";
 import { contactsFromTransactions } from "@/lib/contacts";
 import { useApp } from "@/lib/store";
 import type { Transaction } from "@/lib/types";
@@ -112,11 +112,9 @@ function SendInner() {
   }
 
   return (
-    <div className="mx-auto max-w-xl">
-      <h1 className="text-2xl font-black">Send money</h1>
-      <p className="mt-1 text-sm text-muted">Send to a friend, a shop, or any Mobile Money number.</p>
-      <Card className="mt-6 p-6">
-        <p className="mb-4 text-sm text-muted">Available {formatXAF(balance)}</p>
+    <MoneyPage title="Send money" copy="A friend, a shop, or any Mobile Money number.">
+      <MoneyCard>
+        <p className="mb-4 text-sm font-semibold text-muted">Available {formatXAF(balance)}</p>
         <form
           className="flex flex-col gap-4"
           onSubmit={(e) => {
@@ -131,32 +129,29 @@ function SendInner() {
             <div className="grid grid-cols-3 gap-2">
               {(
                 [
-                  { id: "wallet" as const, label: "LBPay" },
-                  { id: "mtn" as const, label: "MTN" },
-                  { id: "orange" as const, label: "Orange" },
+                  { id: "wallet" as const, label: "LBPay", hint: "No fee" },
+                  { id: "mtn" as const, label: "MTN", hint: "Charge 3%" },
+                  { id: "orange" as const, label: "Orange", hint: "Charge 3%" },
                 ]
               ).map((item) => (
-                <button
+                <RailTile
                   key={item.id}
-                  type="button"
+                  selected={network === item.id}
                   onClick={() => {
                     setNetwork(item.id);
                     if (item.id !== "wallet") setTo((current) => cameroonMsisdn(current));
                   }}
-                  className={`rounded-xl border px-3 py-3 text-sm font-semibold ${
-                    network === item.id ? "border-brand bg-brand-soft text-brand-dark" : "border-line"
-                  }`}
                 >
                   {item.id === "wallet" ? (
-                    <ArrowLeftRight className="mx-auto mb-1 h-5 w-5" />
+                    <ArrowLeftRight className="h-5 w-5" />
                   ) : (
-                    <NetworkMark network={item.id} className="mx-auto mb-1 h-9 w-9 rounded-xl text-[9px]" />
+                    <NetworkMark network={item.id} className="h-9 w-9 rounded-xl text-[9px]" />
                   )}
-                  {item.label}
-                  <span className={`mt-1 block text-[10px] ${item.id === "wallet" ? "font-semibold text-brand" : "font-medium text-muted"}`}>
-                    {item.id === "wallet" ? "No fee" : "Charge 3%"}
+                  <span className="text-sm font-bold">{item.label}</span>
+                  <span className={`text-[10px] ${item.id === "wallet" ? "font-semibold text-brand" : "font-medium text-muted"}`}>
+                    {item.hint}
                   </span>
-                </button>
+                </RailTile>
               ))}
             </div>
           </Field>
@@ -170,7 +165,7 @@ function SendInner() {
             />
           </Field>
           {network === "wallet" && lookup.data?.found ? (
-            <p className="rounded-xl bg-brand-soft px-3 py-2 text-sm font-semibold text-brand-dark">
+            <p className="rounded-2xl bg-brand-soft px-3 py-2 text-sm font-semibold text-brand-dark">
               {lookup.data.user?.name} · @{lookup.data.user?.lbpayId}
             </p>
           ) : null}
@@ -201,16 +196,14 @@ function SendInner() {
             Review and confirm
           </Button>
         </form>
-      </Card>
-      <div className="mt-6 rounded-[2rem] bg-white p-5 shadow-[0_1px_2px_rgba(12,25,19,0.04)]">
+      </MoneyCard>
+      <MoneyCard>
         <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand">People</p>
         <h2 className="mt-1 text-lg font-black">Contacts</h2>
         {contacts.length === 0 ? (
-          <div className="mt-4">
-            <p className="rounded-2xl bg-paper px-4 py-8 text-center text-sm text-muted">None</p>
-          </div>
+          <p className="mt-4 rounded-2xl bg-paper px-4 py-8 text-center text-sm text-muted">None</p>
         ) : (
-          <div className="mt-4 flex flex-wrap gap-2">
+          <div className="mt-3 divide-y divide-line/70">
             {contacts.map((contact) => (
               <button
                 key={contact.key}
@@ -219,17 +212,26 @@ function SendInner() {
                   setTo(contact.to);
                   setNetwork(contact.via);
                 }}
-                className="rounded-full bg-paper px-3 py-1.5 text-sm font-bold text-ink"
+                className="flex w-full items-center gap-3 py-3 text-left"
               >
-                {contact.label}
+                <span className="grid h-11 w-11 place-items-center rounded-full bg-brand-soft text-xs font-black text-brand">
+                  {contact.label.trim().slice(0, 1).toUpperCase() || "?"}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-bold text-ink">{contact.label}</span>
+                  <span className="block text-xs text-muted">
+                    {contact.via === "wallet" ? "LBPay wallet" : contact.via === "orange" ? "Orange Money" : "MTN MoMo"}
+                  </span>
+                </span>
+                <span className="text-sm font-bold text-brand">Send</span>
               </button>
             ))}
           </div>
         )}
-      </div>
+      </MoneyCard>
       <ConfirmSheet
         open={open}
-        title={network === "wallet" ? "Confirm send" : "Confirm send"}
+        title="Confirm send"
         subtitle={network === "wallet" ? `@${lookup.data?.user?.lbpayId || to.replace(/^@/, "")}` : phone}
         amount={network === "wallet" ? value : debit}
         details={details}
@@ -240,7 +242,7 @@ function SendInner() {
         onClose={() => setOpen(false)}
         onConfirm={confirm}
       />
-    </div>
+    </MoneyPage>
   );
 }
 

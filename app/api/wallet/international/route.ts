@@ -5,6 +5,7 @@ import { requireActiveUser } from "@/lib/server/guard";
 import { assertDailyOutbound } from "@/lib/server/limits";
 import { pinFailResponse, verifyUserPin } from "@/lib/server/pin";
 import { COUNTRIES, findCountry, findRail, internationalIssue, quote, recipientIssue } from "@/lib/countries";
+import { FEATURES, INTERNATIONAL_OPENS } from "@/lib/flags";
 import { publicPaymentError } from "@/lib/public-error";
 
 /**
@@ -20,6 +21,12 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  if (!FEATURES.international) {
+    return NextResponse.json(
+      { error: `Transfers abroad open ${INTERNATIONAL_OPENS}. Nothing has been charged.` },
+      { status: 503 },
+    );
+  }
   try {
     const auth = await requireActiveUser();
     if (auth.error || !auth.user) return auth.error!;
