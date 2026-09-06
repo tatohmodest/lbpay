@@ -4,8 +4,10 @@ import Link from "next/link";
 import {
   ArrowRight,
   Check,
+  Flame,
   Globe,
   Lock,
+  PiggyBank,
   Play,
   ShieldCheck,
   Wallet,
@@ -17,6 +19,7 @@ import { Container } from "@/components/marketing/container";
 import { FaqAccordion } from "@/components/marketing/faq-accordion";
 import { HomeReviews } from "@/components/marketing/home-reviews";
 import { SendWidget } from "@/components/marketing/send-widget";
+import { AfricaCorridors, SavingsShowcase } from "@/components/marketing/growth-sections";
 import { Button } from "@/components/ui/button";
 import { SITE_DESCRIPTION, SITE_OG_IMAGE, SITE_TITLE, SITE_URL } from "@/lib/site";
 import { getRequestLocale } from "@/lib/i18n/server";
@@ -44,8 +47,9 @@ const rails = ["MTN Mobile Money", "Orange Money", "Cards", "LBPay wallet"];
 
 const features = [
   { icon: Zap, title: "Fast & affordable", copy: "Wallet to wallet is instant. No waiting on a float agent." },
-  { icon: Globe, title: "Built for Cameroon", copy: "XAF only. MTN, Orange, cards, and a stored wallet." },
-  { icon: Wallet, title: "Extra clear fees", copy: "Deposits 2%. Withdrawals 3%. Transfers inside LBPay are free." },
+  { icon: PiggyBank, title: "Savings with teeth", copy: "Daily, weekly or monthly pots. Miss a cycle and the penalty you chose is cut." },
+  { icon: Globe, title: "Cameroon first, Africa next", copy: "XAF at home. Naira, cedi and CFA delivered in 9 more countries." },
+  { icon: Wallet, title: "Extra clear fees", copy: "Deposits 2%. Withdrawals 3%. Abroad 2.5%. Wallet transfers are free." },
   { icon: Lock, title: "Secure & trusted", copy: "Email OTP, a 4-digit PIN, and a ledger that posts every move." },
 ];
 
@@ -77,6 +81,9 @@ export default async function LandingPage() {
 
       <section className="-mt-[var(--header-h)] bg-forest text-white">
         <Container className="pb-10 pt-[calc(var(--header-h)+3.5rem)] text-center md:pb-6 md:pt-[calc(var(--header-h)+4.5rem)]">
+          <p className="mx-auto mb-5 inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 text-[12px] font-semibold text-hero-muted ring-1 ring-white/15">
+            <Flame className="h-3.5 w-3.5 text-brand" /> {t("home.heroPill")}
+          </p>
           <h1 className="mx-auto max-w-[16ch] text-[2.6rem] font-extrabold leading-[1.08] tracking-tight md:text-[4.25rem]">
             {t("home.heroTitle")}
           </h1>
@@ -99,6 +106,18 @@ export default async function LandingPage() {
               </Button>
             </Link>
           </div>
+          <dl className="mx-auto mt-10 grid max-w-2xl grid-cols-3 divide-x divide-white/10 text-center">
+            {[
+              { v: "0 XAF", k: "Wallet to wallet" },
+              { v: "2.5%", k: "Send abroad" },
+              { v: "10", k: "Countries" },
+            ].map((item) => (
+              <div key={item.k} className="px-3">
+                <dt className="font-mono text-xl font-black tracking-tight md:text-2xl">{item.v}</dt>
+                <dd className="mt-0.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-hero-muted">{item.k}</dd>
+              </div>
+            ))}
+          </dl>
         </Container>
         <div className="relative mx-auto max-w-[1180px] px-5 md:px-8">
           <Image
@@ -194,7 +213,7 @@ export default async function LandingPage() {
               <Button className="rounded-full px-6">Get started</Button>
             </Link>
           </div>
-          <div className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-5">
             {features.map((item) => (
               <div key={item.title}>
                 <span className="grid h-12 w-12 place-items-center rounded-full bg-brand text-white">
@@ -236,6 +255,8 @@ export default async function LandingPage() {
           />
         </Container>
       </section>
+
+      <SavingsShowcase />
 
       <section className="bg-forest py-20 text-white lg:py-24">
         <Container className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
@@ -358,34 +379,7 @@ export default async function LandingPage() {
         </Container>
       </section>
 
-      <section className="bg-white py-20 lg:py-24">
-        <Container className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
-          <div>
-            <h2 className="text-3xl font-extrabold tracking-tight md:text-[2.4rem] md:leading-[1.15]">
-              Send money across Cameroon with LBPay.
-            </h2>
-            <ul className="mt-8 grid grid-cols-2 gap-3">
-              {cities.map((city) => (
-                <li key={city} className="flex items-center gap-2 text-sm font-medium text-ink">
-                  <span className="h-2 w-2 rounded-full bg-brand" />
-                  {city}
-                </li>
-              ))}
-            </ul>
-            <p className="mt-6 text-sm leading-6 text-muted">
-              Built for how people already move cash in Douala, Yaoundé, and the rest of the
-              country.
-            </p>
-          </div>
-          <Image
-            src="/illustrations/cameroon-map.webp"
-            alt="Map of Cameroon highlighting coverage"
-            width={1600}
-            height={900}
-            className="h-auto w-full"
-          />
-        </Container>
-      </section>
+      <AfricaCorridors cities={cities} />
 
       <section id="faq" className="bg-paper py-20 lg:py-24" aria-labelledby="faq-heading">
         <Container className="grid gap-10 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-16">
@@ -404,10 +398,10 @@ export default async function LandingPage() {
       <section className="bg-forest py-16 text-center text-white md:py-20">
         <Container>
           <h2 className="mx-auto max-w-2xl text-3xl font-extrabold tracking-tight md:text-4xl">
-            Set up and move money with LBPay.
+            Send it. Save it. Send it further.
           </h2>
           <p className="mx-auto mt-3 max-w-lg text-sm leading-7 text-white/70">
-            Email, a one-time code, a PIN. Then send XAF across Cameroon.
+            Email, a one-time code, a PIN. Then send XAF across Cameroon, lock a savings pot, or pay someone in Lagos.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <Link href="/signup">
@@ -427,7 +421,7 @@ export default async function LandingPage() {
           </div>
           <p className="mt-6 inline-flex items-center gap-2 text-sm text-white/60">
             <ShieldCheck className="h-4 w-4 text-brand" />
-            PIN confirmed. Ledger posted. XAF only.
+            PIN confirmed. Ledger posted. Home in XAF, delivered in local money abroad.
           </p>
         </Container>
       </section>

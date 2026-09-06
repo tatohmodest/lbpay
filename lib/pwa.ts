@@ -71,6 +71,8 @@ export function openInstallPrompt() {
 
 export function shouldAutoOfferInstall(pathname: string) {
   if (isStandaloneDisplay() || wasInstallDismissed()) return false;
+  // Desktop visitors get the header install button instead of an interruption.
+  if (typeof window !== "undefined" && !window.matchMedia("(max-width: 900px)").matches) return false;
   const blocked = ["/wallet", "/business", "/developers", "/admin", "/pin", "/pay", "/p", "/r"];
   return !blocked.some((path) => pathname === path || pathname.startsWith(`${path}/`));
 }

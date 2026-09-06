@@ -58,9 +58,25 @@ export function InstallPrompt() {
   useEffect(() => {
     if (autoOpened.current) return;
     if (!shouldAutoOfferInstall(pathname)) return;
-    autoOpened.current = true;
-    const timer = window.setTimeout(() => setOpen(true), 700);
-    return () => window.clearTimeout(timer);
+    // Let people read first: offer the app only after they have scrolled a screen
+    // or spent a while on the page, and only once per session.
+    let timer = 0;
+    const offer = () => {
+      if (autoOpened.current) return;
+      autoOpened.current = true;
+      cleanup();
+      setOpen(true);
+    };
+    const onScroll = () => {
+      if (window.scrollY > window.innerHeight * 0.9) offer();
+    };
+    const cleanup = () => {
+      window.clearTimeout(timer);
+      window.removeEventListener("scroll", onScroll);
+    };
+    timer = window.setTimeout(offer, 20_000);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return cleanup;
   }, [pathname]);
 
   useEffect(() => {
@@ -143,7 +159,7 @@ export function InstallPrompt() {
             </h2>
             <p className="mt-3 max-w-sm text-base leading-7 text-muted">
               Add LBPay to your home screen. Your XAF wallet, PIN lock, and transfers open like any
-              other app on this {deviceLabel}.
+              other app on {platform === "ios" ? "your iPhone" : platform === "android" ? "your Android phone" : "this device"}.
             </p>
           </div>
 

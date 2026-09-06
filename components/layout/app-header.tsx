@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Code2, Download, History, Menu, Shield, Store, UserRound, Users, Wallet } from "lucide-react";
+import { Code2, Download, Globe2, History, Menu, PiggyBank, Shield, Store, UserRound, Wallet } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { RightDrawer } from "@/components/ui/right-drawer";
 import { NotificationsButton } from "@/components/notifications-button";
@@ -30,6 +30,8 @@ export function AppHeader({ onOpenMenu }: { onOpenMenu?: () => void }) {
   const menuOpen = open && openedPath === pathname;
   const products = [
     { href: "/wallet", label: t("nav.wallet"), icon: Wallet, copy: "Send, receive, and pay from one place", show: true },
+    { href: "/wallet/savings", label: t("nav.savings"), icon: PiggyBank, copy: "Daily, weekly or monthly pots with a streak", show: true },
+    { href: "/wallet/international", label: t("nav.abroad"), icon: Globe2, copy: "Send to 9 countries, receive from anywhere", show: true },
     {
       href: "/business",
       label: t("nav.business"),
@@ -59,7 +61,7 @@ export function AppHeader({ onOpenMenu }: { onOpenMenu?: () => void }) {
           <Logo href="/wallet" markClassName="h-8 w-8" />
           <nav className="hidden items-center gap-1 lg:flex">
             {products.map((item) => {
-              const active = pathname.startsWith(item.href);
+              const active = item.href === "/wallet" ? isBottomNavActive("/wallet", pathname) : pathname.startsWith(item.href);
               return (
                 <Link
                   key={item.href}
@@ -154,7 +156,7 @@ export function AppHeader({ onOpenMenu }: { onOpenMenu?: () => void }) {
         >
           <nav className="flex flex-col gap-1">
             {products.map((item) => {
-              const active = pathname.startsWith(item.href);
+              const active = item.href === "/wallet" ? isBottomNavActive("/wallet", pathname) : pathname.startsWith(item.href);
               const Icon = item.icon;
               return (
                 <Link
@@ -191,7 +193,7 @@ export function BottomNav() {
   const pathname = usePathname();
   const items = [
     { href: "/wallet", label: "Wallet", icon: Wallet },
-    { href: "/wallet/contacts", label: "Contacts", icon: Users },
+    { href: "/wallet/savings", label: "Save", icon: PiggyBank },
     { href: "/wallet/history", label: "History", icon: History },
     { href: "/business", label: "Business", icon: Store },
     { href: "/wallet/profile", label: "Profile", icon: UserRound },
@@ -224,7 +226,7 @@ function isBottomNavActive(href: string, pathname: string) {
   if (href === "/wallet") {
     if (pathname === "/wallet") return true;
     if (!pathname.startsWith("/wallet/")) return false;
-    return !["/wallet/contacts", "/wallet/history", "/wallet/profile", "/wallet/support"].some(
+    return !["/wallet/savings", "/wallet/international", "/wallet/history", "/wallet/profile", "/wallet/support"].some(
       (tab) => pathname === tab || pathname.startsWith(`${tab}/`),
     );
   }

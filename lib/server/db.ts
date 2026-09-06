@@ -22,6 +22,7 @@ import type {
   KycTrack,
   PaymentLink,
   PaymentMethod,
+  SavingsPlan,
   Transaction,
   TransactionKind,
   TransactionStatus,
@@ -64,7 +65,7 @@ export type StoredWallet = {
 export type StoredTx = Transaction & {
   userId: string;
   counterpartyId?: string;
-  rail?: "internal" | "payunit" | "sandbox";
+  rail?: "internal" | "payunit" | "sandbox" | "partner";
   meta?: {
     from?: string;
     to?: string;
@@ -78,8 +79,18 @@ export type StoredTx = Transaction & {
     refunded?: boolean;
     creditApplied?: boolean;
     refundApplied?: boolean;
+    planId?: string;
+    planName?: string;
+    country?: string;
+    currency?: string;
+    fxRate?: number;
+    receiveAmount?: number;
+    recipientName?: string;
+    corridor?: string;
   };
 };
+
+export type StoredSavingsPlan = SavingsPlan & { userId: string };
 
 export type KycApplication = {
   id: string;
@@ -199,6 +210,7 @@ export type DbShape = {
   reviews?: StoredReview[];
   supportThreads?: StoredSupportThread[];
   supportMessages?: StoredSupportMessage[];
+  savings?: StoredSavingsPlan[];
   vapid?: { publicKey: string; privateKey: string };
 };
 
@@ -256,6 +268,7 @@ function mergeLedgers(base: DbShape, next: DbShape): DbShape {
     reviews: mergeById(base.reviews, next.reviews),
     supportThreads: mergeById(base.supportThreads, next.supportThreads),
     supportMessages: mergeById(base.supportMessages, next.supportMessages),
+    savings: mergeById(base.savings, next.savings),
     otps: next.otps || [],
     vapid: next.vapid || base.vapid,
   };
@@ -299,6 +312,7 @@ async function empty(): Promise<DbShape> {
     reviews: [],
     supportThreads: [],
     supportMessages: [],
+    savings: [],
   };
 }
 
@@ -319,6 +333,7 @@ function withCollections(db: DbShape): DbShape {
     reviews: db.reviews || [],
     supportThreads: db.supportThreads || [],
     supportMessages: db.supportMessages || [],
+    savings: db.savings || [],
     vapid: db.vapid,
   };
 }

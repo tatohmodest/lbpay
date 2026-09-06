@@ -23,7 +23,30 @@ export async function POST(request: Request) {
     if (!["success", "failed", "pending", "cancelled"].includes(status)) {
       return NextResponse.json({ error: "Invalid status." }, { status: 400 });
     }
-    await patchTx(tx.id, { status, note: `${tx.note || ""} · admin: ${reason}` });
+    const refundAbroad =
+      tx.kind === "international" &&
+      tx.status === "pending" &&
+      (status === "failed" || status === "cancelled") &&
+      !tx.meta?.refunded;
+    await patchTx(tx.id, {
+      status,
+      note: `${tx.note || ""} · admin: ${reason}`,
+      meta: { ...tx.meta, stage: status === "success" ? "done" : tx.meta?.stage, ...(refundAbroad ? { refunded: true } : {}) },
+    });
+    if (refundAbroad) {
+      await recordLedgerMove({
+        userId: tx.userId,
+        amount: tx.amount + (tx.fee || 0),
+        direction: "credit",
+        kind: "reversal",
+        method: "wallet",
+        counterparty: tx.counterparty,
+        note: `Transfer abroad ${tx.id} not delivered · refunded`,
+        status: "success",
+        rail: "internal",
+        meta: { from: tx.id, refunded: true },
+      });
+    }
     await writeAudit({
       actorId: auth.user.id,
       action: "tx.status",
@@ -35,7 +58,7 @@ export async function POST(request: Request) {
   } else if (body.action === "reverse") {
     const user = await findUserById(tx.userId);
     if (!user) return NextResponse.json({ error: "Wallet owner missing." }, { status: 404 });
-    const isOut = ["send", "withdraw", "airtime", "bill", "cross_network", "payout"].includes(tx.kind);
+    const isOut = ["send", "withdraw", "airtime", "bill", "cross_network", "payout", "international"].includes(tx.kind);
     await recordLedgerMove({
       userId: user.id,
       amount: tx.amount,

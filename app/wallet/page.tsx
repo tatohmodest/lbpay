@@ -5,7 +5,10 @@ import Link from "next/link";
 import {
   ArrowDownLeft,
   ArrowUpRight,
+  Globe2,
   Phone,
+  PiggyBank,
+  Plus,
   QrCode,
   Receipt,
   Send,
@@ -15,36 +18,32 @@ import {
 import { StatusBadge } from "@/components/ui/badge";
 import { AppImg } from "@/components/app-img";
 import { CopyHandle } from "@/components/copy-handle";
-import {
-  ActionRail,
-  BalanceHero,
-  FeedTabs,
-  HubNone,
-  MoneyRow,
-  PromoBanner,
-  SearchJump,
-  SparkCard,
-} from "@/components/money-hub";
+import { FeedTabs, MoneyRow, SearchJump } from "@/components/money-hub";
+import { PlanCard, SavingsEmpty } from "@/components/savings";
+import { AbroadCard, ActionGrid, NextMove, SectionHead, WalletBalance, WeekPulse, buildNudges } from "@/components/wallet-home";
 import { VerifyPrompt } from "@/components/verify-prompt";
 import { InviteSomeone } from "@/components/invite-someone";
 import { ContactRow } from "@/components/wallet-contacts";
-import { contactInitials, contactsFromTransactions } from "@/lib/contacts";
+import { contactsFromTransactions } from "@/lib/contacts";
 import { dayNet, firstName, formatDate, formatXAF, isMoneyOut } from "@/lib/format";
 import { useApp } from "@/lib/store";
 import { useMe } from "@/lib/hooks/wallet";
-import { txHref } from "@/lib/tx";
-import type { Transaction } from "@/lib/types";
+import { kindTitle, txHref } from "@/lib/tx";
+import type { SavingsPlan, Transaction } from "@/lib/types";
 
 const actions = [
-  { href: "/wallet/send", label: "Send", icon: Send },
-  { href: "/wallet/request", label: "Receive", icon: WalletCards },
-  { href: "/wallet/deposit", label: "Deposit", icon: ArrowDownLeft },
-  { href: "/wallet/withdraw", label: "Withdraw", icon: ArrowUpRight },
-  { href: "/wallet/qr", label: "QR", icon: QrCode },
-] as const;
+  { href: "/wallet/send", label: "Send", icon: Send, tone: "bg-brand-soft text-brand-deep" },
+  { href: "/wallet/savings", label: "Save", icon: PiggyBank, tone: "bg-[#fff1d6] text-[#8a5a00]", badge: "New" },
+  { href: "/wallet/international", label: "Abroad", icon: Globe2, tone: "bg-[#e3ecff] text-[#1f3f9c]", badge: "New" },
+  { href: "/wallet/request", label: "Receive", icon: WalletCards, tone: "bg-[#eaf3ff] text-[#0f5fa3]" },
+  { href: "/wallet/deposit", label: "Deposit", icon: ArrowDownLeft, tone: "bg-[#e6f6ee] text-brand-dark" },
+  { href: "/wallet/withdraw", label: "Withdraw", icon: ArrowUpRight, tone: "bg-[#f3eefc] text-[#5b3aa3]" },
+  { href: "/wallet/quick", label: "Quick", icon: Zap, tone: "bg-[#fff4e5] text-[#b4530a]" },
+  { href: "/wallet/qr", label: "QR", icon: QrCode, tone: "bg-[#eef1ef] text-ink" },
+];
 
 const extras = [
-  { href: "/wallet/quick", label: "Quick", copy: "Any network", icon: Zap },
+  { href: "/wallet/quick", label: "Quick transfer", copy: "MTN ↔ Orange, any network", icon: Zap },
   { href: "/wallet/airtime", label: "Airtime", copy: "Coming soon", icon: Phone },
   { href: "/wallet/bills", label: "Bills", copy: "Coming soon", icon: Receipt },
 ];
@@ -61,6 +60,11 @@ export default function WalletPage() {
   const [tab, setTab] = useState("activity");
   const balance = me.data?.balance ?? state.balance;
   const transactions = (me.data?.transactions as Transaction[] | undefined) ?? state.transactions;
+  const savings = me.data?.savings as SavingsPlan[] | undefined;
+  const plans = useMemo(() => savings ?? [], [savings]);
+  const activePlans = plans.filter((p) => p.status === "active");
+  const saved = plans.reduce((sum, p) => sum + p.balance, 0);
+  const streak = activePlans.reduce((best, p) => Math.max(best, p.streak), 0);
   const contacts = contactsFromTransactions(transactions);
   const frozen = (me.data?.user?.status || state.user.status) === "frozen";
   const personalKyc = me.data?.user?.kyc?.personal || "unverified";
@@ -71,8 +75,12 @@ export default function WalletPage() {
     () => transactions.filter((tx) => tx.status === "pending" && !isMoneyOut(tx.kind)),
     [transactions],
   );
-  const pendingIn = pending.reduce((sum, tx) => sum + tx.amount, 0);
   const today = dayNet(transactions);
+  const nudges = useMemo(
+    () => buildNudges({ balance, plans, transactions, contactsCount: contacts.length, kyc: personalKyc }),
+    [balance, plans, transactions, contacts.length, personalKyc],
+  );
+  const orderedPlans = [...activePlans].sort((a, b) => +new Date(a.nextDueAt) - +new Date(b.nextDueAt));
 
   return (
     <div className="mx-auto max-w-lg space-y-5 lg:mx-0 lg:grid lg:max-w-none lg:grid-cols-12 lg:items-start lg:gap-8 lg:space-y-0">
@@ -91,7 +99,7 @@ export default function WalletPage() {
             className="h-10 w-10 rounded-full object-cover"
           />
           <div className="min-w-0 flex-1">
-            <p className="truncate text-[15px] font-bold text-ink">{person}</p>
+            <p className="truncate text-[15px] font-bold text-ink">{user?.name || state.user.name || "Your wallet"}</p>
             {handle ? (
               <CopyHandle handle={handle} className="-ml-1 text-xs text-muted hover:text-ink" />
             ) : (
@@ -107,42 +115,44 @@ export default function WalletPage() {
           </Link>
         </header>
 
-        <SearchJump href="/wallet/send" placeholder="Number or @handle" />
+        <WalletBalance amount={balance} saved={saved} delta={today} name={person} />
 
-        <BalanceHero
-          label="Total (XAF)"
-          amount={balance}
-          delta={today}
-          cta={{ href: "/wallet/deposit", label: "Add money" }}
-        />
+        <ActionGrid items={actions} />
 
-        <ActionRail items={[...actions]} />
+        <NextMove nudges={nudges} />
 
-        <PromoBanner
-          kicker="Quick"
-          title="Send across MTN and Orange."
-          href="/wallet/quick"
-          cta="Send"
-        />
+        <SearchJump href="/wallet/send" placeholder="Send to a number or @handle" />
 
-        <div className="grid grid-cols-2 gap-2.5">
-          <SparkCard
-            href="/wallet/contacts"
-            title="People"
-            value={contacts.length ? String(contacts.length) : "None"}
-            hint="Send again"
-            faces={contacts.slice(0, 3).map((contact) => contactInitials(contact.label))}
-          />
-          <SparkCard
-            href="/wallet/history"
-            title="Incoming"
-            value={pendingIn ? formatXAF(pendingIn, { withCurrency: false }) : "None"}
-            hint={pendingIn ? "On the way" : "Nothing pending"}
-          />
-        </div>
+        <section className="space-y-2.5">
+          <SectionHead title="Savings pots" href="/wallet/savings" action={activePlans.length ? "Manage" : undefined} />
+          {orderedPlans.length ? (
+            <div className="space-y-2">
+              {orderedPlans.slice(0, 2).map((plan) => (
+                <PlanCard key={plan.id} plan={plan} compact />
+              ))}
+              <div className="flex items-center gap-2">
+                <Link
+                  href="/wallet/savings?new=1"
+                  className="inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-xl bg-white text-sm font-bold text-ink ring-1 ring-line/80 hover:bg-paper"
+                >
+                  <Plus className="h-4 w-4" /> New pot
+                </Link>
+                {orderedPlans.length > 2 ? (
+                  <Link href="/wallet/savings" className="inline-flex h-10 items-center justify-center rounded-xl px-4 text-sm font-bold text-brand-deep hover:underline">
+                    +{orderedPlans.length - 2} more
+                  </Link>
+                ) : null}
+              </div>
+            </div>
+          ) : (
+            <SavingsEmpty />
+          )}
+        </section>
       </div>
 
       <div className="space-y-5 lg:col-span-7">
+        <WeekPulse transactions={transactions} streak={streak} />
+
         <section>
           <FeedTabs
             tabs={tabs}
@@ -155,7 +165,7 @@ export default function WalletPage() {
               contacts.length ? (
                 contacts.slice(0, 8).map((contact) => <ContactRow key={contact.key} contact={contact} />)
               ) : (
-                <HubNone />
+                <EmptyFeed title="No one yet" copy="Send money once and the person shows up here for a two-tap repeat." href="/wallet/send" cta="Send money" />
               )
             ) : null}
             {tab === "incoming" ? (
@@ -166,14 +176,14 @@ export default function WalletPage() {
                     href={txHref(tx.id)}
                     mark={tx.counterparty.trim().slice(0, 1).toUpperCase() || "?"}
                     title={tx.counterparty}
-                    meta={`${tx.kind.replace("_", " ")} · ${formatDate(tx.createdAt)}`}
+                    meta={`${kindTitle(tx.kind)} · ${formatDate(tx.createdAt)}`}
                     amount={`+${formatXAF(tx.amount, { withCurrency: false })}`}
                     tone="in"
                     badge={<StatusBadge status={tx.status} />}
                   />
                 ))
               ) : (
-                <HubNone />
+                <EmptyFeed title="Nothing on the way" copy="Share your @handle or a payment link and incoming money shows up here." href="/wallet/request" cta="Request money" />
               )
             ) : null}
             {tab === "activity" ? (
@@ -184,9 +194,9 @@ export default function WalletPage() {
                     <MoneyRow
                       key={tx.id}
                       href={txHref(tx.id)}
-                      mark={tx.counterparty.trim().slice(0, 1).toUpperCase() || "?"}
+                      mark={tx.kind === "savings_in" || tx.kind === "penalty" ? "🐷" : tx.kind === "international" ? "🌍" : tx.counterparty.trim().slice(0, 1).toUpperCase() || "?"}
                       title={tx.counterparty}
-                      meta={`${tx.kind.replace("_", " ")} · ${formatDate(tx.createdAt)}`}
+                      meta={`${kindTitle(tx.kind)} · ${formatDate(tx.createdAt)}`}
                       amount={`${out ? "−" : "+"}${formatXAF(tx.amount, { withCurrency: false })}`}
                       tone={out ? "out" : "in"}
                       badge={<StatusBadge status={tx.status} />}
@@ -194,13 +204,16 @@ export default function WalletPage() {
                   );
                 })
               ) : (
-                <HubNone />
+                <EmptyFeed title="No activity yet" copy="Add money, then send, save or pay. Everything you do lands here." href="/wallet/deposit" cta="Add money" />
               )
             ) : null}
           </div>
         </section>
 
-        <InviteSomeone />
+        <div className="grid gap-4 md:grid-cols-2">
+          <AbroadCard />
+          <InviteSomeone />
+        </div>
 
         <section className="overflow-hidden rounded-2xl bg-white ring-1 ring-line/80">
           {extras.map((item) => (
@@ -220,6 +233,18 @@ export default function WalletPage() {
           ))}
         </section>
       </div>
+    </div>
+  );
+}
+
+function EmptyFeed({ title, copy, href, cta }: { title: string; copy: string; href: string; cta: string }) {
+  return (
+    <div className="rounded-2xl bg-white px-4 py-8 text-center ring-1 ring-line/80">
+      <p className="text-sm font-black text-ink">{title}</p>
+      <p className="mx-auto mt-1 max-w-xs text-xs text-muted">{copy}</p>
+      <Link href={href} className="mt-3 inline-flex h-9 items-center rounded-xl bg-brand px-4 text-sm font-bold text-white hover:bg-brand-dark">
+        {cta}
+      </Link>
     </div>
   );
 }

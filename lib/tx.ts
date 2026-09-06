@@ -11,6 +11,14 @@ export type TxMeta = {
   linkSlug?: string;
   handle?: string;
   refunded?: boolean;
+  planId?: string;
+  planName?: string;
+  country?: string;
+  currency?: string;
+  fxRate?: number;
+  receiveAmount?: number;
+  recipientName?: string;
+  corridor?: string;
 };
 
 const KIND_TITLE: Record<TransactionKind, string> = {
@@ -29,6 +37,11 @@ const KIND_TITLE: Record<TransactionKind, string> = {
   subscription: "Subscription",
   adjustment: "Adjustment",
   reversal: "Reversal",
+  savings_in: "Saved",
+  savings_out: "Savings withdrawal",
+  penalty: "Missed-save penalty",
+  international: "Sent abroad",
+  international_in: "Received from abroad",
 };
 
 const STATUS_LABEL: Record<TransactionStatus, string> = {
@@ -89,6 +102,14 @@ export function publicTx(tx: {
   if (raw.linkSlug) meta.linkSlug = String(raw.linkSlug);
   if (raw.handle) meta.handle = String(raw.handle);
   if (raw.refunded) meta.refunded = true;
+  if (raw.planId) meta.planId = String(raw.planId);
+  if (raw.planName) meta.planName = String(raw.planName);
+  if (raw.country) meta.country = String(raw.country);
+  if (raw.currency) meta.currency = String(raw.currency);
+  if (typeof raw.fxRate === "number") meta.fxRate = raw.fxRate;
+  if (typeof raw.receiveAmount === "number") meta.receiveAmount = raw.receiveAmount;
+  if (raw.recipientName) meta.recipientName = String(raw.recipientName);
+  if (raw.corridor) meta.corridor = String(raw.corridor);
 
   return {
     id: tx.id,

@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatXAF } from "@/lib/format";
 import { readApiJson } from "@/lib/http";
+import type { SavingsFrequency, SavingsPlan } from "@/lib/types";
 
 export type MeResponse = {
   session: boolean;
@@ -27,6 +28,7 @@ export type MeResponse = {
   supportUnread?: number;
   keys?: Array<{ id: string; env: string; publicKey: string; secretMasked: string; createdAt: string }>;
   links?: Array<{ id: string; slug: string; title: string; amount: number | null; status: string }>;
+  savings?: SavingsPlan[];
   transactions?: Array<{
     id: string;
     kind: string;
@@ -49,6 +51,14 @@ export type MeResponse = {
       linkSlug?: string;
       handle?: string;
       refunded?: boolean;
+      planId?: string;
+      planName?: string;
+      country?: string;
+      currency?: string;
+      fxRate?: number;
+      receiveAmount?: number;
+      recipientName?: string;
+      corridor?: string;
     };
   }>;
 };
@@ -174,4 +184,94 @@ export function useSpend() {
 
 export function moneyLabel(amount: number) {
   return formatXAF(amount);
+}
+
+export type SavingsPlanInput = {
+  name: string;
+  emoji?: string;
+  frequency: SavingsFrequency;
+  amount: number;
+  target?: number | null;
+  penaltyRate?: number;
+  autoSave?: boolean;
+  pin: string;
+};
+
+function post<T>(url: string, body: unknown) {
+  return fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  }).then((res) => parseApi<T>(res));
+}
+
+export function useSavings() {
+  return useQuery({
+    queryKey: ["savings"],
+    queryFn: async () => parseApi<{ savings: SavingsPlan[]; balance: number }>(await fetch("/api/wallet/savings")),
+  });
+}
+
+export function useSavingsPlan(id: string) {
+  return useQuery({
+    queryKey: ["savings", id],
+    enabled: Boolean(id),
+    queryFn: async () => parseApi<{ plan: SavingsPlan }>(await fetch(`/api/wallet/savings/${encodeURIComponent(id)}`)),
+  });
+}
+
+export function useCreateSavingsPlan() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (input: SavingsPlanInput) => post<{ ok: true; plan: SavingsPlan }>("/api/wallet/savings", input),
+    onSuccess: () => {
+      client.invalidateQueries({ queryKey: ["me"] });
+      client.invalidateQueries({ queryKey: ["savings"] });
+    },
+  });
+}
+
+export type SavingsAction =
+  | { action: "deposit"; amount: number; pin: string }
+  | { action: "withdraw"; amount: number | "all"; pin: string }
+  | { action: "close"; pin: string }
+  | { action: "settings"; autoSave?: boolean; penaltyRate?: number; name?: string; emoji?: string; target?: number | null };
+
+export function useSavingsAction(id: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (input: SavingsAction) =>
+      post<{ ok: true; plan: SavingsPlan; balance?: number }>(`/api/wallet/savings/${encodeURIComponent(id)}`, input),
+    onSuccess: () => {
+      client.invalidateQueries({ queryKey: ["me"] });
+      client.invalidateQueries({ queryKey: ["savings"] });
+    },
+  });
+}
+
+export function useInternationalSend() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (input: {
+      country: string;
+      rail: string;
+      recipient: string;
+      recipientName: string;
+      amount: number;
+      note?: string;
+      pin: string;
+    }) =>
+      post<{
+        ok: true;
+        status: "pending" | "success";
+        balance: number;
+        fee: number;
+        debitAmount: number;
+        receiveAmount: number;
+        currency: string;
+        rate: number;
+        transactionId: string;
+      }>("/api/wallet/international", input),
+    onSuccess: () => client.invalidateQueries({ queryKey: ["me"] }),
+  });
 }
