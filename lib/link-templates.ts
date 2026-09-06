@@ -28,7 +28,7 @@ export const LINK_TEMPLATES = [
 
 export type LinkTemplateId = (typeof LINK_TEMPLATES)[number]["id"];
 
-export const DEFAULT_LINK_TEMPLATE: LinkTemplateId = "statement";
+export const DEFAULT_LINK_TEMPLATE: LinkTemplateId = "display";
 
 const TEMPLATE_IDS = new Set<string>(LINK_TEMPLATES.map((item) => item.id));
 

@@ -6,6 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PaymentLinkForm } from "@/components/payment-link-form";
+import { ProductCard } from "@/components/product-card";
 import { ProductLinkFrame } from "@/components/product-link-frame";
 import { formatXAF } from "@/lib/format";
 import { useNotify } from "@/lib/notify";
@@ -124,7 +125,14 @@ export function PaymentLinkManageList({
         const template = linkTemplateMeta(link.template);
         const isEditing = editing?.id === link.id;
         return (
-          <Card key={link.id} className={layout === "cards" ? "overflow-hidden rounded-[1.75rem] p-3" : "rounded-[1.75rem] p-4"}>
+          <Card
+            key={link.id}
+            className={
+              isEditing || layout === "rows"
+                ? "rounded-[1.75rem] p-4"
+                : "overflow-hidden rounded-[1.75rem] border-0 bg-transparent p-0 shadow-none"
+            }
+          >
             {isEditing ? (
               <div>
                 <p className="text-sm font-semibold">Edit payment link</p>
@@ -185,29 +193,25 @@ export function PaymentLinkManageList({
                 </div>
               </div>
             ) : (
-              <>
-                <ProductLinkFrame
-                  template={link.template}
-                  title={link.title}
-                  amount={link.amount}
-                  merchantName={merchantName}
-                  imageUrl={link.imageUrl}
-                />
-                <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-muted">{template.name}</p>
-                <p className="mt-1 truncate font-mono text-xs text-muted">{url}</p>
-                <LinkActions
-                  url={url}
-                  slug={link.slug}
-                  busy={deletingId === link.id}
-                  onCopy={() =>
-                    copyText(url)
-                      .then(() => notify.success("Copied", "Share this link."))
-                      .catch((err: Error) => notify.error("Could not copy", err.message))
-                  }
-                  onEdit={() => setEditing(link)}
-                  onDelete={() => void remove(link)}
-                />
-              </>
+              <ProductCard
+                mode="share"
+                merchantName={merchantName}
+                product={{ slug: link.slug, title: link.title, amount: link.amount, imageUrl: link.imageUrl }}
+                actions={
+                  <LinkActions
+                    url={url}
+                    slug={link.slug}
+                    busy={deletingId === link.id}
+                    onCopy={() =>
+                      copyText(url)
+                        .then(() => notify.success("Copied", "Share this link."))
+                        .catch((err: Error) => notify.error("Could not copy", err.message))
+                    }
+                    onEdit={() => setEditing(link)}
+                    onDelete={() => void remove(link)}
+                  />
+                }
+              />
             )}
           </Card>
         );

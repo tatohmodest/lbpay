@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Check, Lock, ShieldCheck } from "lucide-react";
 import { AmountField } from "@/components/amount-field";
 import { ConfirmSheet } from "@/components/confirm-sheet";
@@ -10,7 +10,7 @@ import { NetworkMark } from "@/components/network-mark";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/input";
 import { Logo } from "@/components/logo";
-import { ProductLinkFrame } from "@/components/product-link-frame";
+import { ProductCard } from "@/components/product-card";
 import { formatXAF } from "@/lib/format";
 import { useMe } from "@/lib/hooks/wallet";
 import { amountIssue } from "@/lib/limits";
@@ -40,7 +40,14 @@ async function pollStatus(tx: string) {
   return { status: "pending" as const };
 }
 
-function CheckoutShell({ children }: { children: React.ReactNode }) {
+function CheckoutShell({
+  children,
+  variant = "page",
+}: {
+  children: React.ReactNode;
+  variant?: "page" | "embedded";
+}) {
+  if (variant === "embedded") return <div className="w-full">{children}</div>;
   return (
     <main className="min-h-screen bg-paper px-4 py-6 sm:py-10">
       <div className="mx-auto w-full max-w-md">
@@ -55,12 +62,7 @@ function CheckoutShell({ children }: { children: React.ReactNode }) {
 
 function CheckoutCard({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <section
-      className={cn(
-        "rounded-[1.25rem] border border-line/80 bg-white p-5 shadow-[0_1px_2px_rgba(12,25,19,0.04)] sm:p-6",
-        className,
-      )}
-    >
+    <section className={cn("rounded-[1.75rem] bg-white p-5 ring-1 ring-line/80 sm:p-6", className)}>
       {children}
     </section>
   );
@@ -79,7 +81,7 @@ export function CheckoutPay({
   merchantHandle,
   fixedAmount,
   imageUrl,
-  template,
+  variant = "page",
 }: {
   handle?: string;
   slug?: string;
@@ -89,8 +91,10 @@ export function CheckoutPay({
   fixedAmount?: number | null;
   imageUrl?: string;
   template?: string;
+  variant?: "page" | "embedded";
 }) {
   const me = useMe();
+  const router = useRouter();
   const search = useSearchParams();
   const signedIn = Boolean(me.data?.session);
   const [method, setMethod] = useState<Method>("wallet");
@@ -257,7 +261,7 @@ export function CheckoutPay({
 
   if (paid) {
     return (
-      <CheckoutShell>
+      <CheckoutShell variant={variant}>
         <CheckoutCard className="text-center">
           <span className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-brand-soft text-brand">
             <Check className="h-6 w-6" />
@@ -272,7 +276,7 @@ export function CheckoutPay({
 
   if (waiting) {
     return (
-      <CheckoutShell>
+      <CheckoutShell variant={variant}>
         <CheckoutCard className="text-center">
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand">Waiting for payment</p>
           <h2 className="mt-2 text-2xl font-black">Approve on your phone</h2>
@@ -295,21 +299,24 @@ export function CheckoutPay({
   }
 
   return (
-    <CheckoutShell>
+    <CheckoutShell variant={variant}>
       {slug ? (
         <div className="mb-4">
-          <ProductLinkFrame
-            size="hero"
-            template={template}
-            title={title}
-            amount={fixedAmount}
+          <ProductCard
+            mode="hero"
             merchantName={merchantName}
-            imageUrl={imageUrl}
+            product={{ slug, title, amount: fixedAmount ?? null, imageUrl }}
           />
         </div>
       ) : null}
       <CheckoutCard>
-        {slug ? (
+        {variant === "embedded" ? (
+          <>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">Or send any amount</p>
+            <h1 className="mt-2 text-xl font-black tracking-tight">Pay {merchantName}</h1>
+            <p className="mt-1 font-mono text-sm font-bold text-brand">@{merchantHandle}</p>
+          </>
+        ) : slug ? (
           <>
             <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">Pay this</p>
             <p className="mt-1 font-mono text-sm font-bold text-brand">@{merchantHandle}</p>
@@ -379,8 +386,8 @@ export function CheckoutPay({
                 type="button"
                 onClick={() => setMethod(item.id)}
                 className={cn(
-                  "flex items-center gap-3 rounded-[1.1rem] border p-3 text-left transition",
-                  selected ? "border-brand bg-brand-soft" : "border-line bg-white hover:border-brand/40",
+                  "flex items-center gap-3 rounded-[1.25rem] p-3 text-left ring-1 transition",
+                  selected ? "bg-brand-soft ring-brand/40" : "bg-[#f6f8f7] ring-transparent hover:bg-white hover:ring-line/80",
                 )}
               >
                 <NetworkMark network={item.id} />
@@ -421,7 +428,7 @@ export function CheckoutPay({
                 className="w-full"
                 onClick={() => {
                   rememberCheckoutReturn();
-                  window.location.assign("/signup");
+                  router.push("/signup");
                 }}
               >
                 Create a free wallet

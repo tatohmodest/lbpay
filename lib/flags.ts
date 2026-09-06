@@ -12,7 +12,11 @@ export const FEATURES = {
   marketplaceSplits: true,
   savings: false,
   lending: false,
+  /** Cross-border send is built, but held until the corridor is live. */
+  international: false,
 } as const;
+
+export const INTERNATIONAL_OPENS = "this Friday";
 
 export const LEGAL_NOTE =
   "Stored balances, cross-network transfers, custody, savings, lending, and merchant settlement can trigger licensing, KYC/AML, and safeguarding requirements. Confirm what can be offered directly versus through a licensed partner before enabling live money movement.";

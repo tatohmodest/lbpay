@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { findUserByHandle } from "@/lib/server/db";
+import { findUserByHandle, listLinks } from "@/lib/server/db";
 import { resolveAvatar } from "@/lib/avatar";
+import { publicProductsFromLinks } from "@/lib/shop";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -8,12 +9,15 @@ export async function GET(request: Request) {
   if (!q) return NextResponse.json({ error: "Missing handle" }, { status: 400 });
   const user = await findUserByHandle(q);
   if (!user) return NextResponse.json({ found: false });
+  const products = publicProductsFromLinks(await listLinks(user.id));
   return NextResponse.json({
     found: true,
     user: {
       name: user.name,
       lbpayId: user.lbpayId,
       avatar: resolveAvatar(user.avatar),
+      businessName: user.businessName || "",
     },
+    products,
   });
 }

@@ -2,10 +2,10 @@
 
 import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Card } from "@/components/ui/card";
 import { Field, Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ConfirmSheet } from "@/components/confirm-sheet";
+import { MoneyCard, MoneyPage } from "@/components/money-move";
 import { useApp } from "@/lib/store";
 import { formatXAF } from "@/lib/format";
 import { useDisburse, useMe } from "@/lib/hooks/wallet";
@@ -170,11 +170,9 @@ export default function WithdrawPage() {
   }
 
   return (
-    <div className="mx-auto max-w-xl">
-      <h1 className="text-2xl font-black">Withdraw</h1>
-      <p className="mt-1 text-sm text-muted">Cash out to MTN or Orange whenever you need it.</p>
+    <MoneyPage title="Withdraw" copy="Cash out to MTN or Orange whenever you need it.">
       {waiting ? (
-        <Card className="mt-6 p-6 text-center">
+        <MoneyCard className="text-center">
           <p className="text-sm font-bold uppercase tracking-wide text-brand">Sending</p>
           <h2 className="mt-2 text-2xl font-black">Paying Mobile Money</h2>
           <p className="mt-4 rounded-2xl bg-paper px-4 py-3 text-sm leading-6 text-ink">
@@ -190,9 +188,9 @@ export default function WithdrawPage() {
               Back to wallet
             </Button>
           </div>
-        </Card>
+        </MoneyCard>
       ) : (
-        <Card className="mt-6 p-6">
+        <MoneyCard>
           <form
             className="flex flex-col gap-4"
             onSubmit={(e) => {
@@ -248,7 +246,7 @@ export default function WithdrawPage() {
               Review withdrawal
             </Button>
           </form>
-        </Card>
+        </MoneyCard>
       )}
       <ConfirmSheet
         open={open}
@@ -263,6 +261,6 @@ export default function WithdrawPage() {
         onClose={() => setOpen(false)}
         onConfirm={confirm}
       />
-    </div>
+    </MoneyPage>
   );
 }

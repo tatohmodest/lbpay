@@ -1,10 +1,15 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 import { ArrowRight, ChevronRight, Eye, EyeOff, Flame, PiggyBank, Sparkles } from "lucide-react";
+import { PayQR } from "@/components/qr";
 import { COUNTRIES } from "@/lib/countries";
+import { copyText } from "@/lib/clipboard";
+import { FEATURES, INTERNATIONAL_OPENS } from "@/lib/flags";
 import { formatXAF, isMoneyOut } from "@/lib/format";
+import { useNotify } from "@/lib/notify";
 import { dueState, penaltyFor, timeUntil } from "@/lib/savings";
 import type { SavingsPlan, Transaction } from "@/lib/types";
 import { useHiddenAmount } from "@/components/house-card";
@@ -17,60 +22,92 @@ export function WalletBalance({
   saved,
   delta,
   name,
+  payUrl,
 }: {
   amount: number;
   saved: number;
   delta: number;
   name: string;
+  payUrl?: string;
 }) {
   const { hidden, toggle } = useHiddenAmount();
+  const notify = useNotify();
+  const [copied, setCopied] = useState(false);
   const mask = (n: number) => (hidden ? "••••••" : formatXAF(n, { withCurrency: false }));
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+
+  async function copyPayLink() {
+    if (!payUrl) return;
+    try {
+      await copyText(payUrl);
+      setCopied(true);
+      notify.success("Copied", "Share this payment link so people can pay you.");
+      window.setTimeout(() => setCopied(false), 1600);
+    } catch {
+      notify.error("Could not copy", "Open QR and copy the link from there.");
+    }
+  }
 
   return (
     <section className="relative overflow-hidden rounded-[1.75rem] bg-forest p-5 text-white sm:p-6">
       <div className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-brand/25 blur-3xl" />
       <div className="pointer-events-none absolute -bottom-24 -left-10 h-48 w-48 rounded-full bg-gold/10 blur-3xl" />
-      <div className="relative">
-        <div className="flex items-center justify-between gap-3">
-          <p className="text-[13px] font-semibold text-hero-muted">
-            {greeting}, {name}
+      <div className="relative flex items-stretch gap-4">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-[13px] font-semibold text-hero-muted">
+              {greeting}, {name}
+            </p>
+            <button
+              type="button"
+              onClick={toggle}
+              className="grid h-8 w-8 place-items-center rounded-full bg-white/10 text-hero-muted hover:bg-white/20 hover:text-white"
+              aria-label={hidden ? "Show amounts" : "Hide amounts"}
+            >
+              {hidden ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+            </button>
+          </div>
+          <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.16em] text-hero-muted">Available to spend</p>
+          <p className="mt-1 font-mono text-[2.1rem] font-black leading-none tracking-tight sm:text-[2.5rem]">
+            {mask(amount)} <span className="text-base font-bold text-hero-muted">XAF</span>
           </p>
+          <div className="mt-4 flex flex-wrap items-center gap-2 text-[12px] font-semibold">
+            <span
+              className={cn(
+                "rounded-full px-2.5 py-1",
+                delta > 0 ? "bg-brand/25 text-white" : "bg-white/10 text-hero-muted",
+              )}
+            >
+              Today {hidden ? "••••" : `${delta > 0 ? "+" : delta < 0 ? "−" : ""}${formatXAF(Math.abs(delta), { withCurrency: false })}`}
+            </span>
+            <Link href="/wallet/savings" className="inline-flex items-center gap-1 rounded-full bg-white/10 px-2.5 py-1 text-hero-muted hover:bg-white/20 hover:text-white">
+              <PiggyBank className="h-3.5 w-3.5" /> Saved {mask(saved)}
+            </Link>
+          </div>
+          <div className="mt-5 grid grid-cols-2 gap-2">
+            <Link href="/wallet/deposit" className="grid h-11 place-items-center rounded-xl bg-brand text-sm font-bold text-white shadow-[0_10px_24px_rgba(0,179,105,0.35)] hover:bg-brand-dark">
+              Add money
+            </Link>
+            <Link href="/wallet/send" className="grid h-11 place-items-center rounded-xl bg-white/12 text-sm font-bold text-white ring-1 ring-white/20 hover:bg-white/20">
+              Send
+            </Link>
+          </div>
+        </div>
+        {payUrl ? (
           <button
             type="button"
-            onClick={toggle}
-            className="grid h-8 w-8 place-items-center rounded-full bg-white/10 text-hero-muted hover:bg-white/20 hover:text-white"
-            aria-label={hidden ? "Show amounts" : "Hide amounts"}
+            onClick={() => void copyPayLink()}
+            className="flex w-[7.25rem] shrink-0 flex-col items-center justify-center gap-2 self-stretch rounded-[1.25rem] bg-white p-2 text-ink shadow-[0_10px_24px_rgba(6,38,28,0.18)]"
+            aria-label="Copy payment link"
+            title="Tap to copy your payment link"
           >
-            {hidden ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+            <PayQR value={payUrl} size={88} padded={false} />
+            <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted">
+              {copied ? "Copied" : "Tap to copy"}
+            </span>
           </button>
-        </div>
-        <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.16em] text-hero-muted">Available to spend</p>
-        <p className="mt-1 font-mono text-[2.4rem] font-black leading-none tracking-tight sm:text-[2.8rem]">
-          {mask(amount)} <span className="text-base font-bold text-hero-muted">XAF</span>
-        </p>
-        <div className="mt-4 flex flex-wrap items-center gap-2 text-[12px] font-semibold">
-          <span
-            className={cn(
-              "rounded-full px-2.5 py-1",
-              delta > 0 ? "bg-brand/25 text-white" : delta < 0 ? "bg-white/10 text-hero-muted" : "bg-white/10 text-hero-muted",
-            )}
-          >
-            Today {hidden ? "••••" : `${delta > 0 ? "+" : delta < 0 ? "−" : ""}${formatXAF(Math.abs(delta), { withCurrency: false })}`}
-          </span>
-          <Link href="/wallet/savings" className="inline-flex items-center gap-1 rounded-full bg-white/10 px-2.5 py-1 text-hero-muted hover:bg-white/20 hover:text-white">
-            <PiggyBank className="h-3.5 w-3.5" /> Saved {mask(saved)}
-          </Link>
-        </div>
-        <div className="mt-5 grid grid-cols-2 gap-2">
-          <Link href="/wallet/deposit" className="grid h-11 place-items-center rounded-xl bg-brand text-sm font-bold text-white shadow-[0_10px_24px_rgba(0,179,105,0.35)] hover:bg-brand-dark">
-            Add money
-          </Link>
-          <Link href="/wallet/send" className="grid h-11 place-items-center rounded-xl bg-white/12 text-sm font-bold text-white ring-1 ring-white/20 hover:bg-white/20">
-            Send
-          </Link>
-        </div>
+        ) : null}
       </div>
     </section>
   );
@@ -199,7 +236,7 @@ export function buildNudges({
       tone: "ink",
       kicker: "Lift your limits",
       title: "Verify your identity",
-      copy: "Takes two minutes and unlocks higher daily limits and transfers abroad.",
+      copy: "Takes two minutes and unlocks higher daily limits.",
       href: "/wallet/kyc",
       cta: "Verify",
     });
@@ -215,15 +252,17 @@ export function buildNudges({
       cta: "Pick a contact",
     });
   }
-  out.push({
-    id: "abroad",
-    tone: "ink",
-    kicker: "New",
-    title: "Send to Nigeria, Ghana, Senegal and more",
-    copy: "Flat 2.5% fee, delivered to Mobile Money or bank in local currency.",
-    href: "/wallet/international",
-    cta: "Send abroad",
-  });
+  if (FEATURES.international) {
+    out.push({
+      id: "abroad",
+      tone: "ink",
+      kicker: "New",
+      title: "Send to Nigeria, Ghana, Senegal and more",
+      copy: "Flat 2.5% fee, delivered to Mobile Money or bank in local currency.",
+      href: "/wallet/international",
+      cta: "Send abroad",
+    });
+  }
   return out;
 }
 
@@ -346,7 +385,7 @@ export function WeekPulse({ transactions, streak }: { transactions: Transaction[
 
 export function AbroadCard() {
   return (
-    <Link href="/wallet/international" className="group block overflow-hidden rounded-[1.5rem] bg-forest p-5 text-white ring-1 ring-forest transition hover:-translate-y-0.5">
+    <Link href="/wallet/international" className="group relative block overflow-hidden rounded-[1.5rem] bg-forest p-5 text-white ring-1 ring-forest transition hover:-translate-y-0.5">
       <p className="text-[11px] font-black uppercase tracking-[0.14em] text-brand">Across Africa</p>
       <p className="mt-1 text-lg font-black leading-tight">Send to 9 countries at a flat 2.5%.</p>
       <p className="mt-1 text-sm text-hero-muted">Naira, cedi, CFA — delivered to Mobile Money or bank.</p>
@@ -358,7 +397,13 @@ export function AbroadCard() {
         ))}
       </div>
       <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-bold text-white">
-        Send abroad <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
+        {FEATURES.international ? (
+          <>
+            Send abroad <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
+          </>
+        ) : (
+          <>Coming {INTERNATIONAL_OPENS}</>
+        )}
       </span>
     </Link>
   );

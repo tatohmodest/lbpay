@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Card } from "@/components/ui/card";
 import { Field, Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ConfirmSheet } from "@/components/confirm-sheet";
+import { MoneyCard, MoneyPage } from "@/components/money-move";
 import { NetworkToggle } from "@/components/network-toggle";
 import { useApp } from "@/lib/store";
 import { formatXAF } from "@/lib/format";
@@ -196,11 +196,9 @@ export default function QuickTransferPage() {
   }
 
   return (
-    <div className="mx-auto max-w-xl">
-      <h1 className="text-2xl font-black">Quick Transfer</h1>
-      <p className="mt-1 text-sm text-muted">Send money to any Mobile Money network. MTN to Orange, easily.</p>
+    <MoneyPage title="Quick Transfer" copy="Send money to any Mobile Money network. MTN to Orange, easily.">
       {waiting ? (
-        <Card className="mt-6 p-6 text-center">
+        <MoneyCard className="text-center">
           <p className="text-sm font-bold uppercase tracking-wide text-brand">
             {waiting.stage === "paying" ? "Sending" : "Waiting for payment"}
           </p>
@@ -222,9 +220,9 @@ export default function QuickTransferPage() {
               Cancel wait
             </Button>
           </div>
-        </Card>
+        </MoneyCard>
       ) : (
-        <Card className="mt-6 p-6">
+        <MoneyCard>
           <form
             className="flex flex-col gap-5"
             onSubmit={(e) => {
@@ -277,7 +275,7 @@ export default function QuickTransferPage() {
               Continue
             </Button>
           </form>
-        </Card>
+        </MoneyCard>
       )}
       <ConfirmSheet
         open={open}
@@ -293,7 +291,7 @@ export default function QuickTransferPage() {
         onClose={() => setOpen(false)}
         onConfirm={confirm}
       />
-      <p className="mt-4 text-xs text-muted">@{me.data?.user?.lbpayId || state.user.lbpayId}</p>
-    </div>
+      <p className="text-center text-xs text-muted">@{me.data?.user?.lbpayId || state.user.lbpayId}</p>
+    </MoneyPage>
   );
 }

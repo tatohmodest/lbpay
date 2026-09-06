@@ -2,10 +2,10 @@
 
 import { useCallback, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Card } from "@/components/ui/card";
 import { Field, Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ConfirmSheet } from "@/components/confirm-sheet";
+import { MoneyCard, MoneyPage } from "@/components/money-move";
 import { useApp } from "@/lib/store";
 import { formatXAF } from "@/lib/format";
 import { useCollect, useMe } from "@/lib/hooks/wallet";
@@ -154,11 +154,9 @@ export default function DepositPage() {
   };
 
   return (
-    <div className="mx-auto max-w-xl">
-        <h1 className="text-2xl font-black">Add money</h1>
-          <p className="mt-1 text-sm text-muted">Add money from MTN or Orange. (Card coming soon)</p>
+    <MoneyPage title="Add money" copy="Add money from MTN or Orange. (Card coming soon)">
       {waiting ? (
-        <Card className="mt-6 p-6 text-center">
+        <MoneyCard className="text-center">
           <p className="text-sm font-bold uppercase tracking-wide text-brand">Waiting for payment</p>
           <h2 className="mt-2 text-2xl font-black">Approve on your phone</h2>
           <p className="mt-2 text-sm leading-6 text-muted">
@@ -178,9 +176,9 @@ export default function DepositPage() {
               Cancel wait
             </Button>
           </div>
-        </Card>
+        </MoneyCard>
       ) : (
-        <Card className="mt-6 p-6">
+        <MoneyCard>
           <p className="mb-4 text-sm text-muted">Available {formatXAF(balance)}</p>
           <form
             className="flex flex-col gap-4"
@@ -232,7 +230,7 @@ export default function DepositPage() {
               Review deposit
             </Button>
           </form>
-        </Card>
+        </MoneyCard>
       )}
       <ConfirmSheet
         open={open}
@@ -252,6 +250,6 @@ export default function DepositPage() {
         onClose={() => setOpen(false)}
         onConfirm={confirm}
       />
-    </div>
+    </MoneyPage>
   );
 }

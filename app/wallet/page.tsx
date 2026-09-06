@@ -24,17 +24,21 @@ import { AbroadCard, ActionGrid, NextMove, SectionHead, WalletBalance, WeekPulse
 import { VerifyPrompt } from "@/components/verify-prompt";
 import { InviteSomeone } from "@/components/invite-someone";
 import { ContactRow } from "@/components/wallet-contacts";
+import { BusinessPromo } from "@/components/business-promo";
 import { contactsFromTransactions } from "@/lib/contacts";
 import { dayNet, firstName, formatDate, formatXAF, isMoneyOut } from "@/lib/format";
+import { payHandleUrl } from "@/lib/origin";
+import { productUnlocked } from "@/lib/roles";
 import { useApp } from "@/lib/store";
 import { useMe } from "@/lib/hooks/wallet";
 import { kindTitle, txHref } from "@/lib/tx";
+import { useBrowserOrigin } from "@/lib/use-origin";
 import type { SavingsPlan, Transaction } from "@/lib/types";
 
 const actions = [
   { href: "/wallet/send", label: "Send", icon: Send, tone: "bg-brand-soft text-brand-deep" },
   { href: "/wallet/savings", label: "Save", icon: PiggyBank, tone: "bg-[#fff1d6] text-[#8a5a00]", badge: "New" },
-  { href: "/wallet/international", label: "Abroad", icon: Globe2, tone: "bg-[#e3ecff] text-[#1f3f9c]", badge: "New" },
+  { href: "/wallet/international", label: "Abroad", icon: Globe2, tone: "bg-[#e3ecff] text-[#1f3f9c]", badge: "Soon" },
   { href: "/wallet/request", label: "Receive", icon: WalletCards, tone: "bg-[#eaf3ff] text-[#0f5fa3]" },
   { href: "/wallet/deposit", label: "Deposit", icon: ArrowDownLeft, tone: "bg-[#e6f6ee] text-brand-dark" },
   { href: "/wallet/withdraw", label: "Withdraw", icon: ArrowUpRight, tone: "bg-[#f3eefc] text-[#5b3aa3]" },
@@ -57,6 +61,7 @@ const tabs = [
 export default function WalletPage() {
   const { state } = useApp();
   const me = useMe();
+  const origin = useBrowserOrigin();
   const [tab, setTab] = useState("activity");
   const balance = me.data?.balance ?? state.balance;
   const transactions = (me.data?.transactions as Transaction[] | undefined) ?? state.transactions;
@@ -71,6 +76,8 @@ export default function WalletPage() {
   const user = me.data?.user;
   const person = firstName(user?.name || state.user.name) || "there";
   const handle = user?.lbpayId || state.user.lbpayId;
+  const payUrl = handle && origin ? payHandleUrl(handle, origin) : "";
+  const showBusinessPromo = !productUnlocked(user || state.user, "business");
   const pending = useMemo(
     () => transactions.filter((tx) => tx.status === "pending" && !isMoneyOut(tx.kind)),
     [transactions],
@@ -115,7 +122,7 @@ export default function WalletPage() {
           </Link>
         </header>
 
-        <WalletBalance amount={balance} saved={saved} delta={today} name={person} />
+        <WalletBalance amount={balance} saved={saved} delta={today} name={person} payUrl={payUrl} />
 
         <ActionGrid items={actions} />
 
@@ -148,6 +155,8 @@ export default function WalletPage() {
             <SavingsEmpty />
           )}
         </section>
+
+        {showBusinessPromo ? <BusinessPromo /> : null}
       </div>
 
       <div className="space-y-5 lg:col-span-7">
