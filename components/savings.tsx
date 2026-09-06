@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { AlarmClock, Check, Flame, Lock, PiggyBank, Plus, Zap } from "lucide-react";
@@ -353,8 +354,16 @@ export function NewPlanForm({ onCreated, balance }: { onCreated?: (plan: Savings
 
 export function SavingsEmpty({ href = "/wallet/savings?new=1" }: { href?: string }) {
   return (
-    <Link href={href} className="block overflow-hidden rounded-2xl bg-forest p-5 text-white ring-1 ring-white/10">
-      <div className="flex items-start gap-4">
+    <Link href={href} className="relative block overflow-hidden rounded-2xl bg-forest p-5 text-white ring-1 ring-white/10">
+      <Image
+        src="/illustrations/savings-pot.webp"
+        alt=""
+        aria-hidden
+        width={512}
+        height={512}
+        className="pointer-events-none absolute -right-6 -top-4 h-40 w-40 object-cover opacity-90 sm:h-48 sm:w-48"
+      />
+      <div className="relative flex items-start gap-4 pr-24 sm:pr-32">
         <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-brand text-white">
           <PiggyBank className="h-6 w-6" />
         </span>

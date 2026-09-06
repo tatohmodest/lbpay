@@ -24,7 +24,7 @@ function PotPreview() {
         <span className="block text-[10px] font-black uppercase tracking-[0.14em] text-danger">Missed a day</span>
         −{penalty.toLocaleString("fr-FR")} XAF penalty
       </div>
-      <div className="rounded-[1.75rem] bg-forest p-6 text-white shadow-[0_30px_70px_rgba(6,38,28,0.28)]">
+      <div className="rounded-[1.75rem] bg-forest p-6 text-white shadow-[0_30px_70px_rgba(6,38,28,0.35)] ring-1 ring-white/15">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className="grid h-11 w-11 place-items-center rounded-2xl bg-white/10 text-2xl">{POT.emoji}</span>
@@ -59,7 +59,7 @@ export function SavingsShowcase() {
   return (
     <section id="savings" className="bg-white py-20 lg:py-24">
       <Container className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
-        <div>
+        <div className="lg:pb-16">
           <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-brand-deep">Savings pots</p>
           <h2 className="mt-3 text-3xl font-extrabold tracking-tight md:text-[2.4rem] md:leading-[1.15]">
             Save every day. Or pay the price you set yourself.
@@ -95,7 +95,20 @@ export function SavingsShowcase() {
             </Link>
           </div>
         </div>
-        <PotPreview />
+        <div className="relative">
+          <div className="overflow-hidden rounded-[2rem] bg-forest lg:ml-auto lg:w-[88%]">
+            <Image
+              src="/illustrations/savings-pot.webp"
+              alt="Matte green piggy bank with gold coins dropping in"
+              width={1024}
+              height={1024}
+              className="h-auto w-full scale-[1.08] object-cover object-top md:aspect-[5/4] lg:aspect-[4/5]"
+            />
+          </div>
+          <div className="relative z-10 -mt-24 px-3 sm:-mt-32 sm:px-6 lg:mr-auto lg:w-[80%] lg:px-0">
+            <PotPreview />
+          </div>
+        </div>
       </Container>
     </section>
   );
@@ -146,13 +159,15 @@ export function AfricaCorridors({ cities }: { cities: string[] }) {
             </Link>
           </div>
           <div>
-            <Image
-              src="/illustrations/cameroon-map.webp"
-              alt="Map of Cameroon highlighting coverage"
-              width={1600}
-              height={900}
-              className="h-auto w-full"
-            />
+            <div className="overflow-hidden rounded-[1.5rem] ring-1 ring-line/80">
+              <Image
+                src="/illustrations/africa-corridors.webp"
+                alt="Stylised map of West and Central Africa with transfer routes fanning out from Cameroon to nine neighbouring countries"
+                width={1536}
+                height={1024}
+                className="h-auto w-full"
+              />
+            </div>
             <div className="mt-6 rounded-[1.5rem] bg-white p-5 ring-1 ring-line/80">
               <p className="text-sm font-bold text-ink">And every corner of Cameroon</p>
               <ul className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
