@@ -26,7 +26,7 @@ import { InviteSomeone } from "@/components/invite-someone";
 import { ContactRow } from "@/components/wallet-contacts";
 import { BusinessPromo } from "@/components/business-promo";
 import { contactsFromTransactions } from "@/lib/contacts";
-import { dayNet, firstName, formatDate, formatXAF, isMoneyOut } from "@/lib/format";
+import { dayNet, formatDate, formatXAF, isMoneyOut } from "@/lib/format";
 import { payHandleUrl } from "@/lib/origin";
 import { productUnlocked } from "@/lib/roles";
 import { useApp } from "@/lib/store";
@@ -74,7 +74,6 @@ export default function WalletPage() {
   const frozen = (me.data?.user?.status || state.user.status) === "frozen";
   const personalKyc = me.data?.user?.kyc?.personal || "unverified";
   const user = me.data?.user;
-  const person = firstName(user?.name || state.user.name) || "there";
   const handle = user?.lbpayId || state.user.lbpayId;
   const payUrl = handle && origin ? payHandleUrl(handle, origin) : "";
   const showBusinessPromo = !productUnlocked(user || state.user, "business");
@@ -122,9 +121,23 @@ export default function WalletPage() {
           </Link>
         </header>
 
-        <WalletBalance amount={balance} saved={saved} delta={today} name={person} payUrl={payUrl} />
+        <WalletBalance amount={balance} saved={saved} delta={today} payUrl={payUrl} />
 
         <ActionGrid items={actions} />
+
+        <section className="space-y-2.5">
+          <h2 className="px-1 text-[15px] font-black text-ink">For you</h2>
+          {showBusinessPromo ? (
+            <BusinessPromo href="/business" />
+          ) : (
+            <BusinessPromo
+              href="/business/links"
+              title="Your shop is live"
+              subtitle="Share a product or the whole catalogue. Customers pay you directly."
+              cta="Open shop"
+            />
+          )}
+        </section>
 
         <NextMove nudges={nudges} />
 
@@ -155,8 +168,6 @@ export default function WalletPage() {
             <SavingsEmpty />
           )}
         </section>
-
-        {showBusinessPromo ? <BusinessPromo /> : null}
       </div>
 
       <div className="space-y-5 lg:col-span-7">

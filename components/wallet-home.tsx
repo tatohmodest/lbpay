@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 import { ArrowRight, ChevronRight, Eye, EyeOff, Flame, PiggyBank, Sparkles } from "lucide-react";
@@ -21,21 +22,17 @@ export function WalletBalance({
   amount,
   saved,
   delta,
-  name,
   payUrl,
 }: {
   amount: number;
   saved: number;
   delta: number;
-  name: string;
   payUrl?: string;
 }) {
   const { hidden, toggle } = useHiddenAmount();
   const notify = useNotify();
   const [copied, setCopied] = useState(false);
-  const mask = (n: number) => (hidden ? "••••••" : formatXAF(n, { withCurrency: false }));
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+  const mask = (n: number) => (hidden ? "*****" : formatXAF(n, { withCurrency: false }));
 
   async function copyPayLink() {
     if (!payUrl) return;
@@ -50,66 +47,65 @@ export function WalletBalance({
   }
 
   return (
-    <section className="relative overflow-hidden rounded-[1.75rem] bg-forest p-5 text-white sm:p-6">
-      <div className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-brand/25 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-24 -left-10 h-48 w-48 rounded-full bg-gold/10 blur-3xl" />
-      <div className="relative flex items-stretch gap-4">
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-[13px] font-semibold text-hero-muted">
-              {greeting}, {name}
+    <div className="space-y-2.5">
+      <section className="relative overflow-hidden rounded-[1.35rem] bg-white px-4 py-4 shadow-[0_10px_28px_rgba(12,25,19,0.08)] ring-1 ring-black/[0.06]">
+        <div className="pointer-events-none absolute bottom-0 right-0 h-[4.75rem] w-[8.5rem] overflow-hidden" aria-hidden>
+          <div className="absolute -bottom-9 -right-8 flex h-28 w-40 origin-bottom-right -rotate-[28deg]">
+            <span className="w-[11px] bg-[#00b369]" />
+            <span className="w-[11px] bg-[#ffcc00]" />
+            <span className="w-[11px] bg-[#ff6a00]" />
+            <span className="w-[11px] bg-[#7b3ff2]" />
+            <span className="w-[11px] bg-[#e11d48]" />
+          </div>
+        </div>
+        <div className="relative flex items-center gap-3">
+          <div className="min-w-0 flex-1">
+            <p className="flex items-center gap-2 text-[13px] font-bold text-ink">
+              <Image src="/illustrations/lbpay-mark.webp" alt="" width={20} height={20} className="h-5 w-5 rounded-[5px]" />
+              Main wallet
+            </p>
+            <p className="mt-3 font-mono text-[1.7rem] font-black leading-none tracking-tight text-ink sm:text-[1.85rem]">
+              {mask(amount)} <span className="text-[15px] font-bold text-ink">XAF</span>
             </p>
             <button
               type="button"
               onClick={toggle}
-              className="grid h-8 w-8 place-items-center rounded-full bg-white/10 text-hero-muted hover:bg-white/20 hover:text-white"
-              aria-label={hidden ? "Show amounts" : "Hide amounts"}
+              className="mt-4 inline-flex h-8 items-center gap-1.5 rounded-full border border-ink bg-white px-3 text-[12px] font-semibold text-ink"
             >
-              {hidden ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+              {hidden ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+              {hidden ? "Show balance" : "Hide balance"}
             </button>
           </div>
-          <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.16em] text-hero-muted">Available to spend</p>
-          <p className="mt-1 font-mono text-[2.1rem] font-black leading-none tracking-tight sm:text-[2.5rem]">
-            {mask(amount)} <span className="text-base font-bold text-hero-muted">XAF</span>
-          </p>
-          <div className="mt-4 flex flex-wrap items-center gap-2 text-[12px] font-semibold">
-            <span
-              className={cn(
-                "rounded-full px-2.5 py-1",
-                delta > 0 ? "bg-brand/25 text-white" : "bg-white/10 text-hero-muted",
-              )}
+          {payUrl ? (
+            <button
+              type="button"
+              onClick={() => void copyPayLink()}
+              className="relative z-10 shrink-0 rounded-[0.7rem] bg-white p-1.5 ring-1 ring-line"
+              aria-label={copied ? "Payment link copied" : "Copy payment link"}
+              title="Tap to copy your payment link"
             >
-              Today {hidden ? "••••" : `${delta > 0 ? "+" : delta < 0 ? "−" : ""}${formatXAF(Math.abs(delta), { withCurrency: false })}`}
-            </span>
-            <Link href="/wallet/savings" className="inline-flex items-center gap-1 rounded-full bg-white/10 px-2.5 py-1 text-hero-muted hover:bg-white/20 hover:text-white">
-              <PiggyBank className="h-3.5 w-3.5" /> Saved {mask(saved)}
-            </Link>
-          </div>
-          <div className="mt-5 grid grid-cols-2 gap-2">
-            <Link href="/wallet/deposit" className="grid h-11 place-items-center rounded-xl bg-brand text-sm font-bold text-white shadow-[0_10px_24px_rgba(0,179,105,0.35)] hover:bg-brand-dark">
-              Add money
-            </Link>
-            <Link href="/wallet/send" className="grid h-11 place-items-center rounded-xl bg-white/12 text-sm font-bold text-white ring-1 ring-white/20 hover:bg-white/20">
-              Send
-            </Link>
-          </div>
+              <PayQR value={payUrl} size={122} padded={false} />
+              <span className="sr-only">{copied ? "Copied" : "Tap to copy payment link"}</span>
+            </button>
+          ) : (
+            <div className="relative z-10 h-[134px] w-[134px] shrink-0 rounded-[0.7rem] bg-paper ring-1 ring-line" />
+          )}
         </div>
-        {payUrl ? (
-          <button
-            type="button"
-            onClick={() => void copyPayLink()}
-            className="flex w-[7.25rem] shrink-0 flex-col items-center justify-center gap-2 self-stretch rounded-[1.25rem] bg-white p-2 text-ink shadow-[0_10px_24px_rgba(6,38,28,0.18)]"
-            aria-label="Copy payment link"
-            title="Tap to copy your payment link"
-          >
-            <PayQR value={payUrl} size={88} padded={false} />
-            <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted">
-              {copied ? "Copied" : "Tap to copy"}
-            </span>
-          </button>
-        ) : null}
+      </section>
+      <div className="flex flex-wrap items-center gap-2 px-0.5 text-[12px] font-semibold">
+        <span
+          className={cn(
+            "rounded-full px-2.5 py-1",
+            delta > 0 ? "bg-brand-soft text-brand-deep" : "bg-white text-muted ring-1 ring-line/80",
+          )}
+        >
+          Today {hidden ? "••••" : `${delta > 0 ? "+" : delta < 0 ? "−" : ""}${formatXAF(Math.abs(delta), { withCurrency: false })}`}
+        </span>
+        <Link href="/wallet/savings" className="inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-muted ring-1 ring-line/80 hover:text-ink">
+          <PiggyBank className="h-3.5 w-3.5" /> Saved {mask(saved)}
+        </Link>
       </div>
-    </section>
+    </div>
   );
 }
 

@@ -1,4 +1,5 @@
 import { ProductPage, productMetadata } from "@/components/marketing/product-page";
+import { BUSINESS_BANNER } from "@/lib/assets";
 
 export const metadata = productMetadata(
   "Business checkout for Cameroon",
@@ -12,7 +13,7 @@ export default function BusinessProductPage() {
       eyebrow="Business"
       title="Run your business with LBPay."
       description="Create product links and share them with your customers. Share the whole shop or just one product. They pay with MTN, Orange, or wallet. You get paid in one place."
-      image="/illustrations/business-banner.webp"
+      image={BUSINESS_BANNER}
       alt="Run your business with LBPay. Create product links and share them with customers to get paid."
       points={[
         "Product links you can share on WhatsApp",
