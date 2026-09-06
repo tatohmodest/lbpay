@@ -129,6 +129,30 @@ function payloadForTx(kind: string, amount: string, who: string, failed: boolean
           : `${amount} was sent to ${who}.`,
         url: "/wallet/history",
       };
+    case "penalty":
+      return {
+        title: "Missed save · penalty applied",
+        body: `${amount} was cut because a save for ${who} was missed. Save today to restart your streak.`,
+        url: "/wallet/savings",
+      };
+    case "savings_in":
+      return {
+        title: "Saved",
+        body: `${amount} moved into ${who}. Keep the streak going.`,
+        url: "/wallet/savings",
+      };
+    case "international":
+      return {
+        title: failed ? "Transfer abroad failed" : "Transfer abroad delivered",
+        body: failed ? `${amount} was returned to your wallet.` : `${amount} was delivered to ${who}.`,
+        url: "/wallet/history",
+      };
+    case "international_in":
+      return {
+        title: "Money received from abroad",
+        body: `${amount} from ${who} is in your wallet.`,
+        url: "/wallet/history",
+      };
     case "airtime":
     case "data":
       return {

@@ -20,7 +20,41 @@ export type TransactionKind =
   | "split"
   | "subscription"
   | "adjustment"
-  | "reversal";
+  | "reversal"
+  | "savings_in"
+  | "savings_out"
+  | "penalty"
+  | "international"
+  | "international_in";
+
+export type SavingsFrequency = "daily" | "weekly" | "monthly";
+export type SavingsStatus = "active" | "completed" | "closed";
+
+export type SavingsPlan = {
+  id: string;
+  name: string;
+  emoji: string;
+  frequency: SavingsFrequency;
+  /** Amount due every cycle, in XAF. */
+  amount: number;
+  /** Optional goal. When the pot reaches it the plan is completed. */
+  target: number | null;
+  /** Share of the cycle amount cut when a cycle is missed. 0.01 to 0.10. */
+  penaltyRate: number;
+  /** Pull the cycle amount from the wallet automatically when it falls due. */
+  autoSave: boolean;
+  balance: number;
+  saved: number;
+  penalties: number;
+  streak: number;
+  bestStreak: number;
+  missed: number;
+  nextDueAt: string;
+  lastDepositAt?: string;
+  status: SavingsStatus;
+  createdAt: string;
+  closedAt?: string;
+};
 
 export type AccountKind = "personal" | "business" | "developer" | "admin";
 export type AccountStatus = "active" | "frozen";
@@ -52,6 +86,14 @@ export type TransactionMeta = {
   linkSlug?: string;
   handle?: string;
   refunded?: boolean;
+  planId?: string;
+  planName?: string;
+  country?: string;
+  currency?: string;
+  fxRate?: number;
+  receiveAmount?: number;
+  recipientName?: string;
+  corridor?: string;
 };
 
 export type Transaction = {
@@ -65,7 +107,7 @@ export type Transaction = {
   note?: string;
   createdAt: string;
   railRef?: string;
-  rail?: "internal" | "payunit" | "sandbox";
+  rail?: "internal" | "payunit" | "sandbox" | "partner";
   meta?: TransactionMeta;
 };
 

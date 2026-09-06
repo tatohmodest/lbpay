@@ -1,0 +1,378 @@
+"use client";
+
+import Link from "next/link";
+import type { LucideIcon } from "lucide-react";
+import { ArrowRight, ChevronRight, Eye, EyeOff, Flame, PiggyBank, Sparkles } from "lucide-react";
+import { COUNTRIES } from "@/lib/countries";
+import { formatXAF, isMoneyOut } from "@/lib/format";
+import { dueState, penaltyFor, timeUntil } from "@/lib/savings";
+import type { SavingsPlan, Transaction } from "@/lib/types";
+import { useHiddenAmount } from "@/components/house-card";
+import { cn } from "@/lib/cn";
+
+/* ---------- Balance ---------- */
+
+export function WalletBalance({
+  amount,
+  saved,
+  delta,
+  name,
+}: {
+  amount: number;
+  saved: number;
+  delta: number;
+  name: string;
+}) {
+  const { hidden, toggle } = useHiddenAmount();
+  const mask = (n: number) => (hidden ? "••••••" : formatXAF(n, { withCurrency: false }));
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+
+  return (
+    <section className="relative overflow-hidden rounded-[1.75rem] bg-forest p-5 text-white sm:p-6">
+      <div className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-brand/25 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-24 -left-10 h-48 w-48 rounded-full bg-gold/10 blur-3xl" />
+      <div className="relative">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-[13px] font-semibold text-hero-muted">
+            {greeting}, {name}
+          </p>
+          <button
+            type="button"
+            onClick={toggle}
+            className="grid h-8 w-8 place-items-center rounded-full bg-white/10 text-hero-muted hover:bg-white/20 hover:text-white"
+            aria-label={hidden ? "Show amounts" : "Hide amounts"}
+          >
+            {hidden ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+          </button>
+        </div>
+        <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.16em] text-hero-muted">Available to spend</p>
+        <p className="mt-1 font-mono text-[2.4rem] font-black leading-none tracking-tight sm:text-[2.8rem]">
+          {mask(amount)} <span className="text-base font-bold text-hero-muted">XAF</span>
+        </p>
+        <div className="mt-4 flex flex-wrap items-center gap-2 text-[12px] font-semibold">
+          <span
+            className={cn(
+              "rounded-full px-2.5 py-1",
+              delta > 0 ? "bg-brand/25 text-white" : delta < 0 ? "bg-white/10 text-hero-muted" : "bg-white/10 text-hero-muted",
+            )}
+          >
+            Today {hidden ? "••••" : `${delta > 0 ? "+" : delta < 0 ? "−" : ""}${formatXAF(Math.abs(delta), { withCurrency: false })}`}
+          </span>
+          <Link href="/wallet/savings" className="inline-flex items-center gap-1 rounded-full bg-white/10 px-2.5 py-1 text-hero-muted hover:bg-white/20 hover:text-white">
+            <PiggyBank className="h-3.5 w-3.5" /> Saved {mask(saved)}
+          </Link>
+        </div>
+        <div className="mt-5 grid grid-cols-2 gap-2">
+          <Link href="/wallet/deposit" className="grid h-11 place-items-center rounded-xl bg-brand text-sm font-bold text-white shadow-[0_10px_24px_rgba(0,179,105,0.35)] hover:bg-brand-dark">
+            Add money
+          </Link>
+          <Link href="/wallet/send" className="grid h-11 place-items-center rounded-xl bg-white/12 text-sm font-bold text-white ring-1 ring-white/20 hover:bg-white/20">
+            Send
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ---------- Action grid ---------- */
+
+export type ActionTile = { href: string; label: string; icon: LucideIcon; tone: string; badge?: string };
+
+export function ActionGrid({ items }: { items: ActionTile[] }) {
+  return (
+    <nav className="grid grid-cols-4 gap-2" aria-label="Quick actions">
+      {items.map((item) => {
+        const Icon = item.icon;
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            className="group relative flex flex-col items-center gap-2 rounded-2xl bg-white px-1 py-3 text-center ring-1 ring-line/80 transition hover:-translate-y-0.5 hover:shadow-[0_10px_24px_rgba(12,25,19,0.08)]"
+          >
+            <span className={cn("grid h-11 w-11 place-items-center rounded-2xl transition group-hover:scale-105", item.tone)}>
+              <Icon className="h-5 w-5" />
+            </span>
+            <span className="text-[11.5px] font-bold text-ink">{item.label}</span>
+            {item.badge ? (
+              <span className="absolute -top-1.5 right-1.5 rounded-full bg-gold px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide text-ink">{item.badge}</span>
+            ) : null}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
+
+/* ---------- Next move (nudges) ---------- */
+
+export type Nudge = {
+  id: string;
+  tone: "brand" | "gold" | "danger" | "ink";
+  kicker: string;
+  title: string;
+  copy: string;
+  href: string;
+  cta: string;
+};
+
+export function buildNudges({
+  balance,
+  plans,
+  transactions,
+  contactsCount,
+  kyc,
+}: {
+  balance: number;
+  plans: SavingsPlan[];
+  transactions: Transaction[];
+  contactsCount: number;
+  kyc: string;
+}): Nudge[] {
+  const out: Nudge[] = [];
+  const active = plans.filter((p) => p.status === "active");
+  const overdue = active.filter((p) => dueState(p) === "overdue").sort((a, b) => +new Date(a.nextDueAt) - +new Date(b.nextDueAt));
+  const dueToday = active.filter((p) => dueState(p) === "today").sort((a, b) => +new Date(a.nextDueAt) - +new Date(b.nextDueAt));
+
+  if (overdue[0]) {
+    const p = overdue[0];
+    out.push({
+      id: `overdue-${p.id}`,
+      tone: "danger",
+      kicker: "Missed save",
+      title: `${p.emoji} ${p.name} is overdue`,
+      copy: `Save ${formatXAF(p.amount)} now to keep the pot on track. A ${Math.round(p.penaltyRate * 100)}% penalty (${formatXAF(penaltyFor(p))}) applies per missed cycle.`,
+      href: `/wallet/savings/${p.id}`,
+      cta: "Save now",
+    });
+  }
+  if (dueToday[0]) {
+    const p = dueToday[0];
+    out.push({
+      id: `due-${p.id}`,
+      tone: "gold",
+      kicker: `Due in ${timeUntil(p.nextDueAt)}`,
+      title: `${p.emoji} ${p.name} needs ${formatXAF(p.amount)}`,
+      copy: p.streak > 0 ? `You are on a ${p.streak}-cycle streak. Keep it alive before midnight.` : "Save before midnight to start your streak. Missing it costs " + formatXAF(penaltyFor(p)) + ".",
+      href: `/wallet/savings/${p.id}`,
+      cta: "Save now",
+    });
+  }
+  if (!active.length) {
+    out.push({
+      id: "start-saving",
+      tone: "brand",
+      kicker: "Build a habit",
+      title: "Put 500 XAF aside every day",
+      copy: "That is 15,000 XAF a month, locked in a pot with a streak. Miss a day and a small penalty you choose keeps you honest.",
+      href: "/wallet/savings?new=1",
+      cta: "Start a pot",
+    });
+  }
+  if (balance <= 0) {
+    out.push({
+      id: "fund",
+      tone: "ink",
+      kicker: "Empty wallet",
+      title: "Add money to get going",
+      copy: "Top up from MTN MoMo, Orange Money or a card in under a minute.",
+      href: "/wallet/deposit",
+      cta: "Add money",
+    });
+  }
+  const pendingIn = transactions.filter((tx) => tx.status === "pending" && !isMoneyOut(tx.kind)).reduce((s, tx) => s + tx.amount, 0);
+  if (pendingIn > 0) {
+    out.push({
+      id: "incoming",
+      tone: "brand",
+      kicker: "On the way",
+      title: `${formatXAF(pendingIn)} incoming`,
+      copy: "Money is being confirmed. It lands in your wallet as soon as the network settles.",
+      href: "/wallet/history",
+      cta: "Track",
+    });
+  }
+  if (kyc === "unverified" && balance > 0) {
+    out.push({
+      id: "kyc",
+      tone: "ink",
+      kicker: "Lift your limits",
+      title: "Verify your identity",
+      copy: "Takes two minutes and unlocks higher daily limits and transfers abroad.",
+      href: "/wallet/kyc",
+      cta: "Verify",
+    });
+  }
+  if (contactsCount > 0 && balance > 0) {
+    out.push({
+      id: "send-again",
+      tone: "brand",
+      kicker: "People",
+      title: "Send to someone you paid before",
+      copy: `${contactsCount} ${contactsCount === 1 ? "person" : "people"} in your recent activity. Repeat a transfer in two taps.`,
+      href: "/wallet/contacts",
+      cta: "Pick a contact",
+    });
+  }
+  out.push({
+    id: "abroad",
+    tone: "ink",
+    kicker: "New",
+    title: "Send to Nigeria, Ghana, Senegal and more",
+    copy: "Flat 2.5% fee, delivered to Mobile Money or bank in local currency.",
+    href: "/wallet/international",
+    cta: "Send abroad",
+  });
+  return out;
+}
+
+const NUDGE_TONE: Record<Nudge["tone"], { card: string; kicker: string; cta: string }> = {
+  brand: { card: "bg-brand-soft ring-brand/20", kicker: "text-brand-deep", cta: "bg-brand text-white hover:bg-brand-dark" },
+  gold: { card: "bg-[#fff6d6] ring-gold/40", kicker: "text-[#7a5a00]", cta: "bg-ink text-white hover:bg-black" },
+  danger: { card: "bg-red-50 ring-danger/20", kicker: "text-danger", cta: "bg-danger text-white hover:bg-red-700" },
+  ink: { card: "bg-white ring-line/80", kicker: "text-muted", cta: "bg-ink text-white hover:bg-black" },
+};
+
+export function NextMove({ nudges }: { nudges: Nudge[] }) {
+  const [primary, ...rest] = nudges;
+  if (!primary) return null;
+  const tone = NUDGE_TONE[primary.tone];
+  return (
+    <section className="space-y-2.5">
+      <div className="flex items-center gap-2 px-1">
+        <Sparkles className="h-4 w-4 text-brand" />
+        <h2 className="text-[13px] font-black uppercase tracking-[0.14em] text-muted">Your next move</h2>
+      </div>
+      <Link href={primary.href} className={cn("block rounded-[1.5rem] p-4 ring-1 transition hover:-translate-y-0.5 sm:p-5", tone.card)}>
+        <p className={cn("text-[11px] font-black uppercase tracking-[0.14em]", tone.kicker)}>{primary.kicker}</p>
+        <p className="mt-1 text-lg font-black leading-tight text-ink">{primary.title}</p>
+        <p className="mt-1 text-sm text-ink/75">{primary.copy}</p>
+        <span className={cn("mt-4 inline-flex h-10 items-center gap-1.5 rounded-xl px-4 text-sm font-bold", tone.cta)}>
+          {primary.cta} <ArrowRight className="h-4 w-4" />
+        </span>
+      </Link>
+      {rest.slice(0, 2).length ? (
+        <div className="grid gap-2 sm:grid-cols-2">
+          {rest.slice(0, 2).map((n) => (
+            <Link key={n.id} href={n.href} className="flex items-center gap-3 rounded-2xl bg-white p-3 ring-1 ring-line/80 hover:bg-paper">
+              <span className="min-w-0 flex-1">
+                <span className={cn("block text-[10px] font-black uppercase tracking-[0.14em]", NUDGE_TONE[n.tone].kicker)}>{n.kicker}</span>
+                <span className="block truncate text-sm font-bold text-ink">{n.title}</span>
+              </span>
+              <ChevronRight className="h-4 w-4 shrink-0 text-muted" />
+            </Link>
+          ))}
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+/* ---------- Week pulse ---------- */
+
+export function weekSeries(transactions: Transaction[], now = new Date()) {
+  const days: Array<{ label: string; in: number; out: number; saved: number }> = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+    days.push({ label: d.toLocaleDateString("en", { weekday: "narrow" }), in: 0, out: 0, saved: 0 });
+  }
+  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6).getTime();
+  for (const tx of transactions) {
+    if (tx.status !== "success") continue;
+    const at = new Date(tx.createdAt).getTime();
+    if (at < start) continue;
+    const idx = Math.min(6, Math.floor((at - start) / 86_400_000));
+    if (idx < 0) continue;
+    if (tx.kind === "savings_in") days[idx].saved += tx.amount;
+    else if (isMoneyOut(tx.kind)) days[idx].out += tx.amount;
+    else days[idx].in += tx.amount;
+  }
+  return days;
+}
+
+export function WeekPulse({ transactions, streak }: { transactions: Transaction[]; streak: number }) {
+  const series = weekSeries(transactions);
+  const totals = series.reduce((acc, d) => ({ in: acc.in + d.in, out: acc.out + d.out, saved: acc.saved + d.saved }), { in: 0, out: 0, saved: 0 });
+  const max = Math.max(1, ...series.map((d) => Math.max(d.in, d.out + d.saved)));
+  const { hidden } = useHiddenAmount();
+  const mask = (n: number) => (hidden ? "••••" : formatXAF(n, { withCurrency: false }));
+  const quiet = totals.in + totals.out + totals.saved === 0;
+
+  return (
+    <section className="rounded-[1.5rem] bg-white p-4 ring-1 ring-line/80 sm:p-5">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-[13px] font-black uppercase tracking-[0.14em] text-muted">Last 7 days</h2>
+        {streak > 0 ? (
+          <span className="inline-flex items-center gap-1 rounded-full bg-[#fff1e6] px-2.5 py-1 text-[11px] font-black text-[#b4530a]">
+            <Flame className="h-3.5 w-3.5" /> {streak}-cycle streak
+          </span>
+        ) : null}
+      </div>
+      <div className="mt-3 grid grid-cols-3 gap-2">
+        {[
+          { label: "In", value: totals.in, tone: "text-brand-deep", dot: "bg-brand" },
+          { label: "Out", value: totals.out, tone: "text-ink", dot: "bg-ink/70" },
+          { label: "Saved", value: totals.saved, tone: "text-[#b4530a]", dot: "bg-gold" },
+        ].map((k) => (
+          <div key={k.label} className="rounded-2xl bg-paper px-3 py-2.5">
+            <p className="flex items-center gap-1.5 text-[11px] font-semibold text-muted">
+              <span className={cn("h-2 w-2 rounded-full", k.dot)} /> {k.label}
+            </p>
+            <p className={cn("mt-0.5 truncate font-mono text-[15px] font-black tabular-nums", k.tone)}>{mask(k.value)}</p>
+          </div>
+        ))}
+      </div>
+      <div className="mt-4 grid h-24 grid-cols-7 items-end gap-2" aria-hidden>
+        {series.map((d, i) => (
+          <div key={i} className="flex h-full flex-col items-center justify-end gap-1">
+            <div className="flex h-full w-full items-end justify-center gap-0.5">
+              <span className="w-1/2 rounded-t-md bg-brand/80" style={{ height: `${Math.max(d.in ? 6 : 2, (d.in / max) * 100)}%` }} />
+              <span className="flex w-1/2 flex-col justify-end overflow-hidden rounded-t-md" style={{ height: `${Math.max(d.out + d.saved ? 6 : 2, ((d.out + d.saved) / max) * 100)}%` }}>
+                <span className="w-full bg-gold" style={{ flexGrow: d.saved, minHeight: d.saved ? 3 : 0 }} />
+                <span className="w-full bg-ink/60" style={{ flexGrow: d.out, minHeight: d.out ? 3 : 0 }} />
+              </span>
+            </div>
+            <span className="text-[10px] font-semibold text-muted">{d.label}</span>
+          </div>
+        ))}
+      </div>
+      {quiet ? <p className="mt-2 text-center text-xs text-muted">A quiet week. Start a pot or send to someone to see it move.</p> : null}
+    </section>
+  );
+}
+
+/* ---------- Explore cards ---------- */
+
+export function AbroadCard() {
+  return (
+    <Link href="/wallet/international" className="group block overflow-hidden rounded-[1.5rem] bg-forest p-5 text-white ring-1 ring-forest transition hover:-translate-y-0.5">
+      <p className="text-[11px] font-black uppercase tracking-[0.14em] text-brand">Across Africa</p>
+      <p className="mt-1 text-lg font-black leading-tight">Send to 9 countries at a flat 2.5%.</p>
+      <p className="mt-1 text-sm text-hero-muted">Naira, cedi, CFA — delivered to Mobile Money or bank.</p>
+      <div className="mt-3 flex flex-wrap gap-1">
+        {COUNTRIES.filter((c) => c.code !== "CM").map((c) => (
+          <span key={c.code} className="rounded-full bg-white/10 px-2 py-0.5 text-sm" title={c.name}>
+            {c.flag}
+          </span>
+        ))}
+      </div>
+      <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-bold text-white">
+        Send abroad <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
+      </span>
+    </Link>
+  );
+}
+
+export function SectionHead({ title, href, action }: { title: string; href?: string; action?: string }) {
+  return (
+    <div className="flex items-center justify-between px-1">
+      <h2 className="text-[13px] font-black uppercase tracking-[0.14em] text-muted">{title}</h2>
+      {href ? (
+        <Link href={href} className="text-[12px] font-bold text-brand-deep hover:underline">
+          {action || "See all"}
+        </Link>
+      ) : null}
+    </div>
+  );
+}

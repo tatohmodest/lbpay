@@ -79,6 +79,9 @@ const MONEY_OUT: TransactionKind[] = [
   "bill",
   "cross_network",
   "payout",
+  "savings_in",
+  "penalty",
+  "international",
 ];
 
 export function isMoneyOut(kind: string) {
