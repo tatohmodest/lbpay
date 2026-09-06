@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { AlarmClock, Check, Flame, Lock, PiggyBank, Plus, Zap } from "lucide-react";
+import { AlarmClock, Check, Flame, PiggyBank, Plus, Zap } from "lucide-react";
 import { Field, Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ConfirmSheet } from "@/components/confirm-sheet";
@@ -354,27 +354,26 @@ export function NewPlanForm({ onCreated, balance }: { onCreated?: (plan: Savings
 
 export function SavingsEmpty({ href = "/wallet/savings?new=1" }: { href?: string }) {
   return (
-    <Link href={href} className="relative block overflow-hidden rounded-2xl bg-forest p-5 text-white ring-1 ring-white/10">
+    <Link
+      href={href}
+      className="group block overflow-hidden rounded-2xl bg-white ring-1 ring-line/80 shadow-[0_10px_30px_rgba(6,38,28,0.06)] transition hover:shadow-[0_16px_40px_rgba(6,38,28,0.12)]"
+    >
       <Image
-        src="/illustrations/savings-pot.webp"
-        alt=""
-        aria-hidden
-        width={512}
-        height={512}
-        className="pointer-events-none absolute -right-6 -top-4 h-40 w-40 object-cover opacity-90 sm:h-48 sm:w-48"
+        src="/illustrations/savings-banner.webp"
+        alt="Small savings, big dreams, real money. Save just 500 XAF a day and get 15,000 XAF a month."
+        width={744}
+        height={528}
+        priority
+        className="aspect-[744/528] w-full object-cover"
       />
-      <div className="relative flex items-start gap-4 pr-24 sm:pr-32">
-        <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-brand text-white">
-          <PiggyBank className="h-6 w-6" />
-        </span>
+      <div className="flex items-center justify-between gap-3 px-4 py-3.5">
         <div className="min-w-0">
-          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-brand">Start saving</p>
-          <p className="mt-1 text-lg font-black leading-tight">500 XAF a day becomes 15,000 XAF this month.</p>
-          <p className="mt-1 text-sm text-hero-muted">Pick daily, weekly or monthly. Miss a save and a small penalty you choose keeps you honest.</p>
-          <span className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 text-xs font-bold text-forest">
-            <Lock className="h-3.5 w-3.5" /> Create my first plan
-          </span>
+          <p className="text-[15px] font-black leading-tight text-ink">Savings pots</p>
+          <p className="mt-0.5 truncate text-xs text-muted">500 XAF a day becomes 15,000 a month.</p>
         </div>
+        <span className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-brand px-4 text-xs font-bold text-white transition group-hover:bg-brand-dark">
+          <PiggyBank className="h-3.5 w-3.5" /> Start saving
+        </span>
       </div>
     </Link>
   );
