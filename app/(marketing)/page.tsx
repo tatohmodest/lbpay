@@ -22,7 +22,6 @@ import { SendWidget } from "@/components/marketing/send-widget";
 import { AfricaCorridors, SavingsShowcase } from "@/components/marketing/growth-sections";
 import { Button } from "@/components/ui/button";
 import { SITE_DESCRIPTION, SITE_OG_IMAGE, SITE_TITLE, SITE_URL } from "@/lib/site";
-import { BUSINESS_BANNER } from "@/lib/assets";
 import { getRequestLocale } from "@/lib/i18n/server";
 import { translate } from "@/lib/i18n/messages";
 
@@ -193,10 +192,10 @@ export default async function LandingPage() {
                 </span>
               </div>
               <Image
-                src={BUSINESS_BANNER}
-                alt="Run your business with LBPay. Create product links and share them with customers."
-                width={1536}
-                height={1024}
+                src="/illustrations/business-kit.webp"
+                alt="LBPay merchant QR, card, and dashboard"
+                width={1200}
+                height={900}
                 className="h-auto w-full"
               />
             </Link>
