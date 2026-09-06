@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Check, Lock, ShieldCheck } from "lucide-react";
 import { AmountField } from "@/components/amount-field";
 import { ConfirmSheet } from "@/components/confirm-sheet";
@@ -94,6 +94,7 @@ export function CheckoutPay({
   variant?: "page" | "embedded";
 }) {
   const me = useMe();
+  const router = useRouter();
   const search = useSearchParams();
   const signedIn = Boolean(me.data?.session);
   const [method, setMethod] = useState<Method>("wallet");
@@ -427,7 +428,7 @@ export function CheckoutPay({
                 className="w-full"
                 onClick={() => {
                   rememberCheckoutReturn();
-                  window.location.assign("/signup");
+                  router.push("/signup");
                 }}
               >
                 Create a free wallet

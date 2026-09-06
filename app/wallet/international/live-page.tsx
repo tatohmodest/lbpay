@@ -3,7 +3,7 @@
 import { Suspense, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft, ArrowRightLeft, Check, Clock3, Copy, Globe2, Share2, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Check, Clock3, Copy, Share2, ShieldCheck } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/input";
@@ -33,7 +33,6 @@ function InternationalInner() {
   const [recipient, setRecipient] = useState("");
   const [recipientName, setRecipientName] = useState("");
   const [amount, setAmount] = useState("");
-  const [note, setNote] = useState("");
   const [open, setOpen] = useState(false);
   const [pinError, setPinError] = useState("");
   const [lockedUntil, setLockedUntil] = useState(0);
@@ -66,7 +65,7 @@ function InternationalInner() {
     setPinError("");
     setLockedUntil(0);
     try {
-      const res = await send.mutateAsync({ country: country.code, rail: rail.id, recipient, recipientName: recipientName.trim(), amount: value, note, pin });
+      const res = await send.mutateAsync({ country: country.code, rail: rail.id, recipient, recipientName: recipientName.trim(), amount: value, note: "", pin });
       notify.moneyOut(res.debitAmount, `${formatLocal(res.receiveAmount, country.currency)} on its way to ${recipientName.trim()} in ${country.name}`);
       setOpen(false);
       router.push("/wallet");
