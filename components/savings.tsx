@@ -2,8 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useState } from "react";
-import { AlarmClock, Check, Flame, PiggyBank, Plus, Zap } from "lucide-react";
+import { useId, useMemo, useState } from "react";
+import { AlarmClock, ArrowRight, Check, Eye, EyeOff, Flame, PiggyBank, Plus, Zap } from "lucide-react";
+import { useHiddenAmount } from "@/components/house-card";
+import { SAVINGS_FLOAT } from "@/lib/assets";
 import { Field, Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ConfirmSheet } from "@/components/confirm-sheet";
@@ -91,6 +93,80 @@ export function Streak({ count, className }: { count: number; className?: string
       <Flame className={cn("h-3.5 w-3.5", count ? "fill-amber-400 text-amber-500" : "")} />
       {count} streak
     </span>
+  );
+}
+
+export function SavingsHero({
+  amount,
+  active,
+  pace,
+  streak,
+  onNew,
+}: {
+  amount: number;
+  active: number;
+  pace: number;
+  streak: number;
+  onNew: () => void;
+}) {
+  const { hidden, toggle } = useHiddenAmount();
+  const gridId = useId().replace(/:/g, "");
+  const shown = hidden ? "••••••" : formatXAF(amount, { withCurrency: false });
+
+  return (
+    <section className="lb-house-card relative flex min-h-[13.5rem] flex-col overflow-hidden rounded-[1.25rem] p-5 text-white sm:min-h-[15.5rem]">
+      <svg className="pointer-events-none absolute inset-0 h-full w-full opacity-[0.28]" aria-hidden>
+        <defs>
+          <pattern id={gridId} width="28" height="48" patternUnits="userSpaceOnUse" patternTransform="rotate(28)">
+            <path d="M28 0H0V48" fill="none" stroke="white" strokeWidth="0.9" />
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill={`url(#${gridId})`} />
+      </svg>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={SAVINGS_FLOAT}
+        alt=""
+        width={80}
+        height={80}
+        className="pointer-events-none absolute right-2.5 top-2.5 z-10 h-[4.35rem] w-[4.35rem] object-contain drop-shadow-[0_10px_18px_rgba(6,38,28,0.28)] sm:right-3.5 sm:top-3.5 sm:h-[4.85rem] sm:w-[4.85rem]"
+      />
+      <div className="relative z-10 flex items-start justify-between gap-3 pr-[4.75rem]">
+        <div className="min-w-0">
+          <p className="text-[15px] font-semibold">In your pots</p>
+          <p className="mt-0.5 text-xs text-white/70">Money you set aside, on your rhythm</p>
+        </div>
+        <button
+          type="button"
+          onClick={toggle}
+          className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-white/80 transition hover:bg-white/15 hover:text-white"
+          aria-label={hidden ? "Show amount" : "Hide amount"}
+        >
+          {hidden ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+        </button>
+      </div>
+      <div className="relative z-10 mt-5 min-w-0 pr-2">
+        <p className="font-mono text-[2.15rem] font-black leading-none tracking-tight sm:text-[2.35rem]">
+          {shown}
+          {hidden ? null : <span className="ml-1.5 text-sm font-semibold tracking-normal text-white/80">XAF</span>}
+        </p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <span className="rounded-full bg-white/18 px-2.5 py-1 text-[11px] font-semibold">{active} active</span>
+          <span className="rounded-full bg-white/18 px-2.5 py-1 text-[11px] font-semibold">
+            {hidden ? "••••" : formatXAF(pace, { withCurrency: false })} / mo
+          </span>
+          <span className="rounded-full bg-white/18 px-2.5 py-1 text-[11px] font-semibold">{streak} best streak</span>
+        </div>
+      </div>
+      <button
+        type="button"
+        onClick={onNew}
+        className="relative z-10 mt-auto flex items-center justify-between border-t border-white/20 pt-3.5 text-sm font-semibold"
+      >
+        New plan
+        <ArrowRight className="h-4 w-4" />
+      </button>
+    </section>
   );
 }
 

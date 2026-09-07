@@ -2,11 +2,9 @@
 
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Plus } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { NewPlanForm, PlanCard, SavingsEmpty } from "@/components/savings";
-import { ACTION_ART, ONBOARD_ART, SAVINGS_POT } from "@/lib/assets";
-import { formatXAF } from "@/lib/format";
+import { NewPlanForm, PlanCard, SavingsEmpty, SavingsHero } from "@/components/savings";
+import { ACTION_ART, ONBOARD_ART } from "@/lib/assets";
 import { useMe, useSavings } from "@/lib/hooks/wallet";
 import { monthlyPace } from "@/lib/savings";
 import { cn } from "@/lib/cn";
@@ -50,44 +48,13 @@ function SavingsInner() {
           </div>
         </header>
 
-        <section className="relative overflow-hidden rounded-[1.85rem] bg-forest p-5 text-white shadow-[0_18px_40px_rgba(6,38,28,0.22)]">
-          <div className="relative z-10 max-w-[16.5rem] sm:max-w-[18rem]">
-            <p className="text-[11px] font-black uppercase tracking-[0.16em] text-brand">In your pots</p>
-            <p className="mt-2 font-mono text-[2.15rem] font-black leading-none tracking-tight">
-              {formatXAF(potTotal, { withCurrency: false })}{" "}
-              <span className="text-base font-bold text-hero-muted">XAF</span>
-            </p>
-            <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-              <div className="rounded-2xl bg-white/10 px-2 py-2.5">
-                <p className="font-mono text-sm font-black">{active.length}</p>
-                <p className="text-[10px] font-semibold text-hero-muted">Active</p>
-              </div>
-              <div className="rounded-2xl bg-white/10 px-2 py-2.5">
-                <p className="font-mono text-sm font-black">{formatXAF(pace, { withCurrency: false })}</p>
-                <p className="text-[10px] font-semibold text-hero-muted">Per month</p>
-              </div>
-              <div className="rounded-2xl bg-white/10 px-2 py-2.5">
-                <p className="font-mono text-sm font-black">{bestStreak}</p>
-                <p className="text-[10px] font-semibold text-hero-muted">Best streak</p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => setCreating(true)}
-              className="mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-brand text-sm font-bold text-white hover:bg-brand-dark"
-            >
-              <Plus className="h-4 w-4" /> New plan
-            </button>
-          </div>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={SAVINGS_POT}
-            alt=""
-            width={176}
-            height={176}
-            className="pointer-events-none absolute -bottom-6 -right-5 h-40 w-40 object-contain sm:-right-3 sm:h-44 sm:w-44"
-          />
-        </section>
+        <SavingsHero
+          amount={potTotal}
+          active={active.length}
+          pace={pace}
+          streak={bestStreak}
+          onNew={() => setCreating(true)}
+        />
 
         <section className="grid grid-cols-3 gap-2">
           {POINTS.map((item) => (
