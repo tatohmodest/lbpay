@@ -26,7 +26,7 @@ const actions = [
   { href: "/business/qr", label: "QR", art: ACTION_ART.qr },
   { href: "/business/payments", label: "Sales", art: ACTION_ART.sales },
   { href: "/business/customers", label: "People", art: ACTION_ART.people },
-  { href: "/business/settings", label: "Shop", art: ACTION_ART.business },
+  { href: "/business/links", label: "Shop", art: ACTION_ART.business },
 ] as const;
 
 const tabs = [

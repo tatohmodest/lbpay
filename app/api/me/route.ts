@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { catchRoute } from "@/lib/server/api";
-import { findUserById, getWallet, listKeys, listLinks, listTx, publicUser } from "@/lib/server/db";
+import { deleteAccountForUser, findUserById, getWallet, listKeys, listLinks, listTx, publicUser } from "@/lib/server/db";
 import { supportUnreadForUser } from "@/lib/server/support";
 import { listSavings } from "@/lib/server/savings";
 import { publicTx } from "@/lib/tx";
-import { readAdminSession, readSession } from "@/lib/server/session";
-import { isAdmin } from "@/lib/roles";
+import { clearSession, readAdminSession, readSession } from "@/lib/server/session";
+import { requireUser } from "@/lib/server/guard";
+import { isAdmin, shouldSkipAdminOtp } from "@/lib/roles";
 
 export async function GET() {
   try {
@@ -18,7 +19,9 @@ export async function GET() {
     const transactions = await listTx(user.id);
     const keys = await listKeys(user.id);
     const links = await listLinks(user.id);
-    const adminStep = isAdmin(user) ? Boolean((await readAdminSession())?.userId === user.id) : false;
+    const adminStep = isAdmin(user)
+      ? shouldSkipAdminOtp(user) || Boolean((await readAdminSession())?.userId === user.id)
+      : false;
     const supportUnread = await supportUnreadForUser(user.id);
     return NextResponse.json({
       session: true,
@@ -39,5 +42,20 @@ export async function GET() {
     });
   } catch (error) {
     return catchRoute("me", error);
+  }
+}
+
+export async function DELETE() {
+  try {
+    const auth = await requireUser();
+    if (auth.error || !auth.user) return auth.error!;
+    const deleted = await deleteAccountForUser(auth.user.id);
+    if (!deleted) {
+      return NextResponse.json({ error: "Account not found." }, { status: 404 });
+    }
+    await clearSession();
+    return NextResponse.json({ ok: true, user: publicUser(deleted) });
+  } catch (error) {
+    return catchRoute("me-delete", error);
   }
 }

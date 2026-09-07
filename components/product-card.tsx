@@ -25,12 +25,13 @@ export function ProductCard({
   const url = product.slug ? productUrl(product.slug, origin) : "";
   const shop = merchantName?.trim();
   const excerpt = productExcerpt(product.description, mode === "pay" ? 72 : 110);
+  const showDescription = mode !== "pay";
   const { onSale, percentOff, original, price } = productPricing(product.amount, product.compareAtAmount);
   const saved = onSale && original && price ? original - price : 0;
   const checkout = product.slug ? payLinkPath(product.slug) : "";
 
   const media = (
-    <div className="relative aspect-[4/5] w-full overflow-hidden bg-gradient-to-br from-brand-soft to-paper sm:aspect-[5/4]">
+    <div className="relative aspect-square w-full overflow-hidden bg-gradient-to-br from-brand-soft to-paper">
       {product.imageUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={product.imageUrl} alt={product.title} className="h-full w-full object-cover" />
@@ -53,7 +54,7 @@ export function ProductCard({
         <h2 className="text-[1.05rem] font-black leading-tight tracking-tight text-ink sm:text-lg">
           {product.title}
         </h2>
-        {excerpt ? <p className="line-clamp-2 text-sm leading-5 text-muted">{excerpt}</p> : null}
+        {showDescription && excerpt ? <p className="line-clamp-2 text-sm leading-5 text-muted">{excerpt}</p> : null}
         <ProductPrice
           amount={product.amount}
           compareAtAmount={product.compareAtAmount}
@@ -113,7 +114,7 @@ export function ProductGrid({
     <div
       className={cn(
         "grid gap-3 sm:gap-4",
-        products.length === 1 ? "max-w-md" : "grid-cols-2 xl:grid-cols-3",
+        products.length === 1 ? "max-w-sm" : "grid-cols-1 sm:grid-cols-2 xl:grid-cols-3",
       )}
     >
       {products.map((product) => (

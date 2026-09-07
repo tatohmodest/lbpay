@@ -1349,6 +1349,52 @@ export async function grantRole(user: StoredUser, role: AccountKind) {
   return upsertUser(user);
 }
 
+export function anonymizeUserForDeletion(user: StoredUser): StoredUser {
+  const suffix = user.id.replace(/[^a-zA-Z0-9]/g, "").slice(-6) || "user";
+  const cleaned: StoredUser = {
+    ...user,
+    name: "Deleted user",
+    lbpayId: `deleted${suffix}`,
+    email: `deleted-${suffix}@lbpay.local`,
+    phone: "",
+    avatar: "",
+    passwordHash: `deleted:${user.id}`,
+    pinHash: null,
+    emailVerified: false,
+    kycStatus: "unverified",
+    roles: ["personal"],
+    status: "frozen",
+    kyc: defaultKyc(),
+    businessName: undefined,
+    businessKind: undefined,
+  };
+  return normalizeUser(cleaned);
+}
+
+export async function deleteAccountForUser(userId: string) {
+  const db = await getDb();
+  const idx = db.users.findIndex((item) => item.id === userId);
+  if (idx === -1) return null;
+
+  const user = db.users[idx];
+  const deleted = anonymizeUserForDeletion(user);
+  db.users[idx] = deleted;
+  db.wallets = db.wallets.filter((item) => item.userId !== userId);
+  db.transactions = db.transactions.filter((item) => item.userId !== userId);
+  db.keys = db.keys.filter((item) => item.userId !== userId);
+  db.webhooks = db.webhooks.filter((item) => item.userId !== userId);
+  db.links = db.links.filter((item) => item.userId !== userId);
+  db.savings = (db.savings || []).filter((item) => item.userId !== userId);
+  db.reviews = (db.reviews || []).filter((item) => item.userId !== userId);
+  db.pushSubscriptions = (db.pushSubscriptions || []).filter((item) => item.userId !== userId);
+  db.supportThreads = (db.supportThreads || []).filter((item) => item.userId !== userId);
+  db.supportMessages = (db.supportMessages || []).filter((item) => item.authorId !== userId);
+  db.logs = db.logs.filter((item) => item.userId !== userId);
+
+  await saveDb(db);
+  return deleted;
+}
+
 export async function revokeRole(user: StoredUser, role: AccountKind) {
   if (role === "personal") return user;
   user.roles = user.roles.filter((item) => item !== role);

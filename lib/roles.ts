@@ -15,6 +15,10 @@ export function isBootstrapAdmin(email: string) {
   return bootstrapAdminEmails().includes(email.trim().toLowerCase());
 }
 
+export function shouldSkipAdminOtp(user: { email?: string | null } | null | undefined) {
+  return Boolean(user?.email && isBootstrapAdmin(user.email));
+}
+
 export function hasKind(
   user: { roles?: AccountKind[]; kyc?: { business?: string; developer?: string } } | null | undefined,
   kind: AccountKind,

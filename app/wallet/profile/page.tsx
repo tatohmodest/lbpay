@@ -121,6 +121,30 @@ export default function ProfilePage() {
         >
           Sign out
         </Button>
+        <Button
+          className="mt-3 border border-red-200 bg-red-50 text-red-700 hover:bg-red-100"
+          variant="secondary"
+          onClick={async () => {
+            const confirmed = window.confirm(
+              "Delete this account and all your saved data? This cannot be undone.",
+            );
+            if (!confirmed) return;
+
+            const res = await fetch("/api/me", { method: "DELETE" });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+              notify.error("Could not delete account", data.error || "Please try again.");
+              return;
+            }
+
+            queryClient.clear();
+            logout();
+            notify.info("Account deleted", "Your data has been removed from LBPay.");
+            router.push("/");
+          }}
+        >
+          Delete account
+        </Button>
       </Card>
       <ReviewForm />
       <p className="mt-4 text-xs text-muted">{LEGAL_NOTE}</p>

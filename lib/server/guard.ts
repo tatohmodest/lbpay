@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { findUserById } from "@/lib/server/db";
 import { readAdminSession, readSession } from "@/lib/server/session";
-import { hasKind, isAdmin } from "@/lib/roles";
+import { hasKind, isAdmin, shouldSkipAdminOtp } from "@/lib/roles";
 import type { AccountKind } from "@/lib/types";
 
 export async function currentUser() {
@@ -57,6 +57,9 @@ export async function requireAdmin() {
   if (result.error || !result.user) return result;
   if (!isAdmin(result.user)) {
     return { error: NextResponse.json({ error: "Admin only." }, { status: 403 }), user: null };
+  }
+  if (shouldSkipAdminOtp(result.user)) {
+    return result;
   }
   const step = await readAdminSession();
   if (!step || step.userId !== result.user.id) {
