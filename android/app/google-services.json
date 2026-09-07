@@ -1,8 +1,8 @@
 {
   "project_info": {
     "project_number": "1005766549175",
-    "project_id": "lbpay-cm",
-    "storage_bucket": "lbpay-cm.firebasestorage.app"
+    "project_id": "lbpay-89179",
+    "storage_bucket": "lbpay-89179.firebasestorage.app"
   },
   "client": [
     {
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyC-lbpay-replace-from-firebase-console"
+          "current_key": "AIzaSyC0tYzELolFxBPjKZ_y5fnVhH95SnsDxig"
         }
       ],
       "services": {
