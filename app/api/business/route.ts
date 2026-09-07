@@ -1,5 +1,5 @@
 import { after, NextResponse } from "next/server";
-import { addLink, deleteLink, listLinks, listTx, updateLink } from "@/lib/server/db";
+import { addLink, deleteLink, listLinks, listTx, shopQuotaFor, updateLink } from "@/lib/server/db";
 import { deleteCloudinaryImage } from "@/lib/server/cloudinary";
 import { requireKind } from "@/lib/server/guard";
 import {
@@ -8,11 +8,13 @@ import {
   parsePaymentLinkPatch,
   paymentLinkIdFromRequest,
 } from "@/lib/server/payment-links";
+import { isShopSlotLimitError } from "@/lib/shop-limits";
 
 export async function GET() {
   const auth = await requireKind("business");
   if (auth.error || !auth.user) return auth.error!;
   const links = await listLinks(auth.user.id);
+  const quota = await shopQuotaFor(auth.user.id);
   const txs = (await listTx(auth.user.id)).filter((tx) => ["collection", "receive"].includes(tx.kind));
   const revenue = txs.filter((tx) => tx.status === "success").reduce((sum, tx) => sum + tx.amount, 0);
   return NextResponse.json({
@@ -22,6 +24,7 @@ export async function GET() {
     collections: txs,
     revenue,
     kyc: auth.user.kyc.business,
+    quota,
   });
 }
 
@@ -31,8 +34,17 @@ export async function POST(request: Request) {
   const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
   const parsed = parsePaymentLinkInput(body);
   if (!parsed.ok) return NextResponse.json({ error: parsed.error }, { status: 400 });
-  const link = await addLink(buildPaymentLink(auth.user.id, parsed.value));
-  return NextResponse.json({ ok: true, link });
+  try {
+    const link = await addLink(buildPaymentLink(auth.user.id, parsed.value));
+    const quota = await shopQuotaFor(auth.user.id);
+    return NextResponse.json({ ok: true, link, quota });
+  } catch (err: unknown) {
+    if (isShopSlotLimitError(err)) {
+      const quota = await shopQuotaFor(auth.user.id);
+      return NextResponse.json({ error: err.message, code: "SHOP_SLOT_LIMIT", quota }, { status: 403 });
+    }
+    return NextResponse.json({ error: err instanceof Error ? err.message : "Failed" }, { status: 400 });
+  }
 }
 
 export async function PATCH(request: Request) {

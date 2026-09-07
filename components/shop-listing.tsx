@@ -58,6 +58,7 @@ export function ShopListing({ handle }: { handle: string }) {
   }
 
   const shopName = user.businessName || user.name;
+  const url = shopUrl(user.lbpayId, origin);
 
   if (!products.length) {
     return (
@@ -66,25 +67,32 @@ export function ShopListing({ handle }: { handle: string }) {
         title={`Pay ${user.name}`}
         merchantName={shopName}
         merchantHandle={user.lbpayId}
+        merchantAvatar={user.avatar}
       />
     );
   }
 
-  const url = shopUrl(user.lbpayId, origin);
-
   return (
-    <main className="min-h-screen bg-paper px-4 py-6 sm:py-10">
-      <div className="mx-auto w-full max-w-md space-y-5">
-        <div className="flex justify-center">
-          <Logo href="/" markClassName="h-8 w-8" />
+    <main className="min-h-screen bg-paper pb-10">
+      <header className="bg-forest px-4 pb-16 pt-6 text-white">
+        <div className="mx-auto flex w-full max-w-lg justify-center">
+          <Logo href="/" tone="dark" markClassName="h-8 w-8" />
         </div>
-        <section className="rounded-[1.75rem] bg-white p-5 text-center ring-1 ring-line/80 sm:p-6">
-          <AppImg src={user.avatar} alt="" className="mx-auto h-16 w-16 rounded-full object-cover ring-4 ring-brand-soft" />
+      </header>
+      <div className="mx-auto w-full max-w-lg space-y-5 px-4">
+        <section className="-mt-12 rounded-[1.85rem] bg-white px-5 pb-6 pt-8 text-center shadow-[0_18px_50px_rgba(6,38,28,0.12)] ring-1 ring-line/80">
+          <AppImg
+            src={user.avatar}
+            alt=""
+            className="mx-auto h-[4.5rem] w-[4.5rem] rounded-full object-cover ring-4 ring-brand-soft"
+          />
           <h1 className="mt-3 text-2xl font-black tracking-tight text-ink">{shopName}</h1>
           <p className="mt-1 font-mono text-sm font-bold text-brand">@{user.lbpayId}</p>
-          <p className="mt-2 text-sm text-muted">Pick a product and pay with MTN, Orange, or wallet.</p>
+          <p className="mt-2 text-sm leading-6 text-muted">
+            {products.length} {products.length === 1 ? "product" : "products"} · Pay with MTN, Orange, or wallet
+          </p>
           <div className="mt-5 text-left">
-            <ShareRow url={url} text={shopShareText(shopName, url)} copyLabel="Copy shop link" />
+            <ShareRow url={url} text={shopShareText(shopName, url)} copyLabel="Share this shop" />
           </div>
         </section>
         <ProductGrid products={products} merchantName={shopName} mode="pay" />
@@ -94,8 +102,9 @@ export function ShopListing({ handle }: { handle: string }) {
           title={`Pay ${shopName}`}
           merchantName={shopName}
           merchantHandle={user.lbpayId}
+          merchantAvatar={user.avatar}
         />
-        <p className="pb-6 text-center text-xs text-muted">
+        <p className="pb-4 text-center text-xs text-muted">
           Want this for your own goods?{" "}
           <Link href="/signup" className="font-bold text-brand-deep hover:underline">
             Create a shop

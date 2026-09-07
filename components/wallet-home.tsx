@@ -13,6 +13,7 @@ import { useNotify } from "@/lib/notify";
 import { dueState, penaltyFor, timeUntil } from "@/lib/savings";
 import type { SavingsPlan, Transaction } from "@/lib/types";
 import { useHiddenAmount } from "@/components/house-card";
+import { HABIT_ART } from "@/lib/assets";
 import { cn } from "@/lib/cn";
 
 /* ---------- Balance ---------- */
@@ -152,6 +153,7 @@ export type Nudge = {
   copy: string;
   href: string;
   cta: string;
+  art?: string;
 };
 
 export function buildNudges({
@@ -205,6 +207,7 @@ export function buildNudges({
       copy: "That is 15,000 XAF a month, locked in a pot with a streak. Miss a day and a small penalty you choose keeps you honest.",
       href: "/wallet/savings?new=1",
       cta: "Start a pot",
+      art: HABIT_ART,
     });
   }
   if (balance <= 0) {
@@ -283,13 +286,43 @@ export function NextMove({ nudges }: { nudges: Nudge[] }) {
         <Sparkles className="h-4 w-4 text-brand" />
         <h2 className="text-[13px] font-black uppercase tracking-[0.14em] text-muted">Your next move</h2>
       </div>
-      <Link href={primary.href} className={cn("block rounded-[1.5rem] p-4 ring-1 transition hover:-translate-y-0.5 sm:p-5", tone.card)}>
-        <p className={cn("text-[11px] font-black uppercase tracking-[0.14em]", tone.kicker)}>{primary.kicker}</p>
-        <p className="mt-1 text-lg font-black leading-tight text-ink">{primary.title}</p>
-        <p className="mt-1 text-sm text-ink/75">{primary.copy}</p>
-        <span className={cn("mt-4 inline-flex h-10 items-center gap-1.5 rounded-xl px-4 text-sm font-bold", tone.cta)}>
-          {primary.cta} <ArrowRight className="h-4 w-4" />
-        </span>
+      <Link
+        href={primary.href}
+        className={cn(
+          "block overflow-hidden rounded-[1.5rem] ring-1 transition hover:-translate-y-0.5",
+          tone.card,
+          primary.art ? "p-0" : "p-4 sm:p-5",
+        )}
+      >
+        {primary.art ? (
+          <div className="grid sm:grid-cols-[1.15fr_0.85fr] sm:items-stretch">
+            <div className="p-5 sm:p-6">
+              <p className={cn("text-[11px] font-black uppercase tracking-[0.14em]", tone.kicker)}>{primary.kicker}</p>
+              <p className="mt-1 text-xl font-black leading-tight text-ink sm:text-2xl">{primary.title}</p>
+              <p className="mt-2 text-sm leading-6 text-ink/75">{primary.copy}</p>
+              <span className={cn("mt-5 inline-flex h-10 items-center gap-1.5 rounded-xl px-4 text-sm font-bold", tone.cta)}>
+                {primary.cta} <ArrowRight className="h-4 w-4" />
+              </span>
+            </div>
+            <div className="relative min-h-[10.5rem] bg-white/40 sm:min-h-0">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={primary.art}
+                alt=""
+                className="absolute inset-0 h-full w-full object-contain object-bottom p-2 sm:object-center sm:p-3"
+              />
+            </div>
+          </div>
+        ) : (
+          <>
+            <p className={cn("text-[11px] font-black uppercase tracking-[0.14em]", tone.kicker)}>{primary.kicker}</p>
+            <p className="mt-1 text-lg font-black leading-tight text-ink">{primary.title}</p>
+            <p className="mt-1 text-sm text-ink/75">{primary.copy}</p>
+            <span className={cn("mt-4 inline-flex h-10 items-center gap-1.5 rounded-xl px-4 text-sm font-bold", tone.cta)}>
+              {primary.cta} <ArrowRight className="h-4 w-4" />
+            </span>
+          </>
+        )}
       </Link>
       {rest.slice(0, 2).length ? (
         <div className="grid gap-2 sm:grid-cols-2">

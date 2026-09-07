@@ -82,6 +82,7 @@ const MONEY_OUT: TransactionKind[] = [
   "savings_in",
   "penalty",
   "international",
+  "shop_slots",
 ];
 
 export function isMoneyOut(kind: string) {

@@ -1,32 +1,22 @@
 "use client";
 
-import {
-  BarChart3,
-  FileText,
-  LayoutDashboard,
-  Link2,
-  QrCode,
-  Receipt,
-  Settings,
-  Users,
-  Wallet,
-} from "lucide-react";
 import { BusinessMobileTabs } from "@/components/business/mobile-tabs";
 import { ConsoleShell, WalletShell } from "@/components/layout/shells";
 import { RoleGate } from "@/components/role-gate";
+import { ACTION_ART } from "@/lib/assets";
 import { useMe } from "@/lib/hooks/wallet";
 import { productUnlocked } from "@/lib/roles";
 
 const items = [
-  { href: "/business", label: "Overview", icon: LayoutDashboard },
-  { href: "/business/payments", label: "Sales", icon: Receipt },
-  { href: "/business/invoices", label: "Invoices", icon: FileText },
-  { href: "/business/customers", label: "Customers", icon: Users },
-  { href: "/business/links", label: "Links", icon: Link2 },
-  { href: "/business/analytics", label: "Analytics", icon: BarChart3 },
-  { href: "/business/settlements", label: "Settlement", icon: Wallet },
-  { href: "/business/qr", label: "QR", icon: QrCode },
-  { href: "/business/settings", label: "Settings", icon: Settings },
+  { href: "/business", label: "Overview", art: ACTION_ART.business },
+  { href: "/business/payments", label: "Sales", art: ACTION_ART.sales },
+  { href: "/business/invoices", label: "Invoices", art: ACTION_ART.invoices },
+  { href: "/business/customers", label: "Customers", art: ACTION_ART.people },
+  { href: "/business/links", label: "Links", art: ACTION_ART.products },
+  { href: "/business/analytics", label: "Analytics", art: ACTION_ART.analytics },
+  { href: "/business/settlements", label: "Settlement", art: ACTION_ART.wallet },
+  { href: "/business/qr", label: "QR", art: ACTION_ART.qr },
+  { href: "/business/settings", label: "Settings", art: ACTION_ART.settings },
 ];
 
 export function BusinessLayoutClient({ children }: { children: React.ReactNode }) {

@@ -208,6 +208,14 @@ function payloadForTx(kind: string, amount: string, who: string, failed: boolean
         body: `${amount} was reversed on your wallet.`,
         url: "/wallet/history",
       };
+    case "shop_slots":
+      return {
+        title: failed ? "Could not add product slots" : "More product slots",
+        body: failed
+          ? `${amount} was returned to your wallet.`
+          : `You added 10 product slots for ${amount}.`,
+        url: "/business/links",
+      };
     default:
       return {
         title: failed ? "Transaction failed" : "Transaction update",

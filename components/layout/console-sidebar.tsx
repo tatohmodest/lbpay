@@ -12,7 +12,7 @@ import { ChatWithUsButton } from "@/components/chat-with-us-button";
 import { useMe } from "@/lib/hooks/wallet";
 import { productUnlocked } from "@/lib/roles";
 
-export type NavItem = { href: string; label: string; icon: LucideIcon };
+export type NavItem = { href: string; label: string; icon?: LucideIcon; art?: string };
 
 function ProductSwitch({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
@@ -96,7 +96,18 @@ function SidebarLinks({
                 : "text-muted hover:bg-paper hover:text-ink",
             )}
           >
-            <Icon className="h-4 w-4" />
+            {item.art ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={item.art}
+                alt=""
+                width={28}
+                height={28}
+                className="h-7 w-7 shrink-0 object-contain"
+              />
+            ) : Icon ? (
+              <Icon className="h-4 w-4" />
+            ) : null}
             {item.label}
           </Link>
         );

@@ -18,7 +18,7 @@ export function PayLinkClient({ slug }: { slug: string }) {
           imageUrl?: string;
           template?: string;
         };
-        merchant: { name: string; lbpayId: string } | null;
+        merchant: { name: string; lbpayId: string; avatar?: string } | null;
       };
     },
   });
@@ -52,9 +52,10 @@ export function PayLinkClient({ slug }: { slug: string }) {
       slug={slug}
       handle={link.data.merchant?.lbpayId}
       title={link.data.link.title}
-      merchantName={link.data.merchant?.name || "Payment request"}
-      merchantHandle={link.data.merchant?.lbpayId || ""}
-      fixedAmount={link.data.link.amount}
+        merchantName={link.data.merchant?.name || "Payment request"}
+        merchantHandle={link.data.merchant?.lbpayId || ""}
+        merchantAvatar={link.data.merchant?.avatar}
+        fixedAmount={link.data.link.amount}
       imageUrl={link.data.link.imageUrl}
       template={link.data.link.template}
     />

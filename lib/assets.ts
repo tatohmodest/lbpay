@@ -14,6 +14,12 @@ export const ACTION_ART = {
   history: "/illustrations/actions/history.webp",
   business: "/illustrations/actions/business.webp",
   profile: "/illustrations/actions/profile.webp",
+  sales: "/illustrations/actions/sales.webp",
+  invoices: "/illustrations/actions/invoices.webp",
+  people: "/illustrations/actions/people.webp",
+  products: "/illustrations/actions/products.webp",
+  analytics: "/illustrations/actions/analytics.webp",
+  settings: "/illustrations/actions/settings.webp",
 } as const;
 
 export const ONBOARD_ART = {
@@ -22,6 +28,8 @@ export const ONBOARD_ART = {
   save: "/illustrations/onboarding/save.webp",
   business: "/illustrations/onboarding/business.webp",
 } as const;
+
+export const HABIT_ART = "/illustrations/habit-scene.webp";
 
 export const ANDROID_APP_ID = "1:1005766549175:android:a8788725b5871add9a7732";
 export const ANDROID_PACKAGE = "com.loopingbinary.lbpay";

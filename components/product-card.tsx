@@ -27,7 +27,7 @@ export function ProductCard({
 
   const body = (
     <>
-      <div className="aspect-[4/3] w-full overflow-hidden bg-gradient-to-br from-brand-soft to-paper">
+      <div className="aspect-[5/4] w-full overflow-hidden bg-gradient-to-br from-brand-soft to-paper">
         {product.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={product.imageUrl} alt={product.title} className="h-full w-full object-cover" />
@@ -40,7 +40,7 @@ export function ProductCard({
       <div className="space-y-1 px-5 pb-2 pt-4">
         {shop ? <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">{shop}</p> : null}
         <h2 className="text-lg font-black leading-tight tracking-tight text-ink">{product.title}</h2>
-        <p className="font-mono text-2xl font-black text-brand">{price}</p>
+        <p className="font-mono text-[1.65rem] font-black text-brand">{price}</p>
       </div>
     </>
   );

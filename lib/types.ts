@@ -25,7 +25,8 @@ export type TransactionKind =
   | "savings_out"
   | "penalty"
   | "international"
-  | "international_in";
+  | "international_in"
+  | "shop_slots";
 
 export type SavingsFrequency = "daily" | "weekly" | "monthly";
 export type SavingsStatus = "active" | "completed" | "closed";

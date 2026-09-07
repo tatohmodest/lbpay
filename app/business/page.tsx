@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Link2, QrCode, Receipt, Store, Users } from "lucide-react";
+import { ACTION_ART } from "@/lib/assets";
 import { StatusBadge } from "@/components/ui/badge";
 import { AppImg } from "@/components/app-img";
 import {
@@ -22,11 +22,11 @@ import { payLinkPath } from "@/lib/origin";
 import { txHref } from "@/lib/tx";
 
 const actions = [
-  { href: "/business/links", label: "Link", icon: Link2 },
-  { href: "/business/qr", label: "QR", icon: QrCode },
-  { href: "/business/payments", label: "Sales", icon: Receipt },
-  { href: "/business/customers", label: "People", icon: Users },
-  { href: "/business/settings", label: "Shop", icon: Store },
+  { href: "/business/links", label: "Link", art: ACTION_ART.products },
+  { href: "/business/qr", label: "QR", art: ACTION_ART.qr },
+  { href: "/business/payments", label: "Sales", art: ACTION_ART.sales },
+  { href: "/business/customers", label: "People", art: ACTION_ART.people },
+  { href: "/business/settings", label: "Shop", art: ACTION_ART.business },
 ] as const;
 
 const tabs = [
@@ -101,10 +101,11 @@ export default function BusinessPage() {
           </div>
           <Link
             href="/business/qr"
-            className="grid h-10 w-10 place-items-center rounded-full bg-white text-ink ring-1 ring-line/80"
+            className="grid h-11 w-11 place-items-center rounded-full bg-white ring-1 ring-line/80"
             aria-label="Shop QR"
           >
-            <QrCode className="h-4 w-4" />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={ACTION_ART.qr} alt="" width={28} height={28} className="h-7 w-7 object-contain" />
           </Link>
         </header>
 

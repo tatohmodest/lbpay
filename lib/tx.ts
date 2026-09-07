@@ -42,6 +42,7 @@ const KIND_TITLE: Record<TransactionKind, string> = {
   penalty: "Missed-save penalty",
   international: "Sent abroad",
   international_in: "Received from abroad",
+  shop_slots: "Product slots",
 };
 
 const STATUS_LABEL: Record<TransactionStatus, string> = {

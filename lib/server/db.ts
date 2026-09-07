@@ -9,6 +9,7 @@ import { normalizeLinkTemplate } from "@/lib/link-templates";
 import { resolveAvatar } from "@/lib/avatar";
 import { isSafeProductImageUrl } from "@/lib/product-image";
 import { cloudinaryPublicId } from "@/lib/server/cloudinary";
+import { shopSlotLimit, shopSlotLimitMessage, shopSlotState, SHOP_LIMITS } from "@/lib/shop-limits";
 import { isDeletedLinkId, mergeById, mergePaymentLinks, uniqueIds } from "@/lib/server/ledger-merge";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { withLedgerLock } from "@/lib/server/ledger-lock";
@@ -47,6 +48,7 @@ export type StoredUser = {
   kyc: Record<KycTrack, KycState>;
   businessName?: string;
   businessKind?: BusinessKind;
+  extraLinkPacks?: number;
   createdAt: string;
 };
 
@@ -1179,6 +1181,12 @@ function findLinkIndex(db: DbShape, idOrSlug: string) {
 
 export async function addLink(link: StoredLink) {
   const db = await getDb();
+  const owner = db.users.find((item) => item.id === link.userId);
+  const used = activeLinks(db).filter((item) => item.userId === link.userId).length;
+  const limit = shopSlotLimit(owner?.extraLinkPacks);
+  if (used >= limit) {
+    throw Object.assign(new Error(shopSlotLimitMessage(limit)), { code: "SHOP_SLOT_LIMIT" });
+  }
   const stored = normalizeStoredLink(link);
   db.links.unshift(stored);
   await saveDb(db);
@@ -1190,6 +1198,50 @@ export async function listLinks(userId: string) {
   return activeLinks(db)
     .filter((item) => item.userId === userId)
     .map(normalizeStoredLink);
+}
+
+export async function shopQuotaFor(userId: string) {
+  const db = await getDb();
+  const user = db.users.find((item) => item.id === userId);
+  const used = activeLinks(db).filter((item) => item.userId === userId).length;
+  return shopSlotState(used, user?.extraLinkPacks);
+}
+
+export async function buyShopSlotPack(userId: string) {
+  return withLedgerLock(async () => {
+    const db = await getDb();
+    const user = db.users.find((item) => item.id === userId);
+    const wallet = db.wallets.find((item) => item.userId === userId);
+    if (!user || !wallet) throw new Error("Wallet missing");
+    if (wallet.balance < SHOP_LIMITS.packPrice) {
+      throw new Error(`You need ${SHOP_LIMITS.packPrice.toLocaleString("fr-FR")} XAF in your wallet to add ${SHOP_LIMITS.packSize} more product slots.`);
+    }
+    wallet.balance -= SHOP_LIMITS.packPrice;
+    user.extraLinkPacks = (user.extraLinkPacks || 0) + 1;
+    const tx: StoredTx = {
+      id: `TXN_${Date.now().toString(36).toUpperCase()}`,
+      userId,
+      kind: "shop_slots",
+      amount: SHOP_LIMITS.packPrice,
+      fee: 0,
+      status: "success",
+      method: "wallet",
+      counterparty: "LBPay",
+      note: `${SHOP_LIMITS.packSize} extra product slots`,
+      createdAt: new Date().toISOString(),
+      rail: "internal",
+    };
+    db.transactions.unshift(tx);
+    await saveDb(db);
+    await emitPush((mod) => mod.pushForTransaction(tx));
+    const used = activeLinks(db).filter((item) => item.userId === userId).length;
+    return {
+      extraLinkPacks: user.extraLinkPacks,
+      quota: shopSlotState(used, user.extraLinkPacks),
+      balance: wallet.balance,
+      tx,
+    };
+  });
 }
 
 export async function updateLink(userId: string, idOrSlug: string, changes: Partial<StoredLink>) {

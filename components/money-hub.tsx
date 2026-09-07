@@ -99,7 +99,7 @@ export function BalanceHero({
 export function ActionRail({
   items,
 }: {
-  items: Array<{ href: string; label: string; icon: LucideIcon }>;
+  items: Array<{ href: string; label: string; art?: string; icon?: LucideIcon }>;
 }) {
   return (
     <nav className="grid grid-cols-5 gap-1">
@@ -109,11 +109,16 @@ export function ActionRail({
           <Link
             key={item.href + item.label}
             href={item.href}
-            className="flex flex-col items-center gap-2 rounded-2xl px-1 py-1.5 text-center hover:bg-white"
+            className="flex flex-col items-center gap-1.5 rounded-2xl px-1 py-1.5 text-center hover:bg-white"
           >
-            <span className="grid h-12 w-12 place-items-center rounded-2xl bg-white text-ink shadow-[0_1px_2px_rgba(12,25,19,0.05)] ring-1 ring-line/80">
-              <Icon className="h-5 w-5" />
-            </span>
+            {item.art ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={item.art} alt="" width={52} height={52} draggable={false} className="h-[3.25rem] w-[3.25rem] object-contain" />
+            ) : Icon ? (
+              <span className="grid h-12 w-12 place-items-center rounded-2xl bg-white text-ink shadow-[0_1px_2px_rgba(12,25,19,0.05)] ring-1 ring-line/80">
+                <Icon className="h-5 w-5" />
+              </span>
+            ) : null}
             <span className="text-[11px] font-semibold text-ink">{item.label}</span>
           </Link>
         );

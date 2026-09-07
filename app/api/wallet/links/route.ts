@@ -1,5 +1,5 @@
 import { after, NextResponse } from "next/server";
-import { addLink, listLinks, updateLink, deleteLink } from "@/lib/server/db";
+import { addLink, listLinks, shopQuotaFor, updateLink, deleteLink } from "@/lib/server/db";
 import { deleteCloudinaryImage } from "@/lib/server/cloudinary";
 import { requireActiveUser } from "@/lib/server/guard";
 import {
@@ -8,11 +8,13 @@ import {
   parsePaymentLinkPatch,
   paymentLinkIdFromRequest,
 } from "@/lib/server/payment-links";
+import { isShopSlotLimitError } from "@/lib/shop-limits";
 
 export async function GET() {
   const auth = await requireActiveUser();
   if (auth.error || !auth.user) return auth.error!;
-  return NextResponse.json({ links: await listLinks(auth.user.id) });
+  const [links, quota] = await Promise.all([listLinks(auth.user.id), shopQuotaFor(auth.user.id)]);
+  return NextResponse.json({ links, quota });
 }
 
 export async function POST(request: Request) {
@@ -21,8 +23,17 @@ export async function POST(request: Request) {
   const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
   const parsed = parsePaymentLinkInput(body);
   if (!parsed.ok) return NextResponse.json({ error: parsed.error }, { status: 400 });
-  const link = await addLink(buildPaymentLink(auth.user.id, parsed.value));
-  return NextResponse.json({ ok: true, link });
+  try {
+    const link = await addLink(buildPaymentLink(auth.user.id, parsed.value));
+    const quota = await shopQuotaFor(auth.user.id);
+    return NextResponse.json({ ok: true, link, quota });
+  } catch (err: unknown) {
+    if (isShopSlotLimitError(err)) {
+      const quota = await shopQuotaFor(auth.user.id);
+      return NextResponse.json({ error: err.message, code: "SHOP_SLOT_LIMIT", quota }, { status: 403 });
+    }
+    return NextResponse.json({ error: err instanceof Error ? err.message : "Failed" }, { status: 400 });
+  }
 }
 
 export async function PATCH(request: Request) {
