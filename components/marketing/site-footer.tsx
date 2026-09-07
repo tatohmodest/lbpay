@@ -21,6 +21,8 @@ const developers = [
 const company = [
   { href: "/signup", label: "Create account" },
   { href: "/login", label: "Log in" },
+  { href: "/privacy", label: "Privacy policy" },
+  { href: "/copyright", label: "Copyright policy" },
   { href: "/#faq", label: "FAQ" },
   { href: "/sitemap.xml", label: "Sitemap" },
 ];
