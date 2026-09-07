@@ -110,7 +110,12 @@ export function ProductGrid({
 }) {
   if (!products.length) return null;
   return (
-    <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-3">
+    <div
+      className={cn(
+        "grid gap-3 sm:gap-4",
+        products.length === 1 ? "max-w-md" : "grid-cols-2 xl:grid-cols-3",
+      )}
+    >
       {products.map((product) => (
         <ProductCard key={product.slug} product={product} merchantName={merchantName} mode={mode} />
       ))}

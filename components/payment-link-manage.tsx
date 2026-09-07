@@ -112,7 +112,15 @@ export function PaymentLinkManageList({
   if (links.length === 0) return null;
 
   return (
-    <div className={layout === "cards" ? "grid gap-4 sm:grid-cols-2 xl:grid-cols-3" : "space-y-3"}>
+    <div
+      className={
+        layout === "cards"
+          ? links.length === 1
+            ? "max-w-md"
+            : "grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
+          : "space-y-3"
+      }
+    >
       {links.map((link) => {
         const url = payLinkUrl(link.slug, origin);
         const isEditing = editing?.id === link.id;
