@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import type { StoredUser } from "./db";
 import { anonymizeUserForDeletion } from "./db";
 
 test("account deletion removes personal data while preserving a safe non-login record", () => {
-  const original = {
+  const original: StoredUser = {
     id: "usr_123",
     name: "Ada Lovelace",
     lbpayId: "ada",
@@ -13,13 +14,13 @@ test("account deletion removes personal data while preserving a safe non-login r
     passwordHash: "hash",
     pinHash: "pin",
     emailVerified: true,
-    kycStatus: "verified" as const,
-    roles: ["personal", "admin" as const],
-    status: "active" as const,
+    kycStatus: "verified",
+    roles: ["personal", "admin"],
+    status: "active",
     kyc: {
-      personal: "verified" as const,
-      business: "unverified" as const,
-      developer: "unverified" as const,
+      personal: "verified",
+      business: "unverified",
+      developer: "unverified",
     },
     createdAt: "2024-01-01T00:00:00Z",
   };
