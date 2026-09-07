@@ -25,6 +25,16 @@ async function saveLocalProductImage(userId: string, buffer: Buffer) {
   return { url: rel, publicId: `local:${rel}`, bytes: buffer.byteLength };
 }
 
+const DATA_IMAGE_MAX_BYTES = 480_000;
+
+function saveDataProductImage(buffer: Buffer) {
+  if (buffer.byteLength > DATA_IMAGE_MAX_BYTES) {
+    throw new Error("That photo is still too large. Try a smaller JPG or PNG.");
+  }
+  const url = `data:image/jpeg;base64,${buffer.toString("base64")}`;
+  return { url, publicId: `data:${uid("img")}`, bytes: buffer.byteLength };
+}
+
 export async function POST(request: Request) {
   try {
     const auth = await requireActiveUser();
@@ -35,7 +45,11 @@ export async function POST(request: Request) {
     if (!(file instanceof File)) {
       return NextResponse.json({ error: "Choose a photo to upload." }, { status: 400 });
     }
-    if (!ALLOWED.has(file.type) && !file.type.startsWith("image/")) {
+    const type = String(file.type || "").toLowerCase();
+    if (type.includes("heic") || type.includes("heif")) {
+      return NextResponse.json({ error: "Use a JPG, PNG, or WEBP photo." }, { status: 400 });
+    }
+    if (!ALLOWED.has(type) && !type.startsWith("image/")) {
       return NextResponse.json({ error: "Upload a JPG, PNG, or WEBP photo." }, { status: 400 });
     }
     if (file.size > MAX_KYC_UPLOAD_BYTES) {
@@ -43,19 +57,41 @@ export async function POST(request: Request) {
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
-    const stored = cloudinaryConfigured()
-      ? await uploadProductImage({
-          buffer,
-          userId: auth.user.id,
-          mime: file.type,
-        })
-      : await saveLocalProductImage(auth.user.id, buffer);
-    return NextResponse.json({
-      ok: true,
-      url: stored.url,
-      publicId: stored.publicId,
-      bytes: stored.bytes,
-    });
+    try {
+      const stored = cloudinaryConfigured()
+        ? await uploadProductImage({
+            buffer,
+            userId: auth.user.id,
+            mime: file.type,
+          })
+        : await saveLocalProductImage(auth.user.id, buffer);
+      return NextResponse.json({
+        ok: true,
+        url: stored.url,
+        publicId: stored.publicId,
+        bytes: stored.bytes,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "";
+      if (/cloudinary|photo|upload|EROFS|read-only|ENOENT|EACCES/i.test(message)) {
+        try {
+          const stored = await saveDataProductImage(buffer);
+          return NextResponse.json({
+            ok: true,
+            url: stored.url,
+            publicId: stored.publicId,
+            bytes: stored.bytes,
+          });
+        } catch (fallbackError) {
+          const fallback = fallbackError instanceof Error ? fallbackError.message : "";
+          return NextResponse.json(
+            { error: fallback || "Could not store that photo. Try a smaller JPG or PNG." },
+            { status: 500 },
+          );
+        }
+      }
+      throw error;
+    }
   } catch (error) {
     return catchRoute("product-upload", error);
   }

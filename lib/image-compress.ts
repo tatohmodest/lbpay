@@ -72,8 +72,11 @@ async function compressImage(
     }
     return new File([blob], options.filename, { type: "image/jpeg" });
   } catch (error) {
-    if (file.size <= MAX_IMAGE_UPLOAD_BYTES && file.type.startsWith("image/")) return file;
-    throw error instanceof Error ? error : new Error("Could not compress that photo.");
+    const readable = /image\/(jpeg|jpg|png|webp)/i.test(file.type);
+    if (readable && file.size <= MAX_IMAGE_UPLOAD_BYTES) return file;
+    throw error instanceof Error && /compress|read|process/i.test(error.message)
+      ? error
+      : new Error("Use a JPG, PNG, or WEBP photo.");
   }
 }
 

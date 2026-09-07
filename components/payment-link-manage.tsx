@@ -5,23 +5,21 @@ import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PaymentLinkForm } from "@/components/payment-link-form";
+import { PaymentLinkForm, type PaymentLinkFormInput } from "@/components/payment-link-form";
 import { ProductCard } from "@/components/product-card";
-import { ProductLinkFrame } from "@/components/product-link-frame";
-import { formatXAF } from "@/lib/format";
 import { useNotify } from "@/lib/notify";
 import { copyText } from "@/lib/clipboard";
 import { payLinkPath, payLinkUrl } from "@/lib/origin";
 import { useBrowserOrigin } from "@/lib/use-origin";
-import { linkTemplateMeta } from "@/lib/link-templates";
 
 export type ManagedPaymentLink = {
   id: string;
   slug: string;
   title: string;
   amount: number | null;
+  compareAtAmount?: number | null;
+  description?: string;
   imageUrl?: string;
-  template?: string;
 };
 
 async function readJson(res: Response) {
@@ -54,13 +52,7 @@ export function PaymentLinkManageList({
     queryKeys.forEach((queryKey) => client.invalidateQueries({ queryKey }));
   }
 
-  async function saveEdit(input: {
-    title: string;
-    amount: string;
-    imageUrl?: string;
-    imagePublicId?: string;
-    template: string;
-  }) {
+  async function saveEdit(input: PaymentLinkFormInput) {
     if (!editing) return;
     setSaving(true);
     try {
@@ -72,13 +64,14 @@ export function PaymentLinkManageList({
             id: editing.id,
             title: input.title,
             amount: input.amount ? Number(input.amount) : null,
+            compareAtAmount: input.compareAtAmount ? Number(input.compareAtAmount) : null,
+            description: input.description,
             imageUrl: input.imageUrl,
             imagePublicId: input.imagePublicId,
-            template: input.template,
           }),
         }),
       );
-      notify.success("Updated", "Payment link saved.");
+      notify.success("Updated", "Product saved.");
       setEditing(null);
       refresh();
     } catch (err) {
@@ -90,7 +83,7 @@ export function PaymentLinkManageList({
   }
 
   async function remove(link: ManagedPaymentLink) {
-    if (!confirm(`Delete “${link.title}”? Customers will no longer be able to pay this link.`)) return;
+    if (!confirm(`Delete “${link.title}”? Customers will no longer see this product.`)) return;
     setDeletingId(link.id);
     const controller = new AbortController();
     const timer = window.setTimeout(() => controller.abort(), 20000);
@@ -102,7 +95,7 @@ export function PaymentLinkManageList({
         }),
       );
       if (editing?.id === link.id) setEditing(null);
-      notify.success("Deleted", "Payment link and photo removed.");
+      notify.success("Deleted", "Product and photo removed.");
       refresh();
     } catch (err) {
       const timedOut = err instanceof DOMException && err.name === "AbortError";
@@ -122,7 +115,6 @@ export function PaymentLinkManageList({
     <div className={layout === "cards" ? "grid gap-4 sm:grid-cols-2 xl:grid-cols-3" : "space-y-3"}>
       {links.map((link) => {
         const url = payLinkUrl(link.slug, origin);
-        const template = linkTemplateMeta(link.template);
         const isEditing = editing?.id === link.id;
         return (
           <Card
@@ -135,8 +127,8 @@ export function PaymentLinkManageList({
           >
             {isEditing ? (
               <div>
-                <p className="text-sm font-semibold">Edit payment link</p>
-                <p className="mt-1 text-xs text-muted">The checkout URL stays the same.</p>
+                <p className="text-sm font-semibold">Edit product</p>
+                <p className="mt-1 text-xs text-muted">The product URL stays the same.</p>
                 <div className="mt-4">
                   <PaymentLinkForm
                     key={link.id}
@@ -145,8 +137,9 @@ export function PaymentLinkManageList({
                     initial={{
                       title: link.title,
                       amount: link.amount,
+                      compareAtAmount: link.compareAtAmount,
+                      description: link.description,
                       imageUrl: link.imageUrl,
-                      template: link.template,
                     }}
                     onSubmit={saveEdit}
                   />
@@ -162,29 +155,22 @@ export function PaymentLinkManageList({
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={link.imageUrl} alt={link.title} className="h-full w-full object-cover" />
                   ) : (
-                    <ProductLinkFrame
-                      compact
-                      template={link.template}
-                      title={link.title}
-                      amount={link.amount}
-                      merchantName={merchantName}
-                    />
+                    <div className="grid h-full place-items-center px-3 text-center">
+                      <p className="text-sm font-black text-brand-deep">{link.title}</p>
+                    </div>
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-semibold">{link.title}</p>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted">{template.name}</p>
                   <p className="truncate font-mono text-xs text-muted">{url}</p>
                 </div>
                 <div className="sm:ml-auto sm:text-right">
-                  <p className="font-mono text-sm font-black">{link.amount ? formatXAF(link.amount) : "Open"}</p>
                   <LinkActions
-                    url={url}
                     slug={link.slug}
                     busy={deletingId === link.id}
                     onCopy={() =>
                       copyText(url)
-                        .then(() => notify.success("Copied", "Share this link."))
+                        .then(() => notify.success("Copied", "Share this product page."))
                         .catch((err: Error) => notify.error("Could not copy", err.message))
                     }
                     onEdit={() => setEditing(link)}
@@ -194,17 +180,23 @@ export function PaymentLinkManageList({
               </div>
             ) : (
               <ProductCard
-                mode="share"
+                mode="hero"
                 merchantName={merchantName}
-                product={{ slug: link.slug, title: link.title, amount: link.amount, imageUrl: link.imageUrl }}
+                product={{
+                  slug: link.slug,
+                  title: link.title,
+                  amount: link.amount,
+                  compareAtAmount: link.compareAtAmount,
+                  description: link.description,
+                  imageUrl: link.imageUrl,
+                }}
                 actions={
                   <LinkActions
-                    url={url}
                     slug={link.slug}
                     busy={deletingId === link.id}
                     onCopy={() =>
                       copyText(url)
-                        .then(() => notify.success("Copied", "Share this link."))
+                        .then(() => notify.success("Copied", "Share this product page."))
                         .catch((err: Error) => notify.error("Could not copy", err.message))
                     }
                     onEdit={() => setEditing(link)}
@@ -227,7 +219,6 @@ function LinkActions({
   onEdit,
   onDelete,
 }: {
-  url: string;
   slug: string;
   busy?: boolean;
   onCopy: () => void;
@@ -235,19 +226,30 @@ function LinkActions({
   onDelete: () => void;
 }) {
   return (
-    <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2">
-      <button type="button" className="text-sm font-bold text-brand" onClick={onCopy}>
-        Copy link
-      </button>
-      <Link href={payLinkPath(slug)} className="text-sm font-bold text-brand">
-        Open checkout
+    <div className="mt-3 space-y-2">
+      <Link
+        href={payLinkPath(slug)}
+        target="_blank"
+        rel="noreferrer"
+        className="inline-flex h-12 w-full items-center justify-center rounded-full bg-brand text-sm font-bold text-white shadow-[0_10px_24px_rgba(0,179,105,0.28)] hover:bg-brand-dark"
+      >
+        View as customer
       </Link>
-      <button type="button" className="text-sm font-bold text-brand" onClick={onEdit} disabled={busy}>
-        Edit
+      <button
+        type="button"
+        className="inline-flex h-11 w-full items-center justify-center rounded-full border border-line bg-white text-sm font-bold text-ink hover:border-brand/30 hover:bg-paper"
+        onClick={onCopy}
+      >
+        Copy product link
       </button>
-      <button type="button" className="text-sm font-bold text-rose-600" onClick={onDelete} disabled={busy}>
-        {busy ? "Deleting…" : "Delete"}
-      </button>
+      <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 pt-1">
+        <button type="button" className="text-sm font-bold text-brand" onClick={onEdit} disabled={busy}>
+          Edit
+        </button>
+        <button type="button" className="text-sm font-bold text-rose-600" onClick={onDelete} disabled={busy}>
+          {busy ? "Deleting…" : "Delete"}
+        </button>
+      </div>
     </div>
   );
 }

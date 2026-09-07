@@ -11,6 +11,7 @@ import { ACTION_ART, ONBOARD_ART } from "@/lib/assets";
 import { formatXAF } from "@/lib/format";
 import { useNotify } from "@/lib/notify";
 import { useMe } from "@/lib/hooks/wallet";
+import { payHandlePath } from "@/lib/origin";
 import { shopShareText, shopUrl } from "@/lib/shop";
 import { shopSlotState, SHOP_LIMITS } from "@/lib/shop-limits";
 import { useBrowserOrigin } from "@/lib/use-origin";
@@ -20,8 +21,9 @@ type LinkRow = {
   title: string;
   slug: string;
   amount: number | null;
+  compareAtAmount?: number | null;
+  description?: string;
   imageUrl?: string;
-  template?: string;
 };
 
 type Quota = ReturnType<typeof shopSlotState>;
@@ -42,9 +44,10 @@ export default function WalletLinksPage() {
     mutationFn: (input: {
       title: string;
       amount: string;
+      compareAtAmount: string;
+      description: string;
       imageUrl?: string;
       imagePublicId?: string;
-      template: string;
     }) =>
       fetch("/api/wallet/links", {
         method: "POST",
@@ -52,9 +55,10 @@ export default function WalletLinksPage() {
         body: JSON.stringify({
           title: input.title,
           amount: input.amount ? Number(input.amount) : null,
+          compareAtAmount: input.compareAtAmount ? Number(input.compareAtAmount) : null,
+          description: input.description,
           imageUrl: input.imageUrl,
           imagePublicId: input.imagePublicId,
-          template: input.template,
         }),
       }).then(async (res) => {
         const json = await res.json();
@@ -108,10 +112,10 @@ export default function WalletLinksPage() {
       <section className="relative overflow-hidden rounded-[1.85rem] bg-forest px-5 py-6 text-white sm:px-8 sm:py-8">
         <div className="relative z-10 max-w-lg">
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand">Your shop</p>
-          <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">List it. Share it. Get paid.</h1>
+          <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">Your shop, your prices.</h1>
           <p className="mt-3 max-w-md text-sm leading-6 text-hero-muted sm:text-base">
-            Customers open your shop, pick a product, and pay with MTN, Orange, or wallet. Share the whole
-            page or one product.
+            Photo, details, and a sale price. Customers browse the shop, open a product, and pay with MTN,
+            Orange, or wallet.
           </p>
           <p className="mt-4 text-xs font-semibold text-white/70">
             {quota.used} of {quota.limit} products
@@ -138,11 +142,21 @@ export default function WalletLinksPage() {
                 </div>
               </div>
               <p className="mt-2 text-sm text-muted">
-                One page for every product. Customers browse, then pay you directly.
+                One page for every product. Open it the way a customer does, or copy the link.
               </p>
               <p className="mt-2 truncate font-mono text-xs font-semibold text-ink">{listingUrl}</p>
             </div>
-            <div className="w-full sm:w-72">
+            <div className="w-full space-y-3 sm:w-72">
+              {handle ? (
+                <a
+                  href={payHandlePath(handle)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex h-12 w-full items-center justify-center rounded-full bg-brand text-sm font-bold text-white shadow-[0_10px_24px_rgba(0,179,105,0.28)] hover:bg-brand-dark"
+                >
+                  View shop as customer
+                </a>
+              ) : null}
               <ShareRow url={listingUrl} text={shopShareText(shopName, listingUrl)} copyLabel="Copy shop link" />
             </div>
           </div>
@@ -172,7 +186,9 @@ export default function WalletLinksPage() {
           <div className="flex items-end justify-between gap-3">
             <div>
               <h2 className="text-base font-black md:text-lg">New product</h2>
-              <p className="mt-1 text-sm text-muted">Photo, price, then share. {quota.remaining} slots left.</p>
+              <p className="mt-1 text-sm text-muted">
+                Photo, details, selling price, optional original price. {quota.remaining} slots left.
+              </p>
             </div>
           </div>
           <div className="mt-4">
@@ -188,7 +204,9 @@ export default function WalletLinksPage() {
       {links.length > 0 ? (
         <div>
           <h2 className="text-base font-black md:text-lg">Your products</h2>
-          <p className="mt-1 mb-3 text-sm text-muted">Share one product, or send the whole listing.</p>
+          <p className="mt-1 mb-3 text-sm text-muted">
+            Open a product as a customer, or copy the page link to share.
+          </p>
           <PaymentLinkManageList
             links={links}
             merchantName={shopName}

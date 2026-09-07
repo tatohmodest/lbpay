@@ -15,8 +15,9 @@ export function PayLinkClient({ slug }: { slug: string }) {
         link: {
           title: string;
           amount: number | null;
+          compareAtAmount?: number | null;
+          description?: string;
           imageUrl?: string;
-          template?: string;
         };
         merchant: { name: string; lbpayId: string; avatar?: string } | null;
       };
@@ -52,12 +53,13 @@ export function PayLinkClient({ slug }: { slug: string }) {
       slug={slug}
       handle={link.data.merchant?.lbpayId}
       title={link.data.link.title}
-        merchantName={link.data.merchant?.name || "Payment request"}
-        merchantHandle={link.data.merchant?.lbpayId || ""}
-        merchantAvatar={link.data.merchant?.avatar}
-        fixedAmount={link.data.link.amount}
+      merchantName={link.data.merchant?.name || "Payment request"}
+      merchantHandle={link.data.merchant?.lbpayId || ""}
+      merchantAvatar={link.data.merchant?.avatar}
+      fixedAmount={link.data.link.amount}
+      compareAtAmount={link.data.link.compareAtAmount}
+      description={link.data.link.description}
       imageUrl={link.data.link.imageUrl}
-      template={link.data.link.template}
     />
   );
 }

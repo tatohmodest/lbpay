@@ -31,7 +31,8 @@ export async function POST(request: Request) {
       currency: "XAF",
       url: payLinkUrl(link.slug, requestOrigin(request)),
       imageUrl: link.imageUrl || null,
-      template: link.template,
+      description: link.description || null,
+      compareAtAmount: link.compareAtAmount || null,
       status: "active",
       environment: auth.env,
     });

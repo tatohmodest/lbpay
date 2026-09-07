@@ -73,38 +73,56 @@ export function ShopListing({ handle }: { handle: string }) {
   }
 
   return (
-    <main className="min-h-screen bg-paper pb-10">
-      <header className="bg-forest px-4 pb-16 pt-6 text-white">
-        <div className="mx-auto flex w-full max-w-lg justify-center">
+    <main className="min-h-screen bg-paper pb-16">
+      <header className="bg-forest px-4 pb-20 pt-6 text-white">
+        <div className="mx-auto flex w-full max-w-5xl justify-center">
           <Logo href="/" tone="dark" markClassName="h-8 w-8" />
         </div>
       </header>
-      <div className="mx-auto w-full max-w-lg space-y-5 px-4">
-        <section className="-mt-12 rounded-[1.85rem] bg-white px-5 pb-6 pt-8 text-center shadow-[0_18px_50px_rgba(6,38,28,0.12)] ring-1 ring-line/80">
-          <AppImg
-            src={user.avatar}
-            alt=""
-            className="mx-auto h-[4.5rem] w-[4.5rem] rounded-full object-cover ring-4 ring-brand-soft"
-          />
-          <h1 className="mt-3 text-2xl font-black tracking-tight text-ink">{shopName}</h1>
-          <p className="mt-1 font-mono text-sm font-bold text-brand">@{user.lbpayId}</p>
-          <p className="mt-2 text-sm leading-6 text-muted">
-            {products.length} {products.length === 1 ? "product" : "products"} · Pay with MTN, Orange, or wallet
-          </p>
-          <div className="mt-5 text-left">
+      <div className="mx-auto w-full max-w-5xl space-y-6 px-4">
+        <section className="-mt-14 overflow-hidden rounded-[1.85rem] bg-white shadow-[0_18px_50px_rgba(6,38,28,0.12)] ring-1 ring-line/80">
+          <div className="grid gap-6 p-5 sm:grid-cols-[auto_1fr] sm:items-center sm:p-7">
+            <AppImg
+              src={user.avatar}
+              alt=""
+              className="h-[4.75rem] w-[4.75rem] rounded-full object-cover ring-4 ring-brand-soft"
+            />
+            <div className="min-w-0">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand">Shop</p>
+              <h1 className="mt-1 text-2xl font-black tracking-tight text-ink sm:text-3xl">{shopName}</h1>
+              <p className="mt-1 font-mono text-sm font-bold text-brand">@{user.lbpayId}</p>
+              <p className="mt-2 text-sm leading-6 text-muted">
+                {products.length} {products.length === 1 ? "product" : "products"} · Pay with MTN, Orange, or
+                wallet
+              </p>
+            </div>
+          </div>
+          <div className="border-t border-line/80 px-5 py-4 sm:px-7">
             <ShareRow url={url} text={shopShareText(shopName, url)} copyLabel="Share this shop" />
           </div>
         </section>
-        <ProductGrid products={products} merchantName={shopName} mode="pay" />
-        <CheckoutPay
-          variant="embedded"
-          handle={user.lbpayId}
-          title={`Pay ${shopName}`}
-          merchantName={shopName}
-          merchantHandle={user.lbpayId}
-          merchantAvatar={user.avatar}
-        />
-        <p className="pb-4 text-center text-xs text-muted">
+
+        <div>
+          <div className="mb-4 flex items-end justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-black tracking-tight">Products</h2>
+              <p className="text-sm text-muted">Tap a product to see details and pay.</p>
+            </div>
+          </div>
+          <ProductGrid products={products} merchantName={shopName} mode="pay" />
+        </div>
+
+        <section className="rounded-[1.75rem] bg-white p-5 ring-1 ring-line/80 sm:p-6">
+          <CheckoutPay
+            variant="embedded"
+            handle={user.lbpayId}
+            title={`Pay ${shopName}`}
+            merchantName={shopName}
+            merchantHandle={user.lbpayId}
+            merchantAvatar={user.avatar}
+          />
+        </section>
+        <p className="pb-2 text-center text-xs text-muted">
           Want this for your own goods?{" "}
           <Link href="/signup" className="font-bold text-brand-deep hover:underline">
             Create a shop

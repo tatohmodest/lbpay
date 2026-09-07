@@ -125,6 +125,8 @@ export type PaymentLink = {
   slug: string;
   title: string;
   amount: number | null;
+  compareAtAmount?: number | null;
+  description?: string;
   status: "active" | "inactive";
   collected: number;
   payments: number;

@@ -17,7 +17,8 @@ import { useMe } from "@/lib/hooks/wallet";
 import { amountIssue } from "@/lib/limits";
 import { rememberAuthNext } from "@/lib/auth-next";
 import { payHandlePath } from "@/lib/origin";
-import { productShareText, productUrl } from "@/lib/shop";
+import { productPricing, productShareText, productUrl } from "@/lib/shop";
+import { ProductPrice, SaleBadge } from "@/components/product-price";
 import { useBrowserOrigin } from "@/lib/use-origin";
 import {
   CHECKOUT_METHODS,
@@ -88,6 +89,8 @@ export function CheckoutPay({
   merchantHandle,
   merchantAvatar,
   fixedAmount,
+  compareAtAmount,
+  description,
   imageUrl,
   variant = "page",
 }: {
@@ -98,8 +101,9 @@ export function CheckoutPay({
   merchantHandle: string;
   merchantAvatar?: string;
   fixedAmount?: number | null;
+  compareAtAmount?: number | null;
+  description?: string;
   imageUrl?: string;
-  template?: string;
   variant?: "page" | "embedded";
 }) {
   const me = useMe();
@@ -120,6 +124,9 @@ export function CheckoutPay({
   const origin = useBrowserOrigin();
   const shopHref = merchantHandle ? payHandlePath(merchantHandle) : "";
   const productHref = slug ? productUrl(slug, origin) : "";
+  const { original, price, percentOff } = productPricing(fixedAmount, compareAtAmount);
+  const saved = original && price ? original - price : 0;
+  const details = String(description || "").trim();
 
   const value = fixedAmount && fixedAmount > 0 ? fixedAmount : Number(amount) || 0;
   const clean = cameroonMsisdn(phone);
@@ -498,7 +505,7 @@ export function CheckoutPay({
       <CheckoutShell variant={variant}>
         <div className="grid items-start gap-6 lg:grid-cols-2">
           <article className="overflow-hidden rounded-[1.85rem] bg-white shadow-[0_18px_50px_rgba(12,25,19,0.06)] ring-1 ring-line/80">
-            <div className="aspect-[4/5] w-full overflow-hidden bg-gradient-to-br from-brand-soft to-paper sm:aspect-[5/4] lg:aspect-[4/5]">
+            <div className="relative aspect-[4/5] w-full overflow-hidden bg-gradient-to-br from-brand-soft to-paper sm:aspect-[5/4] lg:aspect-[4/5]">
               {imageUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={imageUrl} alt={title} className="h-full w-full object-cover" />
@@ -507,6 +514,7 @@ export function CheckoutPay({
                   <p className="text-3xl font-black text-brand-deep">{title}</p>
                 </div>
               )}
+              <SaleBadge percentOff={percentOff} className="absolute left-4 top-4" />
             </div>
             <div className="space-y-4 p-5 sm:p-6">
               {shopHref ? (
@@ -520,10 +528,20 @@ export function CheckoutPay({
               ) : null}
               <div>
                 <h1 className="text-2xl font-black leading-tight tracking-tight text-ink sm:text-3xl">{title}</h1>
-                <p className="mt-2 font-mono text-3xl font-black text-brand">
-                  {fixedAmount && fixedAmount > 0 ? formatXAF(fixedAmount) : "Open amount"}
-                </p>
+                <ProductPrice
+                  className="mt-3"
+                  amount={fixedAmount}
+                  compareAtAmount={compareAtAmount}
+                  size="lg"
+                  badge={false}
+                />
+                {saved > 0 ? (
+                  <p className="mt-1.5 text-sm font-semibold text-brand-deep">You save {formatXAF(saved)}</p>
+                ) : null}
               </div>
+              {details ? (
+                <p className="whitespace-pre-wrap text-sm leading-6 text-ink/80">{details}</p>
+              ) : null}
               {productHref ? (
                 <ShareRow
                   url={productHref}

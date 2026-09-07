@@ -1,19 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { Field, Input } from "@/components/ui/input";
+import { Field, Input, Textarea } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ProductPhotoField } from "@/components/product-photo-field";
-import { ProductLinkFrame } from "@/components/product-link-frame";
-import { DEFAULT_LINK_TEMPLATE, LINK_TEMPLATES, type LinkTemplateId } from "@/lib/link-templates";
-import { cn } from "@/lib/cn";
+import { ProductCard } from "@/components/product-card";
+import { PRODUCT_DESCRIPTION_MAX } from "@/lib/shop";
 
-const BOX: Record<LinkTemplateId, { head: string; body: string }> = {
-  statement: { head: "bg-navy text-white", body: "bg-white" },
-  invoice: { head: "bg-brand text-white", body: "bg-white" },
-  receipt: { head: "bg-[#fbfaf6] text-ink", body: "bg-[#fbfaf6]" },
-  voucher: { head: "bg-brand-dark text-white", body: "bg-brand" },
-  display: { head: "bg-[#07140f] text-white", body: "bg-navy" },
+export type PaymentLinkFormInput = {
+  title: string;
+  amount: string;
+  compareAtAmount: string;
+  description: string;
+  imageUrl?: string;
+  imagePublicId?: string;
 };
 
 export function PaymentLinkForm({
@@ -29,77 +29,61 @@ export function PaymentLinkForm({
   initial?: {
     title?: string;
     amount?: number | null;
+    compareAtAmount?: number | null;
+    description?: string;
     imageUrl?: string;
     imagePublicId?: string;
-    template?: string;
   };
-  onSubmit: (input: {
-    title: string;
-    amount: string;
-    imageUrl?: string;
-    imagePublicId?: string;
-    template: LinkTemplateId;
-  }) => void | Promise<void>;
+  onSubmit: (input: PaymentLinkFormInput) => void | Promise<void>;
 }) {
   const [title, setTitle] = useState(initial?.title || "");
   const [amount, setAmount] = useState(initial?.amount ? String(initial.amount) : "");
+  const [compareAtAmount, setCompareAtAmount] = useState(
+    initial?.compareAtAmount ? String(initial.compareAtAmount) : "",
+  );
+  const [description, setDescription] = useState(initial?.description || "");
   const [imageUrl, setImageUrl] = useState(initial?.imageUrl || "");
   const [imagePublicId, setImagePublicId] = useState(initial?.imagePublicId || "");
-  const [template, setTemplate] = useState<LinkTemplateId>(
-    (initial?.template as LinkTemplateId) || DEFAULT_LINK_TEMPLATE,
-  );
+  const [error, setError] = useState("");
   const editing = Boolean(initial);
+
+  const selling = amount ? Number(amount) : 0;
+  const original = compareAtAmount ? Number(compareAtAmount) : 0;
 
   return (
     <form
-      className="flex flex-col gap-4"
-      onSubmit={(e) => {
-        e.preventDefault();
+      className="flex flex-col gap-5"
+      onSubmit={(event) => {
+        event.preventDefault();
+        setError("");
+        if (original > 0 && (!selling || original <= selling)) {
+          setError("Original price has to be higher than the selling price.");
+          return;
+        }
         void Promise.resolve(
           onSubmit({
             title,
             amount,
+            compareAtAmount,
+            description,
             imageUrl: imageUrl || undefined,
             imagePublicId: imagePublicId || undefined,
-            template,
           }),
         )
           .then(() => {
             if (editing) return;
             setTitle("");
             setAmount("");
+            setCompareAtAmount("");
+            setDescription("");
             setImageUrl("");
             setImagePublicId("");
-            setTemplate(DEFAULT_LINK_TEMPLATE);
           })
           .catch(() => undefined);
       }}
     >
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] lg:items-start lg:gap-8">
-        <div className="min-w-0 lg:order-2 lg:sticky lg:top-8">
-          <p className="mb-1 text-sm font-semibold text-ink">Product preview</p>
-          <p className="mb-3 text-xs text-muted sm:text-sm">This is the photo customers see on the checkout.</p>
-          <ProductLinkFrame
-            size="default"
-            template={template}
-            title={title || "Your product"}
-            amount={amount ? Number(amount) : null}
-            merchantName={merchantName}
-            imageUrl={imageUrl}
-          />
-        </div>
-        <div className="flex min-w-0 flex-col gap-3.5 lg:order-1">
-          <Field label="Product / service title">
-            <Input value={title} onChange={(e) => setTitle(e.target.value)} required />
-          </Field>
-          <Field label="Amount (XAF)">
-            <Input
-              type="number"
-              className="font-mono"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-            />
-          </Field>
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:items-start lg:gap-8">
+        <div className="flex min-w-0 flex-col gap-4">
           <ProductPhotoField
             url={imageUrl}
             onUploaded={(url, publicId) => {
@@ -107,62 +91,76 @@ export function PaymentLinkForm({
               setImagePublicId(publicId || "");
             }}
           />
-          <div className="min-w-0">
-            <p className="mb-1 text-sm font-semibold text-ink">Finance template</p>
-            <p className="mb-3 text-xs text-muted sm:text-sm">Pick a wrap. Slide for more.</p>
-            <div className="relative -mx-5 md:mx-0">
-              <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 pb-2 [scrollbar-width:thin] overscroll-x-contain md:px-0">
-                {LINK_TEMPLATES.map((item) => {
-                  const box = BOX[item.id];
-                  const selected = template === item.id;
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => setTemplate(item.id)}
-                      className={cn(
-                        "w-[8.5rem] shrink-0 snap-start overflow-hidden rounded-2xl border text-left shadow-[0_8px_24px_rgba(7,20,15,0.06)] transition",
-                        selected ? "border-brand ring-2 ring-brand/30" : "border-line hover:border-brand/40",
-                      )}
-                    >
-                      <div
-                        className={cn(
-                          "flex h-8 items-center px-2.5 text-[10px] font-semibold uppercase tracking-[0.12em]",
-                          box.head,
-                        )}
-                      >
-                        {item.name}
-                      </div>
-                      {imageUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={imageUrl} alt="" className="h-20 w-full object-cover" />
-                      ) : (
-                        <div className={cn("grid h-20 place-items-center", box.body)}>
-                          <span
-                            className={cn(
-                              "text-[11px] font-semibold",
-                              item.id === "voucher" || item.id === "display" ? "text-white/80" : "text-brand-deep",
-                            )}
-                          >
-                            {title.trim() || "Product"}
-                          </span>
-                        </div>
-                      )}
-                      <span className="block bg-white px-2.5 py-2">
-                        <span className="block text-xs font-semibold text-ink">{item.name}</span>
-                        <span className="mt-0.5 block truncate text-[11px] text-muted">{item.blurb}</span>
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-              <div className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-card to-transparent sm:hidden" />
-            </div>
+          <Field label="Product name">
+            <Input
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+              placeholder="Red palm oil, 1 litre"
+              required
+            />
+          </Field>
+          <Field label="Details" hint="What the customer should know before they pay.">
+            <Textarea
+              value={description}
+              maxLength={PRODUCT_DESCRIPTION_MAX}
+              placeholder="Fresh from the market this morning. 1 litre bottle, sealed."
+              onChange={(event) => setDescription(event.target.value)}
+            />
+            <span className="mt-1 block text-right text-[11px] text-muted">
+              {description.length}/{PRODUCT_DESCRIPTION_MAX}
+            </span>
+          </Field>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Selling price (XAF)">
+              <Input
+                type="number"
+                min={0}
+                inputMode="numeric"
+                className="font-mono"
+                value={amount}
+                placeholder="8500"
+                onChange={(event) => setAmount(event.target.value)}
+              />
+            </Field>
+            <Field label="Original price" hint="Optional. Shows as a strike-through.">
+              <Input
+                type="number"
+                min={0}
+                inputMode="numeric"
+                className="font-mono"
+                value={compareAtAmount}
+                placeholder="12000"
+                onChange={(event) => setCompareAtAmount(event.target.value)}
+              />
+            </Field>
           </div>
+          {error ? <p className="text-sm font-semibold text-danger">{error}</p> : null}
+        </div>
+        <div className="min-w-0 lg:sticky lg:top-8">
+          <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">
+            Customer preview
+          </p>
+          <p className="mb-3 text-sm text-muted">This is the card on your shop page.</p>
+          <ProductCard
+            mode="preview"
+            merchantName={merchantName}
+            product={{
+              slug: "preview",
+              title: title.trim() || "Your product",
+              amount: selling > 0 ? selling : null,
+              compareAtAmount: original > 0 ? original : null,
+              description: description.trim() || undefined,
+              imageUrl: imageUrl || undefined,
+            }}
+          />
         </div>
       </div>
       <Button type="submit" disabled={submitting} className="w-full sm:w-auto">
-        {submitting ? (editing ? "Saving…" : "Creating…") : submitLabel || (editing ? "Save changes" : "Create link")}
+        {submitting
+          ? editing
+            ? "Saving…"
+            : "Listing…"
+          : submitLabel || (editing ? "Save product" : "List this product")}
       </Button>
     </form>
   );

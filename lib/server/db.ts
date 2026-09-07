@@ -8,6 +8,7 @@ import { cameroonMsisdn } from "@/lib/phone";
 import { normalizeLinkTemplate } from "@/lib/link-templates";
 import { resolveAvatar } from "@/lib/avatar";
 import { isSafeProductImageUrl } from "@/lib/product-image";
+import { PRODUCT_DESCRIPTION_MAX } from "@/lib/shop";
 import { cloudinaryPublicId } from "@/lib/server/cloudinary";
 import { shopSlotLimit, shopSlotLimitMessage, shopSlotState, SHOP_LIMITS } from "@/lib/shop-limits";
 import { isDeletedLinkId, mergeById, mergePaymentLinks, uniqueIds } from "@/lib/server/ledger-merge";
@@ -1141,8 +1142,18 @@ function normalizeStoredLink(link: StoredLink): StoredLink {
   const safeUrl = isSafeProductImageUrl(imageUrl) ? imageUrl : undefined;
   const imagePublicId =
     (typeof link.imagePublicId === "string" && link.imagePublicId.trim()) || cloudinaryPublicId(safeUrl) || undefined;
+  const description =
+    typeof link.description === "string"
+      ? link.description.trim().slice(0, PRODUCT_DESCRIPTION_MAX) || undefined
+      : undefined;
+  const amount = link.amount && link.amount > 0 ? link.amount : null;
+  const compareAt =
+    amount && link.compareAtAmount && link.compareAtAmount > amount ? Math.round(link.compareAtAmount) : undefined;
   return {
     ...link,
+    amount,
+    compareAtAmount: compareAt ?? null,
+    description,
     template: normalizeLinkTemplate(link.template),
     imageUrl: safeUrl,
     imagePublicId,
@@ -1254,6 +1265,8 @@ export async function updateLink(userId: string, idOrSlug: string, changes: Part
   const next: StoredLink = { ...link };
   if (typeof changes.title === "string") next.title = changes.title;
   if ("amount" in changes) next.amount = changes.amount ?? null;
+  if ("compareAtAmount" in changes) next.compareAtAmount = changes.compareAtAmount ?? null;
+  if ("description" in changes) next.description = changes.description;
   if ("imageUrl" in changes) next.imageUrl = changes.imageUrl;
   if ("imagePublicId" in changes) next.imagePublicId = changes.imagePublicId;
   else if ("imageUrl" in changes) next.imagePublicId = cloudinaryPublicId(changes.imageUrl) || undefined;
