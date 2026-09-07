@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Camera } from "lucide-react";
+import { isDefaultAvatar, nameInitials } from "@/lib/avatar";
 import { AppImg } from "@/components/app-img";
 import { compressAvatarImage } from "@/lib/image-compress";
 import { MAX_KYC_UPLOAD_BYTES } from "@/lib/kyc";
@@ -19,6 +20,7 @@ export function ProfileAvatar({ src, name }: { src: string; name: string }) {
   const [busy, setBusy] = useState(false);
   const [uploaded, setUploaded] = useState<string | null>(null);
   const preview = uploaded || src;
+  const showPhoto = Boolean(uploaded) || !isDefaultAvatar(src);
 
   async function onFile(file: File | undefined) {
     if (!file) return;
@@ -55,13 +57,19 @@ export function ProfileAvatar({ src, name }: { src: string; name: string }) {
 
   return (
     <label className="relative mx-auto block h-24 w-24 cursor-pointer">
-      <AppImg
-        src={preview || src}
-        alt={name || "Profile photo"}
-        width={96}
-        height={96}
-        className="h-24 w-24 rounded-full object-cover"
-      />
+      {showPhoto ? (
+        <AppImg
+          src={preview || src}
+          alt={name || "Profile photo"}
+          width={96}
+          height={96}
+          className="h-24 w-24 rounded-full object-cover"
+        />
+      ) : (
+        <span className="grid h-24 w-24 place-items-center rounded-full bg-brand-soft text-2xl font-black tracking-tight text-brand-deep">
+          {nameInitials(name)}
+        </span>
+      )}
       <span className="absolute inset-x-0 bottom-0 flex items-center justify-center rounded-b-full bg-ink/70 py-1 text-[10px] font-bold uppercase tracking-wide text-white">
         {busy ? "Saving…" : (
           <span className="inline-flex items-center gap-1">

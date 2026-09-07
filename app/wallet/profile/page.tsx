@@ -30,7 +30,7 @@ export default function ProfilePage() {
       <Card className="p-6 text-center">
         <ProfileAvatar
           src={me.data?.user?.avatar || state.user.avatar}
-          name={state.user.name}
+          name={me.data?.user?.name || state.user.name}
         />
         <h1 className="mt-4 text-2xl font-black">{state.user.name}</h1>
         <CopyHandle handle={me.data?.user?.lbpayId || state.user.lbpayId} className="mt-1 text-brand hover:text-brand-dark" />
