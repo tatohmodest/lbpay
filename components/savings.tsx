@@ -104,7 +104,7 @@ export function PlanCard({ plan, compact = false }: { plan: SavingsPlan; compact
     <Link
       href={`/wallet/savings/${encodeURIComponent(plan.id)}`}
       className={cn(
-        "group block rounded-2xl bg-white p-4 ring-1 transition hover:ring-brand/40",
+        "group block rounded-[1.5rem] bg-white p-4 shadow-[0_8px_22px_rgba(12,25,19,0.05)] ring-1 transition hover:-translate-y-0.5 hover:ring-brand/40",
         urgent && plan.status === "active" ? "ring-amber-200" : "ring-line/80",
       )}
     >

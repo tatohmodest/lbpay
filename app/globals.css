@@ -3,7 +3,12 @@
 :root {
   --background: #f3f7f4;
   --foreground: #0c1913;
-  --header-h: 4.25rem;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --header-h: calc(4.25rem + var(--safe-top));
+}
+
+html.native-app {
+  --safe-top: max(env(safe-area-inset-top, 0px), 1.75rem);
 }
 
 @theme inline {

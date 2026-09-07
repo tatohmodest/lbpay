@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Share } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { inviteShareText, inviteSignupUrl } from "@/lib/invite";
 import { useMe } from "@/lib/hooks/wallet";
@@ -59,7 +60,7 @@ export function InviteSomeone() {
           height={112}
           className="h-24 w-24 shrink-0 rounded-[1.35rem] object-cover"
         />
-        <span className="min-w-0 pr-2">
+        <span className="min-w-0 flex-1 pr-1">
           <span className="block text-[11px] font-semibold uppercase tracking-[0.16em] text-brand">
             Friends
           </span>
@@ -67,6 +68,9 @@ export function InviteSomeone() {
           <span className="mt-1 block text-sm leading-5 text-muted">
             Share your link. They open a wallet.
           </span>
+        </span>
+        <span className="mr-1 grid h-11 w-11 shrink-0 place-items-center rounded-full bg-brand-soft text-brand-deep">
+          <Share className="h-5 w-5" aria-hidden />
         </span>
       </button>
 
@@ -98,6 +102,7 @@ export function InviteSomeone() {
                 Copy link
               </Button>
               <Button type="button" onClick={() => void shareLink()}>
+                <Share className="h-4 w-4" aria-hidden />
                 Share
               </Button>
             </div>

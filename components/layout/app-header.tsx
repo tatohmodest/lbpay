@@ -17,6 +17,7 @@ import { AppImg } from "@/components/app-img";
 import { LanguageToggle } from "@/components/language-toggle";
 import { useI18n } from "@/lib/i18n/use-i18n";
 import { ACTION_ART } from "@/lib/assets";
+import { isDefaultAvatar, nameInitials, resolveAvatar } from "@/lib/avatar";
 
 export function AppHeader({ onOpenMenu }: { onOpenMenu?: () => void }) {
   const pathname = usePathname();
@@ -56,7 +57,7 @@ export function AppHeader({ onOpenMenu }: { onOpenMenu?: () => void }) {
 
   return (
     <>
-    <header className="fixed inset-x-0 top-0 z-40 bg-paper/90 backdrop-blur-xl">
+    <header className="fixed inset-x-0 top-0 z-40 bg-paper/90 pt-[var(--safe-top)] backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 md:px-8">
         <div className="flex items-center gap-8">
           <Logo href="/wallet" markClassName="h-8 w-8" />
@@ -192,12 +193,12 @@ export function AppHeader({ onOpenMenu }: { onOpenMenu?: () => void }) {
 
 export function BottomNav() {
   const pathname = usePathname();
-  const items = [
+  const items: { href: string; label: string; art?: string }[] = [
     { href: "/wallet", label: "Wallet", art: ACTION_ART.wallet },
     { href: "/wallet/savings", label: "Save", art: ACTION_ART.save },
     { href: "/wallet/history", label: "History", art: ACTION_ART.history },
     { href: "/business", label: "Business", art: ACTION_ART.business },
-    { href: "/wallet/profile", label: "Profile", art: ACTION_ART.profile },
+    { href: "/wallet/profile", label: "Profile" },
   ];
 
   return (
@@ -213,20 +214,57 @@ export function BottomNav() {
               active ? "text-brand" : "text-muted",
             )}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={item.art}
-              alt=""
-              width={32}
-              height={32}
-              draggable={false}
-              className={cn("h-8 w-8 object-contain transition", active ? "scale-110" : "opacity-80")}
-            />
+            {item.href === "/wallet/profile" || !item.art ? (
+              <ProfileTabFace active={active} />
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={item.art}
+                alt=""
+                width={32}
+                height={32}
+                draggable={false}
+                className={cn("h-8 w-8 object-contain transition", active ? "scale-110" : "opacity-80")}
+              />
+            )}
             {item.label}
           </Link>
         );
       })}
     </nav>
+  );
+}
+
+function ProfileTabFace({ active }: { active: boolean }) {
+  const { state } = useApp();
+  const me = useMe();
+  const name = me.data?.user?.name || state.user.name || "";
+  const avatar = me.data?.user?.avatar || state.user.avatar;
+  if (!isDefaultAvatar(avatar)) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={resolveAvatar(avatar)}
+        alt=""
+        width={32}
+        height={32}
+        draggable={false}
+        className={cn(
+          "h-8 w-8 rounded-full object-cover ring-2 ring-offset-1 ring-offset-white transition",
+          active ? "ring-brand scale-110" : "ring-transparent opacity-90",
+        )}
+      />
+    );
+  }
+  return (
+    <span
+      className={cn(
+        "grid h-8 w-8 place-items-center rounded-full text-[11px] font-black tracking-tight transition",
+        active ? "scale-110 bg-brand text-white" : "bg-brand-soft text-brand-deep",
+      )}
+    >
+      {nameInitials(name)}
+    </span>
   );
 }
 

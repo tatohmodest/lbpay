@@ -30,6 +30,7 @@ export const ONBOARD_ART = {
 } as const;
 
 export const HABIT_ART = "/illustrations/habit-scene.webp";
+export const SAVINGS_POT = "/illustrations/savings-pot.webp";
 
 export const ANDROID_APP_ID = "1:1005766549175:android:a8788725b5871add9a7732";
 export const ANDROID_PACKAGE = "com.loopingbinary.lbpay";

@@ -15,7 +15,6 @@ import { LanguageToggle } from "@/components/language-toggle";
 
 export function SiteHeader() {
   const pathname = usePathname();
-  if (pathname === "/welcome") return null;
   const [open, setOpen] = useState(false);
   const [openedPath, setOpenedPath] = useState(pathname);
   const standalone = useStandaloneDisplay();
@@ -28,11 +27,12 @@ export function SiteHeader() {
     { href: "/products/developers", label: t("nav.developers"), icon: Code2, copy: "Payments API and keys" },
     { href: "/docs", label: t("nav.docs"), icon: BookOpen, copy: "Reference and sandbox notes" },
   ];
+  if (pathname === "/welcome") return null;
 
   return (
     <>
-      <header className="fixed inset-x-0 top-0 z-50 bg-forest/95 backdrop-blur-xl">
-        <Container className="flex h-[var(--header-h)] items-center justify-between gap-4">
+      <header className="fixed inset-x-0 top-0 z-50 bg-forest/95 pt-[var(--safe-top)] backdrop-blur-xl">
+        <Container className="flex h-16 items-center justify-between gap-4 md:h-[4.25rem]">
           <Logo tone="dark" />
           <nav aria-label="Primary" className="hidden items-center gap-1 lg:flex">
             {links.map((link) => {
