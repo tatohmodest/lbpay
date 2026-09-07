@@ -23,6 +23,7 @@ const PUBLIC = [
   "/r",
   "/products",
   "/pin",
+  "/welcome",
 ];
 const WEB_IDLE_MS = 15 * 60 * 1000;
 const HIDDEN_LOCK_MS = 2000;

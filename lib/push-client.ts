@@ -1,12 +1,15 @@
 "use client";
 
 import { getServiceWorkerRegistration } from "@/components/pwa/register-sw";
+import { isNativeApp } from "@/lib/native";
+import { enableNativePush } from "@/lib/native-push";
 import { isStandaloneDisplay } from "@/lib/pwa";
 
 const DISMISS_KEY = "lbpay_push_dismissed";
 export const PUSH_EVENT = "lbpay:push";
 
 export function pushSupported() {
+  if (isNativeApp()) return true;
   return (
     typeof window !== "undefined" &&
     "serviceWorker" in navigator &&
@@ -16,6 +19,8 @@ export function pushSupported() {
 }
 
 export function pushPermission() {
+  if (typeof window === "undefined") return "denied" as NotificationPermission;
+  if (isNativeApp()) return "default" as NotificationPermission;
   if (typeof Notification === "undefined") return "denied" as NotificationPermission;
   return Notification.permission;
 }
@@ -44,6 +49,7 @@ function urlBase64ToUint8Array(base64: string) {
 }
 
 export async function enablePush() {
+  if (isNativeApp()) return enableNativePush();
   if (!pushSupported()) {
     return { ok: false as const, error: "This browser cannot show phone alerts." };
   }
@@ -84,6 +90,10 @@ export async function enablePush() {
 }
 
 export async function refreshPushSubscription() {
+  if (isNativeApp()) {
+    await enableNativePush();
+    return;
+  }
   if (!pushSupported() || Notification.permission !== "granted") return;
   try {
     const vapidRes = await fetch("/api/push/vapid");

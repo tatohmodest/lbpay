@@ -15,6 +15,7 @@ import { LanguageToggle } from "@/components/language-toggle";
 
 export function SiteHeader() {
   const pathname = usePathname();
+  if (pathname === "/welcome") return null;
   const [open, setOpen] = useState(false);
   const [openedPath, setOpenedPath] = useState(pathname);
   const standalone = useStandaloneDisplay();

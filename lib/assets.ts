@@ -15,3 +15,13 @@ export const ACTION_ART = {
   business: "/illustrations/actions/business.webp",
   profile: "/illustrations/actions/profile.webp",
 } as const;
+
+export const ONBOARD_ART = {
+  wallet: "/illustrations/onboarding/wallet.webp",
+  transfer: "/illustrations/onboarding/transfer.webp",
+  save: "/illustrations/onboarding/save.webp",
+  business: "/illustrations/onboarding/business.webp",
+} as const;
+
+export const ANDROID_APP_ID = "1:1005766549175:android:a8788725b5871add9a7732";
+export const ANDROID_PACKAGE = "com.loopingbinary.lbpay";

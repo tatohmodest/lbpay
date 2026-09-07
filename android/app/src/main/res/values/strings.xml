@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">LBPay</string>
+    <string name="title_activity_main">LBPay</string>
+    <string name="package_name">com.loopingbinary.lbpay</string>
+    <string name="custom_url_scheme">com.loopingbinary.lbpay</string>
+</resources>

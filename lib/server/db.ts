@@ -152,6 +152,8 @@ export type StoredPushSubscription = {
   p256dh: string;
   auth: string;
   createdAt: string;
+  kind?: "web" | "fcm";
+  token?: string;
 };
 
 export type StoredReview = {

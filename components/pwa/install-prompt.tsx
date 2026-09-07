@@ -14,6 +14,7 @@ import {
   useInstallPlatform,
   useStandaloneDisplay,
 } from "@/lib/pwa";
+import { isNativeApp } from "@/lib/native";
 
 export function InstallPrompt() {
   const pathname = usePathname();
@@ -57,6 +58,7 @@ export function InstallPrompt() {
 
   useEffect(() => {
     if (autoOpened.current) return;
+    if (isNativeApp()) return;
     if (!shouldAutoOfferInstall(pathname)) return;
     // Let people read first: offer the app only after they have scrolled a screen
     // or spent a while on the page, and only once per session.
@@ -106,7 +108,7 @@ export function InstallPrompt() {
     }
   }
 
-  if (!open || standalone) return null;
+  if (!open || standalone || isNativeApp()) return null;
 
   const isIos = platform === "ios";
   const canNativeInstall = Boolean(deferred) && !isIos;

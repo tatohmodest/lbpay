@@ -112,6 +112,11 @@ export function NotifyProvider({ children }: { children: ReactNode }) {
       if (keepInInbox(notice.kind, notice.title)) {
         remember({ ...item, createdAt: Date.now(), read: false });
       }
+      if (notice.kind === "money-in" || notice.kind === "money-out" || notice.kind === "success") {
+        void import("@/lib/native").then(({ isNativeApp }) => {
+          if (isNativeApp()) void import("@/lib/native-push").then((mod) => mod.playNativeAlert());
+        });
+      }
     },
     [dismiss, remember],
   );
