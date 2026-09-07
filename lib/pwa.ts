@@ -21,13 +21,20 @@ export function isStandaloneDisplay() {
   );
 }
 
-export function detectInstallPlatform(): InstallPlatform {
-  if (typeof window === "undefined") return "desktop";
-  const ua = window.navigator.userAgent || "";
-  const iPadOs = window.navigator.platform === "MacIntel" && window.navigator.maxTouchPoints > 1;
+export function platformFromUserAgent(ua: string, maxTouchPoints = 0, platform = ""): InstallPlatform {
+  const iPadOs = platform === "MacIntel" && maxTouchPoints > 1;
   if (/iPhone|iPad|iPod/i.test(ua) || iPadOs) return "ios";
   if (/Android/i.test(ua)) return "android";
   return "desktop";
+}
+
+export function detectInstallPlatform(): InstallPlatform {
+  if (typeof window === "undefined") return "desktop";
+  return platformFromUserAgent(
+    window.navigator.userAgent || "",
+    window.navigator.maxTouchPoints || 0,
+    window.navigator.platform || "",
+  );
 }
 
 function subscribeStandalone(onStoreChange: () => void) {
@@ -73,6 +80,8 @@ export function shouldAutoOfferInstall(pathname: string) {
   if (isStandaloneDisplay() || wasInstallDismissed()) return false;
   // Desktop visitors get the header install button instead of an interruption.
   if (typeof window !== "undefined" && !window.matchMedia("(max-width: 900px)").matches) return false;
+  // Android browsers get a persistent APK download bar instead of the PWA sheet.
+  if (typeof window !== "undefined" && detectInstallPlatform() === "android") return false;
   const blocked = ["/wallet", "/business", "/developers", "/admin", "/pin", "/pay", "/p", "/r"];
   return !blocked.some((path) => pathname === path || pathname.startsWith(`${path}/`));
 }

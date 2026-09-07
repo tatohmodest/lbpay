@@ -13,7 +13,7 @@
     "upload": "bash scripts/cf-build.sh && wrangler versions upload",
     "cf-build": "bash scripts/cf-build.sh",
     "cap:sync": "npx cap sync android",
-    "android:debug": "cd android && ./gradlew assembleDebug"
+    "android:debug": "cd android && ./gradlew assembleDebug && mkdir -p ../public/apps && cp app/build/outputs/apk/debug/app-debug.apk ../public/apps/lbpay.apk"
   },
   "dependencies": {
     "@capacitor/app": "^8.1.1",

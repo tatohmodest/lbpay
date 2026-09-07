@@ -25,3 +25,5 @@ export const ONBOARD_ART = {
 
 export const ANDROID_APP_ID = "1:1005766549175:android:a8788725b5871add9a7732";
 export const ANDROID_PACKAGE = "com.loopingbinary.lbpay";
+export const ANDROID_APK_HREF = "/apps/lbpay.apk";
+export const ANDROID_APK_FILENAME = "LBPay.apk";

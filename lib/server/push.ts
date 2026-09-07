@@ -1,6 +1,7 @@
 import webpush from "web-push";
 import { formatXAF } from "@/lib/format";
 import { txHref } from "@/lib/tx";
+import { sendFcm } from "@/lib/server/fcm";
 import {
   getVapidKeys,
   listPushSubscriptions,
@@ -47,7 +48,7 @@ async function configure() {
 }
 
 export async function sendPushToUser(userId: string, payload: PushPayload) {
-  if (!(await configure())) return { sent: 0 };
+  const ready = await configure();
   const rows = await listPushSubscriptions(userId);
   if (!rows.length) return { sent: 0 };
   const body = JSON.stringify({
@@ -61,10 +62,12 @@ export async function sendPushToUser(userId: string, payload: PushPayload) {
     rows.map(async (row) => {
       try {
         if (row.kind === "fcm" && row.token) {
-          const ok = await sendFcm(row.token, payload);
-          if (ok) sent += 1;
+          const result = await sendFcm(row.token, payload);
+          if (result === "sent") sent += 1;
+          if (result === "gone") await removePushEndpoint(row.endpoint).catch(() => undefined);
           return;
         }
+        if (!ready) return;
         await webpush.sendNotification(
           {
             endpoint: row.endpoint,
@@ -85,42 +88,6 @@ export async function sendPushToUser(userId: string, payload: PushPayload) {
     }),
   );
   return { sent };
-}
-
-async function sendFcm(token: string, payload: PushPayload) {
-  const key = process.env.FIREBASE_FCM_SERVER_KEY || process.env.FCM_SERVER_KEY || "";
-  if (!key) return false;
-  const res = await fetch("https://fcm.googleapis.com/fcm/send", {
-    method: "POST",
-    headers: {
-      Authorization: `key=${key}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      to: token,
-      priority: "high",
-      notification: {
-        title: payload.title,
-        body: payload.body,
-        sound: "lbpay_alert",
-        android_channel_id: "lbpay_money",
-        tag: payload.tag || "lbpay",
-      },
-      data: { url: payload.url || "/wallet" },
-      android: {
-        priority: "high",
-        notification: {
-          sound: "lbpay_alert",
-          channel_id: "lbpay_money",
-        },
-      },
-    }),
-  });
-  if (!res.ok) {
-    console.error("[lbpay] fcm delivery failed", res.status);
-    return false;
-  }
-  return true;
 }
 
 export async function pushAccount(userId: string, title: string, body: string, url = "/wallet") {

@@ -1,6 +1,6 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 
-const serverUrl = (process.env.CAPACITOR_SERVER_URL || "https://lbpay.cm").replace(/\/$/, "");
+const serverUrl = (process.env.CAPACITOR_SERVER_URL || "https://lbpay.loopingbinary.com").replace(/\/$/, "");
 
 const config: CapacitorConfig = {
   appId: "com.loopingbinary.lbpay",
@@ -37,6 +37,8 @@ const config: CapacitorConfig = {
     url: serverUrl,
     androidScheme: "https",
     allowNavigation: [
+      "lbpay.loopingbinary.com",
+      "*.loopingbinary.com",
       "lbpay.cm",
       "*.lbpay.cm",
       "*.vercel.app",
