@@ -11,15 +11,11 @@ import { NetworkMark } from "@/components/network-mark";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/input";
 import { Logo } from "@/components/logo";
-import { ShareRow } from "@/components/share-row";
 import { formatXAF } from "@/lib/format";
 import { useMe } from "@/lib/hooks/wallet";
 import { amountIssue } from "@/lib/limits";
 import { rememberAuthNext } from "@/lib/auth-next";
 import { payHandlePath } from "@/lib/origin";
-import { productPricing, productShareText, productUrl } from "@/lib/shop";
-import { ProductPrice, SaleBadge } from "@/components/product-price";
-import { useBrowserOrigin } from "@/lib/use-origin";
 import {
   CHECKOUT_METHODS,
   checkoutFeeBadge,
@@ -121,12 +117,7 @@ export function CheckoutPay({
   const [waiting, setWaiting] = useState<{ tx: string; seconds: number } | null>(null);
   const [checking, setChecking] = useState(false);
   const [paid, setPaid] = useState(false);
-  const origin = useBrowserOrigin();
   const shopHref = merchantHandle ? payHandlePath(merchantHandle) : "";
-  const productHref = slug ? productUrl(slug, origin) : "";
-  const { original, price, percentOff } = productPricing(fixedAmount, compareAtAmount);
-  const saved = original && price ? original - price : 0;
-  const details = String(description || "").trim();
 
   const value = fixedAmount && fixedAmount > 0 ? fixedAmount : Number(amount) || 0;
   const clean = cameroonMsisdn(phone);
@@ -337,7 +328,15 @@ export function CheckoutPay({
       ) : slug ? (
         <>
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand">Checkout</p>
-          <h2 className="mt-1 text-xl font-black tracking-tight">How will you pay?</h2>
+          <h1 className="mt-1 text-xl font-black tracking-tight">{title}</h1>
+          <p className="mt-1 text-sm text-muted">Complete this payment below.</p>
+          {shopHref ? (
+            <p className="mt-2 text-sm">
+              <Link href={shopHref} className="font-semibold text-brand-deep hover:underline">
+                See user products
+              </Link>
+            </p>
+          ) : null}
         </>
       ) : (
         <>
@@ -503,57 +502,8 @@ export function CheckoutPay({
   if (variant === "page" && slug) {
     return (
       <CheckoutShell variant={variant}>
-        <div className="grid items-start gap-6 lg:grid-cols-2">
-          <article className="overflow-hidden rounded-[1.85rem] bg-white shadow-[0_18px_50px_rgba(12,25,19,0.06)] ring-1 ring-line/80">
-            <div className="relative aspect-[4/5] w-full overflow-hidden bg-gradient-to-br from-brand-soft to-paper sm:aspect-[5/4] lg:aspect-[4/5]">
-              {imageUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={imageUrl} alt={title} className="h-full w-full object-cover" />
-              ) : (
-                <div className="grid h-full place-items-center px-6 text-center">
-                  <p className="text-3xl font-black text-brand-deep">{title}</p>
-                </div>
-              )}
-              <SaleBadge percentOff={percentOff} className="absolute left-4 top-4" />
-            </div>
-            <div className="space-y-4 p-5 sm:p-6">
-              {shopHref ? (
-                <Link href={shopHref} className="flex items-center gap-3">
-                  <AppImg src={merchantAvatar} alt="" className="h-10 w-10 rounded-full object-cover" />
-                  <span>
-                    <span className="block text-sm font-bold text-ink">{merchantName}</span>
-                    <span className="font-mono text-xs font-semibold text-brand">@{merchantHandle}</span>
-                  </span>
-                </Link>
-              ) : null}
-              <div>
-                <h1 className="text-2xl font-black leading-tight tracking-tight text-ink sm:text-3xl">{title}</h1>
-                <ProductPrice
-                  className="mt-3"
-                  amount={fixedAmount}
-                  compareAtAmount={compareAtAmount}
-                  size="lg"
-                  badge={false}
-                />
-                {saved > 0 ? (
-                  <p className="mt-1.5 text-sm font-semibold text-brand-deep">You save {formatXAF(saved)}</p>
-                ) : null}
-              </div>
-              {details ? (
-                <p className="whitespace-pre-wrap text-sm leading-6 text-ink/80">{details}</p>
-              ) : null}
-              {productHref ? (
-                <ShareRow
-                  url={productHref}
-                  text={productShareText(title, fixedAmount ?? null, productHref)}
-                  copyLabel="Share this product"
-                />
-              ) : null}
-            </div>
-          </article>
-          <div className="lg:sticky lg:top-8">
-            <CheckoutCard>{payForm}</CheckoutCard>
-          </div>
+        <div className="mx-auto max-w-md">
+          <CheckoutCard>{payForm}</CheckoutCard>
         </div>
         {confirm}
       </CheckoutShell>
