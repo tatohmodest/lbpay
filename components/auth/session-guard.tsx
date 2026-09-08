@@ -74,10 +74,10 @@ export function SessionGuard({ children }: { children: React.ReactNode }) {
   }, [me.data, hydrateFromServer]);
 
   useEffect(() => {
-    if (me.isFetched && !me.data?.session && !isPublic(path)) {
+    if (me.isFetched && !me.isFetching && !me.data?.session && !isPublic(path)) {
       router.replace("/login");
     }
-  }, [me.isFetched, me.data?.session, path, router]);
+  }, [me.isFetched, me.isFetching, me.data?.session, path, router]);
 
   useEffect(() => {
     if (!me.data?.session) return;
@@ -161,7 +161,7 @@ export function SessionGuard({ children }: { children: React.ReactNode }) {
     <>
       {children}
       {showLock ? (
-        <div className="fixed inset-0 z-[95] grid place-items-center bg-paper px-6">
+        <div className="fixed inset-0 z-95 grid place-items-center bg-paper px-6">
           <div className="w-full max-w-sm">
             <Logo href="/wallet" />
             <h1 className="mt-8 text-center text-2xl font-semibold tracking-tight">Welcome back</h1>

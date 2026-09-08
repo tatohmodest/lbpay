@@ -1,7 +1,10 @@
 const KEY = "lbpay.authNext";
+const BLOCKED_NEXT_PREFIXES = ["/login", "/signup", "/verify", "/forgot"];
 
 export function isSafeNextPath(value: string) {
-  return Boolean(value) && value.startsWith("/") && !value.startsWith("//") && !value.includes("\\");
+  const path = String(value || "").trim();
+  if (!path || !path.startsWith("/") || path.startsWith("//") || path.includes("\\")) return false;
+  return !BLOCKED_NEXT_PREFIXES.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
 }
 
 export function rememberAuthNext(path: string) {
