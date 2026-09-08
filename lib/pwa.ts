@@ -80,8 +80,6 @@ export function shouldAutoOfferInstall(pathname: string) {
   if (isStandaloneDisplay() || wasInstallDismissed()) return false;
   // Desktop visitors get the header install button instead of an interruption.
   if (typeof window !== "undefined" && !window.matchMedia("(max-width: 900px)").matches) return false;
-  // Android browsers get a persistent APK download bar instead of the PWA sheet.
-  if (typeof window !== "undefined" && detectInstallPlatform() === "android") return false;
   const blocked = ["/wallet", "/business", "/developers", "/admin", "/pin", "/pay", "/p", "/r"];
   return !blocked.some((path) => pathname === path || pathname.startsWith(`${path}/`));
 }

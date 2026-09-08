@@ -5,7 +5,6 @@ import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { Download, Share, Smartphone, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ANDROID_APK_FILENAME, ANDROID_APK_HREF } from "@/lib/assets";
 import {
   type BeforeInstallPromptEvent,
   INSTALL_EVENT,
@@ -159,22 +158,16 @@ export function InstallPrompt() {
               App for {deviceLabel}
             </p>
             <h2 id="lbpay-install-title" className="mt-3 text-3xl font-semibold tracking-tight text-ink">
-              Get the LBPay app
+              Install LBPay
             </h2>
             <p className="mt-3 max-w-sm text-base leading-7 text-muted">
-              {isAndroid
-                ? "Download the Android app. Your XAF wallet, PIN lock, transfers, and money alerts open like any other app on your phone."
-                : `Add LBPay to your home screen. Your XAF wallet, PIN lock, and transfers open like any other app on ${
-                    platform === "ios" ? "your iPhone" : "this device"
-                  }.`}
+              {`Add LBPay to your home screen as a PWA. Your XAF wallet, PIN lock, and transfers open like any other app on ${
+                platform === "ios" ? "your iPhone" : platform === "android" ? "your Android phone" : "this device"
+              }.`}
             </p>
           </div>
 
-          {isAndroid ? (
-            <p className="mt-8 rounded-2xl bg-paper px-4 py-4 text-center text-sm leading-6 text-muted">
-              Tap download, then open the file and allow installs from this browser if Android asks.
-            </p>
-          ) : isIos ? (
+          {isIos ? (
             <ol className="mt-8 space-y-4">
               <InstallStep n={1} icon={<Share className="h-5 w-5" />}>
                 Tap the <span className="font-medium text-ink">Share</span> button in Safari.
@@ -199,20 +192,16 @@ export function InstallPrompt() {
                 Tap <span className="font-medium text-ink">Install app</span> or{" "}
                 <span className="font-medium text-ink">Add to Home screen</span>.
               </InstallStep>
+              {isAndroid ? (
+                <InstallStep n={3} icon={<Download className="h-5 w-5" />}>
+                  Confirm install when Android asks.
+                </InstallStep>
+              ) : null}
             </ol>
           )}
 
           <div className="mt-auto flex flex-col gap-2 pt-8">
-            {isAndroid ? (
-              <a
-                href={ANDROID_APK_HREF}
-                download={ANDROID_APK_FILENAME}
-                className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-brand text-[15px] font-medium text-white hover:bg-brand-dark"
-              >
-                <Download className="h-4 w-4" />
-                Download LBPay
-              </a>
-            ) : canNativeInstall ? (
+            {canNativeInstall ? (
               <Button type="button" size="lg" onClick={() => void install()} disabled={busy} className="h-12 w-full text-[15px]">
                 {busy ? "Opening…" : "Install app"}
               </Button>
@@ -220,11 +209,11 @@ export function InstallPrompt() {
             <Button
               type="button"
               size="lg"
-              variant={isAndroid || canNativeInstall ? "ghost" : "secondary"}
+              variant={canNativeInstall ? "ghost" : "secondary"}
               onClick={() => close()}
               className="h-12 w-full"
             >
-              {isAndroid ? "Not now" : isIos || !canNativeInstall ? "I will do this next" : "Not now"}
+              {isIos || !canNativeInstall ? "I will do this next" : "Not now"}
             </Button>
           </div>
         </div>

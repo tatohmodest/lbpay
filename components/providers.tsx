@@ -5,7 +5,6 @@ import { useState, type ReactNode } from "react";
 import { NotifyProvider } from "@/lib/notify";
 import { AppProvider } from "@/lib/store";
 import { SessionGuard } from "@/components/auth/session-guard";
-import { AndroidDownloadBar } from "@/components/pwa/android-download-bar";
 import { InstallPrompt } from "@/components/pwa/install-prompt";
 import { PushPrompt } from "@/components/pwa/push-prompt";
 import { RegisterServiceWorker } from "@/components/pwa/register-sw";
@@ -32,7 +31,6 @@ export function AppProviders({ locale, children }: { locale: Locale; children: R
             <RegisterServiceWorker />
             <NativeShell />
             <SessionGuard>{children}</SessionGuard>
-            <AndroidDownloadBar />
             <InstallPrompt />
             <PushPrompt />
             <NotificationInbox />
