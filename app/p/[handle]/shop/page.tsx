@@ -2,9 +2,9 @@
 
 import { use } from "react";
 import { Suspense } from "react";
-import { PayHandle } from "@/components/pay-handle";
+import { ShopListing } from "@/components/shop-listing";
 
-export default function PayHandlePage({
+export default function ShopHandlePage({
   params,
 }: {
   params: Promise<{ handle: string }>;
@@ -13,8 +13,8 @@ export default function PayHandlePage({
   const handle = decodeURIComponent(raw || "").replace(/^@/, "").trim().toLowerCase();
 
   return (
-    <Suspense fallback={<p className="grid min-h-screen place-items-center text-sm text-muted">Opening payment…</p>}>
-      <PayHandle handle={handle} />
+    <Suspense fallback={<p className="grid min-h-screen place-items-center text-sm text-muted">Opening shop…</p>}>
+      <ShopListing handle={handle} />
     </Suspense>
   );
 }

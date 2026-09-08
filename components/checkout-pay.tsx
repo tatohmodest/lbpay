@@ -15,7 +15,7 @@ import { formatXAF } from "@/lib/format";
 import { useMe } from "@/lib/hooks/wallet";
 import { amountIssue } from "@/lib/limits";
 import { rememberAuthNext } from "@/lib/auth-next";
-import { payHandlePath } from "@/lib/origin";
+import { shopHandlePath } from "@/lib/origin";
 import {
   CHECKOUT_METHODS,
   checkoutFeeBadge,
@@ -117,7 +117,7 @@ export function CheckoutPay({
   const [waiting, setWaiting] = useState<{ tx: string; seconds: number } | null>(null);
   const [checking, setChecking] = useState(false);
   const [paid, setPaid] = useState(false);
-  const shopHref = merchantHandle ? payHandlePath(merchantHandle) : "";
+  const shopHref = merchantHandle ? shopHandlePath(merchantHandle) : "";
 
   const value = fixedAmount && fixedAmount > 0 ? fixedAmount : Number(amount) || 0;
   const clean = cameroonMsisdn(phone);
@@ -333,7 +333,7 @@ export function CheckoutPay({
           {shopHref ? (
             <p className="mt-2 text-sm">
               <Link href={shopHref} className="font-semibold text-brand-deep hover:underline">
-                See user products
+                See shop products
               </Link>
             </p>
           ) : null}

@@ -11,7 +11,7 @@ import { ACTION_ART, ONBOARD_ART } from "@/lib/assets";
 import { formatXAF } from "@/lib/format";
 import { useNotify } from "@/lib/notify";
 import { useMe } from "@/lib/hooks/wallet";
-import { payHandlePath } from "@/lib/origin";
+import { shopHandlePath } from "@/lib/origin";
 import { shopShareText, shopUrl } from "@/lib/shop";
 import { shopSlotState, SHOP_LIMITS } from "@/lib/shop-limits";
 import { useBrowserOrigin } from "@/lib/use-origin";
@@ -149,7 +149,7 @@ export default function WalletLinksPage() {
             <div className="w-full space-y-3 sm:w-72">
               {handle ? (
                 <a
-                  href={payHandlePath(handle)}
+                  href={shopHandlePath(handle)}
                   target="_blank"
                   rel="noreferrer"
                   className="inline-flex h-12 w-full items-center justify-center rounded-full bg-brand text-sm font-bold text-white shadow-[0_10px_24px_rgba(0,179,105,0.28)] hover:bg-brand-dark"

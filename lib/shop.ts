@@ -1,6 +1,6 @@
 import { formatXAF } from "./format";
 import { isSafeProductImageUrl } from "./product-image";
-import { payHandleUrl, payLinkUrl } from "./origin";
+import { payLinkUrl, shopHandleUrl } from "./origin";
 
 export const PRODUCT_DESCRIPTION_MAX = 800;
 
@@ -59,7 +59,7 @@ export function publicProductsFromLinks(
 }
 
 export function shopUrl(handle: string, origin = "") {
-  return payHandleUrl(handle, origin);
+  return shopHandleUrl(handle, origin);
 }
 
 export function productUrl(slug: string, origin = "") {

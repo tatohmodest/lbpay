@@ -8,12 +8,20 @@ export function payHandlePath(handle: string) {
   return `/p/${encodeURIComponent(id)}`;
 }
 
+export function shopHandlePath(handle: string) {
+  return `${payHandlePath(handle)}/shop`;
+}
+
 export function payLinkPath(slug: string) {
   return `/pay/${encodeURIComponent(slug)}`;
 }
 
 export function payHandleUrl(handle: string, origin = browserOrigin()) {
   return origin ? `${origin}${payHandlePath(handle)}` : payHandlePath(handle);
+}
+
+export function shopHandleUrl(handle: string, origin = browserOrigin()) {
+  return origin ? `${origin}${shopHandlePath(handle)}` : shopHandlePath(handle);
 }
 
 export function payLinkUrl(slug: string, origin = browserOrigin()) {
