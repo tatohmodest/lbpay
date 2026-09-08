@@ -10,7 +10,15 @@ import { cn } from "@/lib/cn";
 export function Guard({ children }: { children: React.ReactNode }) {
   const me = useMe();
 
-  if (!me.isFetched || !me.data?.session) {
+  if (!me.data && !me.isFetched) {
+    return (
+      <div className="grid min-h-screen place-items-center text-sm text-muted">
+        Opening your account…
+      </div>
+    );
+  }
+
+  if (me.data?.session === false) {
     return (
       <div className="grid min-h-screen place-items-center text-sm text-muted">
         Opening your account…

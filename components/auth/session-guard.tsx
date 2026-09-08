@@ -74,7 +74,7 @@ export function SessionGuard({ children }: { children: React.ReactNode }) {
   }, [me.data, hydrateFromServer]);
 
   useEffect(() => {
-    if (me.isFetched && !me.isFetching && !me.data?.session && !isPublic(path)) {
+    if (me.isFetched && !me.isFetching && me.data?.session === false && !isPublic(path)) {
       router.replace("/login");
     }
   }, [me.isFetched, me.isFetching, me.data?.session, path, router]);
