@@ -207,12 +207,12 @@ export default function WalletLinksPage() {
           <p className="mt-1 mb-3 text-sm text-muted">
             Open a product as a customer, or copy the page link to share.
           </p>
-          <PaymentLinkManageList
+            <PaymentLinkManageList
             links={links}
             merchantName={shopName}
             apiPath="/api/wallet/links"
             queryKeys={[["wallet-links"], ["business"]]}
-            layout="cards"
+              layout="rows"
           />
         </div>
       ) : (

@@ -31,7 +31,7 @@ export function ProductCard({
   const checkout = product.slug ? payLinkPath(product.slug) : "";
 
   const media = (
-    <div className="relative aspect-square w-full overflow-hidden bg-gradient-to-br from-brand-soft to-paper">
+    <div className="relative aspect-square w-full overflow-hidden bg-linear-to-br from-brand-soft to-paper">
       {product.imageUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={product.imageUrl} alt={product.title} className="h-full w-full object-cover" />
@@ -114,7 +114,7 @@ export function ProductGrid({
     <div
       className={cn(
         "grid gap-3 sm:gap-4",
-        products.length === 1 ? "max-w-sm" : "grid-cols-1 sm:grid-cols-2 xl:grid-cols-3",
+        products.length === 1 ? "max-w-sm" : "grid-cols-2 lg:grid-cols-4",
       )}
     >
       {products.map((product) => (

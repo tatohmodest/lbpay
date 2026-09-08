@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { CheckoutPay } from "@/components/checkout-pay";
 import { Logo } from "@/components/logo";
 import { ProductGrid } from "@/components/product-card";
 import { ShareRow } from "@/components/share-row";
@@ -60,18 +59,6 @@ export function ShopListing({ handle }: { handle: string }) {
   const shopName = user.businessName || user.name;
   const url = shopUrl(user.lbpayId, origin);
 
-  if (!products.length) {
-    return (
-      <CheckoutPay
-        handle={user.lbpayId}
-        title={`Pay ${user.name}`}
-        merchantName={shopName}
-        merchantHandle={user.lbpayId}
-        merchantAvatar={user.avatar}
-      />
-    );
-  }
-
   return (
     <main className="min-h-screen bg-paper pb-16">
       <header className="bg-forest px-4 pb-20 pt-6 text-white">
@@ -85,7 +72,7 @@ export function ShopListing({ handle }: { handle: string }) {
             <AppImg
               src={user.avatar}
               alt=""
-              className="h-[4.75rem] w-[4.75rem] rounded-full object-cover ring-4 ring-brand-soft"
+              className="h-19 w-19 rounded-full object-cover ring-4 ring-brand-soft"
             />
             <div className="min-w-0">
               <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand">Shop</p>
@@ -109,19 +96,15 @@ export function ShopListing({ handle }: { handle: string }) {
               <p className="text-sm text-muted">Tap a product to see details and pay.</p>
             </div>
           </div>
-          <ProductGrid products={products} merchantName={shopName} mode="pay" />
+          {products.length ? (
+            <ProductGrid products={products} merchantName={shopName} mode="pay" />
+          ) : (
+            <section className="rounded-[1.75rem] bg-white p-6 text-center ring-1 ring-line/80">
+              <p className="text-sm font-semibold text-ink">No products yet</p>
+              <p className="mt-2 text-sm text-muted">This shop has not listed any products for customers to browse.</p>
+            </section>
+          )}
         </div>
-
-        <section className="rounded-[1.75rem] bg-white p-5 ring-1 ring-line/80 sm:p-6">
-          <CheckoutPay
-            variant="embedded"
-            handle={user.lbpayId}
-            title={`Pay ${shopName}`}
-            merchantName={shopName}
-            merchantHandle={user.lbpayId}
-            merchantAvatar={user.avatar}
-          />
-        </section>
         <p className="pb-2 text-center text-xs text-muted">
           Want this for your own goods?{" "}
           <Link href="/signup" className="font-bold text-brand-deep hover:underline">
