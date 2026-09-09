@@ -25,9 +25,18 @@ export async function GET(request: Request) {
     }
 
     const rail = getPaymentRail();
-    const result = rail.getStatus
+    let result = rail.getStatus
       ? await rail.getStatus(existing?.railRef || tx, { kind: "collect" })
       : { status: "pending" as const, reference: tx, message: undefined };
+
+    // Avoid settling a transient/ambiguous failure while the row is still pending.
+    if (result.status === "failed" && existing?.status === "pending" && rail.getStatus) {
+      const secondCheck = await rail.getStatus(existing.railRef || tx, { kind: "collect" }).catch(() => null);
+      if (secondCheck && secondCheck.status !== "failed") {
+        result = secondCheck;
+      }
+    }
+
     if (result.status === "success" || result.status === "failed") {
       await settleRailTx(existing?.railRef || tx, result.status).catch(() => null);
     }

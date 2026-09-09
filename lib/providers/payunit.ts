@@ -317,7 +317,9 @@ export class PayUnitRail implements PaymentRail {
    * Call the documented path ourselves, then fall back to the SDK with a leading slash.
    */
   private async readDisbursementStatus(reference: string, payToken?: string): Promise<RailResult | null> {
-    const ids = [...new Set([payToken, reference].filter((value): value is string => Boolean(value)))];
+    const ids = payToken
+      ? [payToken]
+      : [...new Set([reference].filter((value): value is string => Boolean(value)))];
     for (const id of ids) {
       try {
         const response = await this.client.request<unknown>(
@@ -325,14 +327,31 @@ export class PayUnitRail implements PaymentRail {
           `/gateway/deposit/deposit_status/${encodeURIComponent(id)}`,
         );
         const body = unwrapPayunitBody(response);
-        const mapped = railStatus(pickStatusRaw(response) || String(body.payment_status || body.status || ""));
-        if (!pickStatusRaw(response) && !body.payment_status && !body.status && !body.transaction_id) {
+        const rawStatus = pickStatusRaw(response) || String(body.payment_status || body.status || "");
+        const mapped = railStatus(rawStatus);
+        const responseReference = pickTransactionId(response, "");
+        const responsePayToken = pickPayToken(response);
+        const failureNote = String(body.system_note || body.message || rawStatus || "").toLowerCase();
+        if (!rawStatus && !body.payment_status && !body.status && !body.transaction_id) {
           continue;
         }
+
+        // Guard against lookup/transport-style failures being treated as terminal payout failure.
+        if (
+          mapped === "failed" &&
+          !responseReference &&
+          !responsePayToken &&
+          /not\s*found|unknown|invalid|missing|timeout|temporar|try again|processing|pending|unavailable/i.test(
+            failureNote,
+          )
+        ) {
+          continue;
+        }
+
         return {
           provider: "payunit",
-          reference: pickTransactionId(response, reference),
-          providerRef: pickPayToken(response) || payToken || id,
+          reference: responseReference || reference,
+          providerRef: responsePayToken || payToken || id,
           status: mapped,
           message:
             mapped === "failed"

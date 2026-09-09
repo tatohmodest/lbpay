@@ -12,25 +12,60 @@ export async function GET(request: Request) {
     if (!txId) return NextResponse.json({ error: "Transaction id is required." }, { status: 400 });
 
     const existing = await findTxByRailRef(txId);
+    if (!existing) {
+      return NextResponse.json({ error: "Transaction not found." }, { status: 404 });
+    }
+    if (existing.userId !== auth.user.id) {
+      return NextResponse.json({ error: "Transaction not found." }, { status: 404 });
+    }
+    if (existing.status === "success" || existing.status === "failed" || existing.status === "cancelled") {
+      return NextResponse.json({
+        ok: true,
+        status: existing.status === "cancelled" ? "failed" : existing.status,
+        transactionId: existing.railRef || txId,
+        message:
+          existing.status === "failed" || existing.status === "cancelled"
+            ? "Your transaction could not be completed. No money has been deducted. Please try again."
+            : undefined,
+      });
+    }
+
     const rail = getPaymentRail();
-    const result = rail.getStatus
+    let result = rail.getStatus
       ? await rail.getStatus(existing?.railRef || txId, {
           kind: "disburse",
           payToken: existing?.meta?.payToken,
         })
       : { status: "pending" as const, reference: txId, message: undefined };
+
+    // If a first check says "failed" while this row is still pending, re-check once before settling.
+    if (result.status === "failed" && existing?.status === "pending" && rail.getStatus) {
+      const secondCheck = await rail
+        .getStatus(existing.railRef || txId, {
+          kind: "disburse",
+          payToken: existing.meta?.payToken,
+        })
+        .catch(() => null);
+      if (secondCheck && secondCheck.status !== "failed") {
+        result = secondCheck;
+      }
+    }
+
     if (result.status === "success" || result.status === "failed") {
       await settleRailTx(existing?.railRef || txId, result.status).catch(() => null);
     }
+
+    const latest = await findTxByRailRef(existing?.railRef || txId);
+    const status = latest?.status === "cancelled" ? "failed" : latest?.status || result.status;
     return NextResponse.json({
       ok: true,
-      status: result.status,
-      transactionId: result.reference,
+      status,
+      transactionId: latest?.railRef || result.reference,
       message:
-        result.status === "failed"
+        status === "failed"
           ? result.message ||
             "Your transaction could not be completed. No money has been deducted. Please try again."
-          : result.status === "pending"
+          : status === "pending"
             ? "Your transaction is being processed. This usually takes less than two minutes. We will notify you once it completes."
             : undefined,
     });
