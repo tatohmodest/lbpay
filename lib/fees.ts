@@ -1,7 +1,7 @@
 export const FEE_RATES = {
-  deposit: 0.02,
-  withdraw: 0.03,
-  crossNetwork: 0.05,
+  deposit: 0.015,
+  withdraw: 0.025,
+  crossNetwork: 0.035,
   airtime: 0,
   walletTransfer: 0,
 } as const;
@@ -43,6 +43,12 @@ export function directTransferRate(from?: MomoNetwork, to?: MomoNetwork) {
   return cross ? FEE_RATES.crossNetwork : FEE_RATES.withdraw;
 }
 
+export function feePercent(rate: number) {
+  const percent = rate * 100;
+  if (Number.isInteger(percent)) return String(percent);
+  return percent.toFixed(2).replace(/\.?0+$/, "");
+}
+
 export function feePercentLabel(rate: number, label = "Charge") {
-  return `${label} (${Math.round(rate * 100)}%)`;
+  return `${label} (${feePercent(rate)}%)`;
 }

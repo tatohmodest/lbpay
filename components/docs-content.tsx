@@ -140,7 +140,7 @@ export function DocsContent({
             Withdrawals and “send to MTN / Orange” are disbursements. Cash leaves LBPay through
             PayUnit (<code>POST /api/gateway/deposit</code> then{" "}
             <code>/api/gateway/deposit/confirm</code> on <code>https://gateway.payunit.net</code>,
-            account number <code>237</code> + 9-digit MSISDN). Deposit is 2%. Withdrawal is 3%.
+            account number <code>237</code> + 9-digit MSISDN). Deposit is 1.5%. Withdrawal is 2.5%.
             Minimum withdrawal is 1,000 XAF. PayUnit must enable the deposit/disbursement product
             on the merchant account; a PayUnit wallet balance alone is not enough.
           </p>
@@ -167,7 +167,7 @@ export function DocsContent({
         <Section id="payouts" title="Create a payout">
           <p>
             <code>POST /api/v1/payouts</code> sends XAF to a Cameroon phone on MTN or Orange. The
-            merchant wallet is debited, plus the 3% withdrawal fee.
+            merchant wallet is debited, plus the 2.5% withdrawal fee.
           </p>
           <CodeTabs examples={PAYOUT_EXAMPLES} />
         </Section>

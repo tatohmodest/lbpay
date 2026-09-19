@@ -16,7 +16,7 @@ import { formatXAF } from "@/lib/format";
 import { useDisburse, useHandleLookup, useMe, useTransfer } from "@/lib/hooks/wallet";
 import { useNotify } from "@/lib/notify";
 import { cameroonMsisdn, isCameroonMsisdn } from "@/lib/phone";
-import { FEE_RATES, feePercentLabel, momoOutFee } from "@/lib/fees";
+import { feePercent, FEE_RATES, feePercentLabel, momoOutFee } from "@/lib/fees";
 import { AmountField } from "@/components/amount-field";
 import { amountIssue, cameroonDay, dailyOutboundCap, outboundKinds } from "@/lib/limits";
 import { readPinFail, isPinError } from "@/lib/pin-fail";
@@ -130,8 +130,8 @@ function SendInner() {
               {(
                 [
                   { id: "wallet" as const, label: "LBPay", hint: "No fee" },
-                  { id: "mtn" as const, label: "MTN", hint: "Charge 3%" },
-                  { id: "orange" as const, label: "Orange", hint: "Charge 3%" },
+                  { id: "mtn" as const, label: "MTN", hint: `Charge ${feePercent(FEE_RATES.withdraw)}%` },
+                  { id: "orange" as const, label: "Orange", hint: `Charge ${feePercent(FEE_RATES.withdraw)}%` },
                 ]
               ).map((item) => (
                 <RailTile

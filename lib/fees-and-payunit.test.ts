@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { depositFee, directTransferFee, FEE_RATES, momoOutFee } from "./fees";
+import { depositFee, directTransferFee, FEE_RATES, feePercent, feePercentLabel, momoOutFee } from "./fees";
 import { amountIssue, LIMITS } from "./limits";
 import {
   disbursementAccount,
@@ -13,18 +13,25 @@ import { parsePaymentLinkPatch } from "./server/payment-links";
 import { payunitGatewayUrl } from "./site";
 import { mapRailError } from "./public-error";
 
-test("deposit is 2 percent and withdrawal is 3 percent", () => {
-  assert.equal(FEE_RATES.deposit, 0.02);
-  assert.equal(FEE_RATES.withdraw, 0.03);
-  assert.equal(depositFee(10_000), 200);
-  assert.equal(momoOutFee(10_000), 300);
-  assert.equal(directTransferFee(10_000, "mtn", "mtn"), 300);
+test("deposit is 1.5 percent and withdrawal is 2.5 percent", () => {
+  assert.equal(FEE_RATES.deposit, 0.015);
+  assert.equal(FEE_RATES.withdraw, 0.025);
+  assert.equal(depositFee(10_000), 150);
+  assert.equal(momoOutFee(10_000), 250);
+  assert.equal(directTransferFee(10_000, "mtn", "mtn"), 250);
 });
 
-test("quick transfer across networks is 5 percent of the amount they receive", () => {
-  assert.equal(FEE_RATES.crossNetwork, 0.05);
-  assert.equal(directTransferFee(10_000, "mtn", "orange"), 500);
-  assert.equal(directTransferFee(10_000, "orange", "mtn"), 500);
+test("quick transfer across networks is 3.5 percent of the amount they receive", () => {
+  assert.equal(FEE_RATES.crossNetwork, 0.035);
+  assert.equal(directTransferFee(10_000, "mtn", "orange"), 350);
+  assert.equal(directTransferFee(10_000, "orange", "mtn"), 350);
+});
+
+test("fee labels preserve one decimal when needed", () => {
+  assert.equal(feePercent(FEE_RATES.deposit), "1.5");
+  assert.equal(feePercent(FEE_RATES.withdraw), "2.5");
+  assert.equal(feePercent(FEE_RATES.crossNetwork), "3.5");
+  assert.equal(feePercentLabel(FEE_RATES.withdraw), "Charge (2.5%)");
 });
 
 test("withdrawal minimum is 1000 XAF, not 100", () => {

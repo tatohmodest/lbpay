@@ -49,7 +49,7 @@ const features = [
   { icon: Zap, title: "Fast & affordable", copy: "Wallet to wallet is instant. No waiting on a float agent." },
   { icon: PiggyBank, title: "Savings with teeth", copy: "Daily, weekly or monthly pots. Miss a cycle and the penalty you chose is cut." },
   { icon: Globe, title: "Cameroon first, Africa next", copy: "XAF at home. Naira, cedi and CFA delivered in 9 more countries." },
-  { icon: Wallet, title: "Extra clear fees", copy: "Deposits 2%. Withdrawals 3%. Abroad 2.5%. Wallet transfers are free." },
+  { icon: Wallet, title: "Extra clear fees", copy: "Deposits 1.5%. Withdrawals 2.5%. MTN ↔ Orange is 3.5%. Wallet transfers are free." },
   { icon: Lock, title: "Secure & trusted", copy: "Email OTP, a 4-digit PIN, and a ledger that posts every move." },
 ];
 
