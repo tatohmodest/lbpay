@@ -125,7 +125,7 @@ export function AuthForm({
       const data = await submitSignup();
       if (!data) return;
       if (data.step === "otp") {
-        notify.info(t("auth.checkEmail"), t("auth.codeSent"));
+        notify.info(t("auth.checkEmail"), t("auth.codeSentSignup"));
         router.push(`/verify?email=${encodeURIComponent(email)}`);
         return;
       }
@@ -149,7 +149,7 @@ export function AuthForm({
       const data = await submitSignup(idConflict.suggestion);
       if (!data) return;
       if (data.step === "otp") {
-        notify.info(t("auth.checkEmail"), t("auth.codeSent"));
+        notify.info(t("auth.checkEmail"), t("auth.codeSentSignup"));
         router.push(`/verify?email=${encodeURIComponent(email)}`);
         return;
       }

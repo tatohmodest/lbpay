@@ -56,7 +56,7 @@ function VerifyInner() {
         notify.info("Could not resend", data.error || "Try again in a moment.");
         return;
       }
-      notify.success("Code sent", "Check your inbox.");
+      notify.success(t("auth.checkEmail"), t("auth.codeSentSignup"));
     } catch (err) {
       notify.info("Could not resend", err instanceof Error ? err.message : "Try again.");
     }
