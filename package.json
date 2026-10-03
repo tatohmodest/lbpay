@@ -9,8 +9,8 @@
     "lint": "eslint",
     "postinstall": "node scripts/strip-og-wasm.mjs",
     "preview": "bash scripts/cf-build.sh && wrangler dev",
-    "deploy": "bash scripts/cf-build.sh && wrangler deploy",
-    "upload": "bash scripts/cf-build.sh && wrangler versions upload",
+    "deploy": "bash scripts/cf-build.sh && OPEN_NEXT_DEPLOY=true wrangler deploy --config wrangler.jsonc --keep-vars",
+    "upload": "bash scripts/cf-build.sh && OPEN_NEXT_DEPLOY=true wrangler versions upload --config wrangler.jsonc --keep-vars",
     "cf-build": "bash scripts/cf-build.sh",
     "cap:sync": "npx cap sync android",
     "android:debug": "cd android && ./gradlew assembleDebug && mkdir -p ../public/apps && cp app/build/outputs/apk/debug/app-debug.apk ../public/apps/lbpay.apk"
