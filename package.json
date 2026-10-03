@@ -16,7 +16,6 @@
     "android:debug": "cd android && ./gradlew assembleDebug && mkdir -p ../public/apps && cp app/build/outputs/apk/debug/app-debug.apk ../public/apps/lbpay.apk"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1146.0",
     "@capacitor/app": "^8.1.1",
     "@capacitor/core": "^8.5.1",
     "@capacitor/haptics": "^8.0.2",
