@@ -71,6 +71,15 @@ function VerifyInner() {
       />
       <AuthCard>
         <form className="flex flex-col gap-4" onSubmit={verify}>
+          <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-3 text-xs leading-relaxed text-amber-900 dark:text-amber-200">
+            <p className="font-semibold flex items-center gap-1.5">
+              <span>📬</span> {t("auth.spamCheckTitle")}
+            </p>
+            <p className="mt-1 text-slate-600 dark:text-amber-200/80">
+              {t("auth.spamCheckNotice")}
+            </p>
+          </div>
+
           <Field label={t("auth.verifyCode")}>
             <Input
               inputMode="numeric"

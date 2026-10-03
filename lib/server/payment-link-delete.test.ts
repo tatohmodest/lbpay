@@ -36,16 +36,21 @@ test("union-by-id merge is what used to put deleted links back", () => {
   assert.equal(mergePaymentLinks(remote, local, ["lnk_gone"]).length, 0);
 });
 
-test("Cloudinary public id is parsed from transformed delivery URLs", () => {
+test("Cloudinary and R2 public id is parsed from delivery URLs", () => {
   const transformed =
     "https://res.cloudinary.com/demo/image/upload/c_limit,w_1280/v1710000000/lbpay/links/user1/abc.jpg";
   const plain = "https://res.cloudinary.com/demo/image/upload/v1710000000/lbpay/links/user1/abc.jpg";
   const eager =
     "https://res.cloudinary.com/demo/image/upload/c_limit,w_1280,h_1280/q_auto:eco/f_jpg/v1710000000/lbpay/links/user1/abc.webp";
+  const r2Url =
+    "https://pub-98c2191bb9e1446f9eafa841d5d5be11.r2.dev/links/user1/abc.jpg";
+
   assert.equal(cloudinaryPublicId(transformed), "lbpay/links/user1/abc");
   assert.equal(cloudinaryPublicId(plain), "lbpay/links/user1/abc");
   assert.equal(cloudinaryPublicId(eager), "lbpay/links/user1/abc");
   assert.equal(cloudinaryPublicId("lbpay/links/user1/abc"), "lbpay/links/user1/abc");
+  assert.equal(cloudinaryPublicId(r2Url), "links/user1/abc.jpg");
+  assert.equal(cloudinaryPublicId("links/user1/abc.jpg"), "links/user1/abc.jpg");
 });
 
 test("DELETE can read the payment link id from the query string", async () => {

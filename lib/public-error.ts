@@ -92,7 +92,7 @@ export function mapRailError(raw: unknown): PublicError {
       user: "Your transaction is being processed. This usually takes less than two minutes. We'll notify you once it completes.",
     };
   }
-  if (/not configured|PAYUNIT_|SESSION_SECRET|CLOUDINARY_/i.test(text)) {
+  if (/not configured|PAYUNIT_|SESSION_SECRET|CLOUDINARY_|R2_/i.test(text)) {
     return {
       code: "SERVICE_UNAVAILABLE",
       user: "Payment service is temporarily unavailable. Please try again later.",

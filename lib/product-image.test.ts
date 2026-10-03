@@ -3,10 +3,11 @@ import { test } from "node:test";
 import { isSafeProductImageUrl, publicProductImageUrl } from "./product-image";
 import { parsePaymentLinkInput } from "./server/payment-links";
 
-test("product photos keep local uploads and Cloudinary https urls", () => {
+test("product photos keep local uploads, Cloudflare R2, and Cloudinary https urls", () => {
   assert.equal(isSafeProductImageUrl("/uploads/links/usr_amina/img_abc.jpg"), true);
   assert.equal(isSafeProductImageUrl("/illustrations/gift-box.webp"), true);
   assert.equal(isSafeProductImageUrl("https://res.cloudinary.com/demo/image/upload/v1/shoe.jpg"), true);
+  assert.equal(isSafeProductImageUrl("https://pub-98c2191bb9e1446f9eafa841d5d5be11.r2.dev/links/usr_1/shoe.jpg"), true);
   assert.equal(isSafeProductImageUrl("http://evil.example/x.jpg"), false);
   assert.equal(isSafeProductImageUrl("/uploads/links/../secret.jpg"), false);
   assert.equal(isSafeProductImageUrl("javascript:alert(1)"), false);
@@ -20,6 +21,7 @@ test("product image public url is absolute for sharing", () => {
     "https://lbpay.cm/uploads/links/usr_1/a.jpg",
   );
   assert.equal(publicProductImageUrl("https://res.cloudinary.com/demo/image/upload/v1/a.jpg", "https://lbpay.cm"), "https://res.cloudinary.com/demo/image/upload/v1/a.jpg");
+  assert.equal(publicProductImageUrl("https://pub-98c2191bb9e1446f9eafa841d5d5be11.r2.dev/links/usr_1/a.jpg", "https://lbpay.cm"), "https://pub-98c2191bb9e1446f9eafa841d5d5be11.r2.dev/links/usr_1/a.jpg");
   assert.equal(publicProductImageUrl("http://evil.example/x.jpg", "https://lbpay.cm"), "");
 });
 

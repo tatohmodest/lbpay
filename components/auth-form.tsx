@@ -334,6 +334,11 @@ export function AuthForm({
                 <Button type="submit" className="mt-1 w-full" disabled={loading}>
                   {loading ? t("auth.pleaseWait") : mode === "login" ? t("auth.continue") : t("auth.createAccount")}
                 </Button>
+                {mode === "signup" ? (
+                  <p className="text-center text-xs text-muted">
+                    {t("auth.signupEmailHint")}
+                  </p>
+                ) : null}
               </form>
             </AuthCard>
             <p className="mt-6 text-sm text-muted">

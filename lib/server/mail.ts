@@ -58,6 +58,7 @@ const OTP_COPY = {
       body: "Use this code to confirm your LBPay account. It expires in 10 minutes.",
       subject: (otp: string) => `${otp} is your LBPay verification code`,
       kind: "verification",
+      spamTip: "💡 Tip: If this email landed in your spam or junk folder, please mark it as 'Not Spam' or move it to your inbox to ensure you receive future transaction alerts and receipts without delay.",
       footer: "If you did not create an LBPay account, ignore this email.",
     },
     admin: {
@@ -65,6 +66,7 @@ const OTP_COPY = {
       body: "Use this code to open the LBPay admin console. It expires in 10 minutes.",
       subject: (otp: string) => `${otp} is your LBPay admin code`,
       kind: "admin",
+      spamTip: "💡 Tip: If this email landed in spam, please mark it as 'Not Spam'.",
       footer: "If you did not request admin access, ignore this email.",
     },
     reset: {
@@ -72,6 +74,7 @@ const OTP_COPY = {
       body: "Use this code to reset your LBPay password. It expires in 10 minutes.",
       subject: (otp: string) => `${otp} is your LBPay password reset code`,
       kind: "password reset",
+      spamTip: "💡 Tip: If this email landed in spam, please mark it as 'Not Spam'.",
       footer: "If you did not ask to reset your password, ignore this email.",
     },
     pin: {
@@ -79,6 +82,7 @@ const OTP_COPY = {
       body: "Use this code to confirm it is you, then you can set a new PIN. It expires in 10 minutes.",
       subject: (otp: string) => `${otp} is your LBPay PIN reset code`,
       kind: "PIN reset",
+      spamTip: "💡 Tip: If this email landed in spam, please mark it as 'Not Spam'.",
       footer: "If you did not ask to reset your PIN, ignore this email.",
     },
   },
@@ -88,6 +92,7 @@ const OTP_COPY = {
       body: "Utilisez ce code pour confirmer votre compte LBPay. Il expire dans 10 minutes.",
       subject: (otp: string) => `${otp} est votre code de vérification LBPay`,
       kind: "vérification",
+      spamTip: "💡 Astuce : Si ce message est arrivé dans vos spams ou courriers indésirables, marquez-le comme 'Non spam' ou déplacez-le dans votre boîte de réception pour recevoir vos futurs reçus.",
       footer: "Si vous n'avez pas créé de compte LBPay, ignorez cet email.",
     },
     admin: {
@@ -95,6 +100,7 @@ const OTP_COPY = {
       body: "Utilisez ce code pour ouvrir la console admin LBPay. Il expire dans 10 minutes.",
       subject: (otp: string) => `${otp} est votre code admin LBPay`,
       kind: "admin",
+      spamTip: "💡 Astuce : Si ce message est arrivé dans vos spams, marquez-le comme 'Non spam'.",
       footer: "Si vous n'avez pas demandé l'accès admin, ignorez cet email.",
     },
     reset: {
@@ -102,6 +108,7 @@ const OTP_COPY = {
       body: "Utilisez ce code pour réinitialiser votre mot de passe LBPay. Il expire dans 10 minutes.",
       subject: (otp: string) => `${otp} est votre code de réinitialisation LBPay`,
       kind: "réinitialisation",
+      spamTip: "💡 Astuce : Si ce message est arrivé dans vos spams, marquez-le comme 'Non spam'.",
       footer: "Si vous n'avez pas demandé à réinitialiser le mot de passe, ignorez cet email.",
     },
     pin: {
@@ -109,6 +116,7 @@ const OTP_COPY = {
       body: "Utilisez ce code pour confirmer que c'est vous, puis choisissez un nouveau PIN. Il expire dans 10 minutes.",
       subject: (otp: string) => `${otp} est votre code PIN LBPay`,
       kind: "PIN",
+      spamTip: "💡 Astuce : Si ce message est arrivé dans vos spams, marquez-le comme 'Non spam'.",
       footer: "Si vous n'avez pas demandé à réinitialiser le PIN, ignorez cet email.",
     },
   },
@@ -116,11 +124,14 @@ const OTP_COPY = {
 
 function otpHtml(
   name: string | undefined,
-  copy: { title: string; body: string; footer: string },
+  copy: { title: string; body: string; spamTip?: string; footer: string },
   otp: string,
   locale: Locale,
 ) {
   const hello = locale === "fr" ? `Bonjour ${name || ""}`.trim() : `Hi ${name || "there"}`;
+  const spamBox = copy.spamTip
+    ? `<div style="margin:20px 0 0;padding:12px 16px;background:#fef7ea;border:1px solid #f9deb5;border-radius:12px;font-size:12px;color:#8a5300;line-height:1.4;">${copy.spamTip}</div>`
+    : "";
   return `<!doctype html>
 <html>
 <body style="margin:0;background:#f3faf6;font-family:ui-sans-serif,system-ui,-apple-system,sans-serif;color:#0f1f17;">
@@ -133,6 +144,7 @@ function otpHtml(
       <p style="margin:0 0 12px;">${hello},</p>
       <p style="margin:0 0 20px;color:#5c6f66;">${copy.body}</p>
       <div style="letter-spacing:10px;font-size:32px;font-weight:800;text-align:center;background:#e6f8ef;color:#007a47;padding:16px;border-radius:16px;">${otp}</div>
+      ${spamBox}
       <p style="margin:20px 0 0;font-size:12px;color:#5c6f66;">${copy.footer}</p>
     </div>
   </div>
@@ -238,8 +250,8 @@ export async function sendOtpEmail(
   const copy = OTP_COPY[locale === "fr" ? "fr" : "en"][purpose];
   const html = otpHtml(name, copy, otp, locale);
   const text = locale === "fr"
-    ? `Votre code LBPay (${copy.kind}) est ${otp}. Il expire dans 10 minutes.`
-    : `Your LBPay ${copy.kind} code is ${otp}. It expires in 10 minutes.`;
+    ? `Votre code LBPay (${copy.kind}) est ${otp}. Il expire dans 10 minutes.\n\n${copy.spamTip}`
+    : `Your LBPay ${copy.kind} code is ${otp}. It expires in 10 minutes.\n\n${copy.spamTip}`;
 
   if (!mailConfigured()) {
     if (process.env.NODE_ENV === "production") {

@@ -1,16 +1,39 @@
 import { v2 as cloudinary } from "cloudinary";
 import { MAX_KYC_UPLOAD_BYTES, type KycImageKind } from "@/lib/kyc";
+import {
+  r2Configured,
+  isOurR2Url,
+  r2Key,
+  deleteFromR2,
+  uploadKycImageR2,
+  uploadProductImageR2,
+  uploadAvatarImageR2,
+} from "./r2";
+
+export {
+  r2Configured,
+  isOurR2Url,
+  r2Key,
+  deleteFromR2,
+  uploadKycImageR2,
+  uploadProductImageR2,
+  uploadAvatarImageR2,
+};
 
 function cloudName() {
   return String(process.env.CLOUDINARY_CLOUD_NAME || "").trim();
 }
 
-export function cloudinaryConfigured() {
+export function cloudinaryConfiguredDirect() {
   return Boolean(cloudName() && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET);
 }
 
+export function cloudinaryConfigured() {
+  return r2Configured() || cloudinaryConfiguredDirect();
+}
+
 function client() {
-  if (!cloudinaryConfigured()) {
+  if (!cloudinaryConfiguredDirect()) {
     throw new Error("Cloudinary is not configured. Set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET.");
   }
   cloudinary.config({
@@ -33,8 +56,12 @@ function inferCloudName(url: string) {
 }
 
 export function isOurCloudinaryUrl(url: string) {
+  if (!url) return false;
+  // If it is our Cloudflare R2 URL, accept it
+  if (isOurR2Url(url)) return true;
+
   const name = cloudName();
-  if (!name || !url) return false;
+  if (!name) return false;
   try {
     const parsed = new URL(url);
     return parsed.protocol === "https:" && parsed.hostname === "res.cloudinary.com" && parsed.pathname.startsWith(`/${name}/`);
@@ -50,10 +77,24 @@ function isTransformSegment(part: string) {
   return /[,=]/.test(part) || /^(c_|w_|h_|q_|f_|e_|g_|x_|y_|r_|b_|l_|o_|dpr_|ar_)/.test(part);
 }
 
-/** Public id from a Cloudinary URL, including transformed delivery URLs. */
+/** Public id or storage key from a Cloudflare R2 or Cloudinary URL */
 export function cloudinaryPublicId(urlOrPublicId: string | null | undefined): string | null {
   const raw = String(urlOrPublicId || "").trim();
   if (!raw) return null;
+
+  // Check if it's an R2 URL or key
+  if (isOurR2Url(raw)) {
+    return r2Key(raw);
+  }
+
+  // Handle R2 keys like kyc/usr_... or links/usr_... or avatars/usr_...
+  if (
+    !raw.includes("res.cloudinary.com") &&
+    (raw.startsWith("kyc/") || raw.startsWith("links/") || raw.startsWith("avatars/"))
+  ) {
+    return r2Key(raw);
+  }
+
   if (!raw.includes("://") && !raw.includes("/upload/")) {
     const id = raw.replace(/\.[^./]+$/, "");
     return id && !id.includes("://") ? id : null;
@@ -116,6 +157,10 @@ export async function uploadKycImage(input: {
   kind: KycImageKind;
   mime: string;
 }) {
+  if (r2Configured()) {
+    return uploadKycImageR2(input);
+  }
+
   if (input.buffer.byteLength > MAX_KYC_UPLOAD_BYTES) {
     throw new Error("Maximum upload is 10MB.");
   }
@@ -166,6 +211,10 @@ export async function uploadProductImage(input: {
   userId: string;
   mime: string;
 }) {
+  if (r2Configured()) {
+    return uploadProductImageR2(input);
+  }
+
   if (input.buffer.byteLength > MAX_KYC_UPLOAD_BYTES) {
     throw new Error("Maximum upload is 10MB.");
   }
@@ -215,6 +264,10 @@ export async function uploadAvatarImage(input: {
   userId: string;
   mime: string;
 }) {
+  if (r2Configured()) {
+    return uploadAvatarImageR2(input);
+  }
+
   if (input.buffer.byteLength > MAX_KYC_UPLOAD_BYTES) {
     throw new Error("Maximum upload is 10MB.");
   }
@@ -261,6 +314,17 @@ export async function uploadAvatarImage(input: {
 
 export async function deleteCloudinaryImage(urlOrPublicId: string | null | undefined, timeoutMs = 8000) {
   if (!urlOrPublicId) return false;
+
+  // If it's an R2 URL or R2 key, delete from R2
+  if (
+    isOurR2Url(urlOrPublicId) ||
+    urlOrPublicId.startsWith("kyc/") ||
+    urlOrPublicId.startsWith("links/") ||
+    urlOrPublicId.startsWith("avatars/")
+  ) {
+    return deleteFromR2(urlOrPublicId);
+  }
+
   const api = deleteClient(urlOrPublicId);
   if (!api) return false;
 
