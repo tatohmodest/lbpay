@@ -31,7 +31,7 @@ export function AnimatePresence({
   dismiss: (id: string) => void;
 }) {
   return (
-    <div className="pointer-events-none fixed inset-x-0 top-4 z-[90] flex flex-col items-center gap-2 px-4 md:inset-x-auto md:right-4 md:items-end">
+    <div className="pointer-events-none fixed inset-x-0 top-4 z-[110] flex flex-col items-center gap-2 px-4 md:inset-x-auto md:right-4 md:items-end">
       {notices.map((notice) => {
         const Icon = NOTICE_ICONS[notice.kind];
         return (

@@ -79,12 +79,12 @@ export function ShopListing({ handle }: { handle: string }) {
             <AppImg
               src={user.avatar}
               alt=""
-              className="h-20 w-20 rounded-2xl object-cover ring-4 ring-emerald-100 shadow-md"
+              className="h-20 w-20 rounded-2xl object-cover ring-4 ring-brand-soft shadow-md"
             />
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <span className="text-[11px] font-black uppercase tracking-[0.16em] text-brand">Storefront</span>
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
+                <span className="inline-flex items-center gap-1 rounded-full bg-brand-soft px-2.5 py-0.5 text-[10px] font-bold text-brand-dark">
                   <CheckCircle2 className="h-3 w-3" /> Verified Merchant
                 </span>
               </div>

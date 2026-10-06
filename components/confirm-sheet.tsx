@@ -39,7 +39,7 @@ function ConfirmSheetInner({
   const wait = secondsLeft(lockedUntil, now);
 
   return (
-    <div className="fixed inset-0 z-[85] grid place-items-end bg-navy/50 p-0 md:place-items-center md:p-6">
+    <div className="fixed inset-0 z-[100] grid place-items-end bg-navy/50 p-0 md:place-items-center md:p-6">
       <div className="w-full max-w-md rounded-t-3xl bg-white p-6 shadow-2xl md:rounded-3xl">
         {step === "review" ? (
           <>

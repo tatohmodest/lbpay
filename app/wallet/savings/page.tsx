@@ -2,7 +2,6 @@
 
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Calendar, Lock, PiggyBank, ShieldCheck } from "lucide-react";
 import {
   DuolingoNudgeCard,
   PlanCard,
@@ -17,24 +16,21 @@ import { monthlyPace } from "@/lib/savings";
 import { cn } from "@/lib/cn";
 import type { SavingsPlan } from "@/lib/types";
 
-const DISCIPLINE_PERKS = [
+const POINTS = [
   {
-    icon: Calendar,
-    title: "Flexible Rhythm",
+    art: ACTION_ART.save,
+    title: "Pick a rhythm",
     copy: "Daily, weekly, or monthly schedules",
-    color: "text-blue-600 bg-blue-50",
   },
   {
-    icon: ShieldCheck,
+    art: ACTION_ART.deposit,
     title: "Prepay & Shield",
-    copy: "Deposit 4 days ahead and stay protected",
-    color: "text-emerald-600 bg-emerald-50",
+    copy: "Pay ahead anytime to protect your streak",
   },
   {
-    icon: Lock,
-    title: "Locked Objective",
-    copy: "Pledge your penalty, stay committed",
-    color: "text-amber-600 bg-amber-50",
+    art: ACTION_ART.withdraw,
+    title: "Zero-fee finish",
+    copy: "100% free cashout once objective is met",
   },
 ];
 
@@ -78,9 +74,8 @@ function SavingsInner() {
       {/* Left Column: Hero & Discipline Features */}
       <div className="space-y-5 lg:col-span-5">
         <header className="flex items-center gap-3">
-          <div className="grid h-12 w-12 place-items-center rounded-2xl bg-emerald-50 text-brand shadow-sm">
-            <PiggyBank className="h-6 w-6" />
-          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={ACTION_ART.save} alt="" width={48} height={48} className="h-12 w-12 object-contain" />
           <div>
             <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-brand">Finances & Discipline</p>
             <h1 className="text-2xl font-black leading-none text-ink">Savings Pots</h1>
@@ -100,23 +95,19 @@ function SavingsInner() {
         {/* Duolingo Motivational Nudge */}
         <DuolingoNudgeCard plans={plans} onAction={handleNudgeAction} />
 
-        {/* Discipline Value Props (Clean Lucide Icons, No Emojis) */}
+        {/* Discipline Value Props with 3D Illustrative Art */}
         <section className="grid grid-cols-3 gap-2">
-          {DISCIPLINE_PERKS.map((item) => {
-            const Icon = item.icon;
-            return (
-              <div
-                key={item.title}
-                className="flex flex-col items-center rounded-2xl bg-white p-3 text-center shadow-[0_4px_16px_rgba(0,0,0,0.03)] ring-1 ring-line/70"
-              >
-                <div className={cn("grid h-9 w-9 place-items-center rounded-xl", item.color)}>
-                  <Icon className="h-4.5 w-4.5" />
-                </div>
-                <p className="mt-2 text-[11px] font-black leading-tight text-ink">{item.title}</p>
-                <p className="mt-0.5 text-[9px] leading-snug text-muted">{item.copy}</p>
-              </div>
-            );
-          })}
+          {POINTS.map((item) => (
+            <div
+              key={item.title}
+              className="flex flex-col items-center rounded-[1.5rem] bg-white px-1.5 py-3.5 text-center shadow-[0_8px_22px_rgba(12,25,19,0.05)] ring-1 ring-line/80"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={item.art} alt="" width={56} height={56} className="h-14 w-14 object-contain" />
+              <p className="mt-1.5 text-[12px] font-black leading-tight text-ink">{item.title}</p>
+              <p className="mt-0.5 text-[10px] leading-4 text-muted">{item.copy}</p>
+            </div>
+          ))}
         </section>
       </div>
 

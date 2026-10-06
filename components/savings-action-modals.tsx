@@ -80,11 +80,11 @@ export function SavingsDepositModal({
       await act.mutateAsync({ action: "deposit", amount: value, pin });
       if (cycles > 1) {
         notify.success(
-          "Prepaid successfully! 🛡️",
+          "Prepaid successfully",
           `Covered ${cycles} ${cycleUnitPlural} in advance. You're protected until ${formatDate(nextDueAt)}.`,
         );
       } else {
-        notify.moneyOut(value, `Saved into ${plan.name} · streak +1 🔥`);
+        notify.moneyOut(value, `Saved into ${plan.name} · streak +1`);
       }
       setConfirmOpen(false);
       onClose();
@@ -98,7 +98,7 @@ export function SavingsDepositModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[95] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
       <div
         className="relative w-full max-w-lg max-h-[92vh] overflow-y-auto rounded-[2rem] bg-white p-5 sm:p-7 shadow-[0_24px_70px_rgba(0,0,0,0.22)] ring-1 ring-black/5"
         role="dialog"
@@ -320,7 +320,7 @@ export function SavingsWithdrawModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[95] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
       <div
         className="relative w-full max-w-lg max-h-[92vh] overflow-y-auto rounded-[2rem] bg-white p-5 sm:p-7 shadow-[0_24px_70px_rgba(0,0,0,0.22)] ring-1 ring-black/5"
         role="dialog"

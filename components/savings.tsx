@@ -112,7 +112,7 @@ export function Streak({ count, className }: { count: number; className?: string
       )}
     >
       <Flame className={cn("h-3.5 w-3.5", status.isHot ? "fill-amber-500 text-amber-600 animate-pulse" : count ? "text-amber-500" : "text-muted")} />
-      {count} streak {status.isHot ? "🔥" : ""}
+      {count} streak
     </span>
   );
 }
@@ -227,7 +227,9 @@ export function SavingsHero({
             <span className="rounded-full bg-white/20 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider">
               {rank.tier} Saver · Lvl {rank.level}
             </span>
-            <span className="text-xs text-white/80 font-bold">⭐ {points} XP</span>
+            <span className="inline-flex items-center gap-1 text-xs text-white/80 font-bold">
+              <Sparkles className="h-3 w-3 text-amber-300" /> {points} XP
+            </span>
           </div>
           <p className="mt-1.5 text-[15px] font-semibold text-white/90">Total in your pots</p>
         </div>
