@@ -1,12 +1,24 @@
 "use client";
 
-import { useId, useMemo, useState } from "react";
-import { Lock, Plus, ShieldCheck, Sparkles, X, Zap } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Field, Input } from "@/components/ui/input";
+import { useMemo, useState } from "react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  CheckCircle2,
+  Flame,
+  Lock,
+  Plus,
+  Shield,
+  ShieldCheck,
+  Sparkles,
+  Trophy,
+  X,
+  Zap,
+} from "lucide-react";
 import { ConfirmSheet } from "@/components/confirm-sheet";
 import { PlanIcon, PLAN_ICON_OPTIONS } from "@/components/plan-icon";
-import { formatXAF } from "@/lib/format";
+import { formatDate, formatXAF } from "@/lib/format";
 import { cn } from "@/lib/cn";
 import { useNotify } from "@/lib/notify";
 import { useCreateSavingsPlan } from "@/lib/hooks/wallet";
@@ -14,7 +26,8 @@ import { isPinError, readPinFail } from "@/lib/pin-fail";
 import {
   FREQUENCIES,
   SAVINGS,
-  cyclesPerMonth,
+  calculateTargetDate,
+  durationLabel,
   frequencyEvery,
   frequencyLabel,
   monthlyPace,
@@ -23,19 +36,64 @@ import {
 } from "@/lib/savings";
 import type { SavingsFrequency, SavingsPlan } from "@/lib/types";
 
+type DurationPreset = {
+  label: string;
+  cycles: number | null;
+  badge?: string;
+  desc?: string;
+};
+
+const DURATION_PRESETS: Record<SavingsFrequency, DurationPreset[]> = {
+  daily: [
+    { label: "10 Days", cycles: 10, badge: "Sprint" },
+    { label: "21 Days", cycles: 21, badge: "Habit" },
+    { label: "30 Days", cycles: 30, badge: "1 Mo" },
+    { label: "60 Days", cycles: 60, badge: "2 Mos" },
+    { label: "90 Days", cycles: 90, badge: "Quarter" },
+    { label: "180 Days", cycles: 180, badge: "6 Mos" },
+    { label: "1 Year", cycles: 365, badge: "Annual" },
+    { label: "Open-ended", cycles: null },
+  ],
+  weekly: [
+    { label: "2 Weeks", cycles: 2, badge: "Quick" },
+    { label: "4 Weeks", cycles: 4, badge: "1 Mo" },
+    { label: "8 Weeks", cycles: 8, badge: "2 Mos" },
+    { label: "12 Weeks", cycles: 12, badge: "Quarter" },
+    { label: "26 Weeks", cycles: 26, badge: "6 Mos" },
+    { label: "1 Year", cycles: 52, badge: "52 Wks" },
+    { label: "Open-ended", cycles: null },
+  ],
+  monthly: [
+    { label: "1 Month", cycles: 1 },
+    { label: "2 Months", cycles: 2 },
+    { label: "3 Months", cycles: 3, badge: "Quarter" },
+    { label: "6 Months", cycles: 6, badge: "6 Mos" },
+    { label: "1 Year", cycles: 12, badge: "Annual" },
+    { label: "2 Years", cycles: 24, badge: "24 Mos" },
+    { label: "Open-ended", cycles: null },
+  ],
+};
+
 const TEMPLATES: Array<{
   name: string;
   icon: string;
   frequency: SavingsFrequency;
   amount: number;
-  target: number | null;
+  durationCycles: number | null;
 }> = [
-  { name: "Daily Habit", icon: "target", frequency: "daily", amount: 500, target: 15_000 },
-  { name: "House Rent", icon: "home", frequency: "weekly", amount: 10_000, target: 120_000 },
-  { name: "School Fees", icon: "graduation", frequency: "monthly", amount: 25_000, target: 150_000 },
-  { name: "Emergency Shield", icon: "shield", frequency: "weekly", amount: 5_000, target: 100_000 },
-  { name: "Gadget Fund", icon: "smartphone", frequency: "daily", amount: 1_000, target: 50_000 },
-  { name: "Business Capital", icon: "briefcase", frequency: "weekly", amount: 15_000, target: 300_000 },
+  { name: "10-Day Sprint", icon: "target", frequency: "daily", amount: 5000, durationCycles: 10 },
+  { name: "Daily Habit", icon: "sparkles", frequency: "daily", amount: 1000, durationCycles: 30 },
+  { name: "Emergency Shield", icon: "shield", frequency: "weekly", amount: 10000, durationCycles: 26 },
+  { name: "Rent Vault", icon: "home", frequency: "weekly", amount: 15000, durationCycles: 8 },
+  { name: "School Fees", icon: "graduation", frequency: "monthly", amount: 25000, durationCycles: 6 },
+  { name: "1-Year Milestone", icon: "gem", frequency: "monthly", amount: 50000, durationCycles: 12 },
+];
+
+const STEPS = [
+  { id: 0, title: "Goal" },
+  { id: 1, title: "Rhythm" },
+  { id: 2, title: "Discipline" },
+  { id: 3, title: "Review" },
 ];
 
 export function SavingsModal({
@@ -52,42 +110,129 @@ export function SavingsModal({
   const notify = useNotify();
   const create = useCreateSavingsPlan();
 
+  // Wizard active slide index: 0, 1, 2, 3
+  const [step, setStep] = useState(0);
+
+  // Form State
   const [name, setName] = useState("");
   const [icon, setIcon] = useState(PLAN_ICON_OPTIONS[0].id);
+  const [showIconPicker, setShowIconPicker] = useState(false);
   const [frequency, setFrequency] = useState<SavingsFrequency>("daily");
-  const [amount, setAmount] = useState("500");
-  const [target, setTarget] = useState("");
-  const [penalty, setPenalty] = useState(Math.round(SAVINGS.defaultPenaltyRate * 100));
+  const [amount, setAmount] = useState("5000");
+
+  // Duration
+  const [durationCycles, setDurationCycles] = useState<number | null>(10);
+  const [customDurationInput, setCustomDurationInput] = useState("");
+  const [customDateInput, setCustomDateInput] = useState("");
+  const [isCustomDuration, setIsCustomDuration] = useState(false);
+  const [customMode, setCustomMode] = useState<"cycles" | "date">("cycles");
+
+  // Target Goal
+  const [customTarget, setCustomTarget] = useState<string>("");
+  const [showCustomTargetInput, setShowCustomTargetInput] = useState(false);
+
+  // Commitment percentage (1% to 25%)
+  const [penalty, setPenalty] = useState(5);
   const [autoSave, setAutoSave] = useState(true);
 
+  // PIN Sheet
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pinError, setPinError] = useState("");
   const [lockedUntil, setLockedUntil] = useState(0);
 
   const value = Number(amount) || 0;
-  const goal = Number(target) || 0;
+
+  // Active cycles
+  const activeDurationCycles = useMemo(() => {
+    if (!isCustomDuration) return durationCycles;
+    if (customMode === "cycles") {
+      const parsed = Number(customDurationInput);
+      return parsed > 0 ? parsed : null;
+    }
+    if (customDateInput) {
+      const target = new Date(customDateInput);
+      const now = new Date();
+      const diffMs = target.getTime() - now.getTime();
+      const diffDays = Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+      if (frequency === "daily") return diffDays;
+      if (frequency === "weekly") return Math.max(1, Math.ceil(diffDays / 7));
+      if (frequency === "monthly") return Math.max(1, Math.ceil(diffDays / 30));
+    }
+    return null;
+  }, [isCustomDuration, durationCycles, customMode, customDurationInput, customDateInput, frequency]);
+
+  // Target amount
+  const calculatedTargetAmount =
+    value > 0 && activeDurationCycles && activeDurationCycles > 0
+      ? value * activeDurationCycles
+      : null;
+
+  const finalTarget = customTarget ? Number(customTarget) || null : calculatedTargetAmount;
+
+  // Maturity date
+  const maturityDate = useMemo(() => {
+    if (isCustomDuration && customMode === "date" && customDateInput) {
+      return new Date(customDateInput).toISOString();
+    }
+    if (!activeDurationCycles || activeDurationCycles <= 0) return null;
+    return calculateTargetDate(frequency, activeDurationCycles);
+  }, [frequency, activeDurationCycles, isCustomDuration, customMode, customDateInput]);
+
+  const penaltyAmount = penaltyFor({ amount: value, penaltyRate: penalty / 100 });
+  const pace = monthlyPace({ amount: value, frequency });
+
   const input = {
     name,
     icon,
     emoji: "🎯",
     frequency,
     amount: value,
-    target: goal || null,
+    target: finalTarget,
+    targetDate: maturityDate || undefined,
+    durationCycles: activeDurationCycles || undefined,
     penaltyRate: penalty / 100,
     autoSave,
   };
-  const issue = validatePlanInput(input);
-  const pace = monthlyPace({ amount: value, frequency });
-  const cycles = goal && value ? Math.ceil(goal / value) : 0;
-  const penaltyAmount = penaltyFor({ amount: value, penaltyRate: penalty / 100 });
 
-  const finishLabel = useMemo(() => {
-    if (!cycles) return "";
-    const perMonth = cyclesPerMonth(frequency);
-    const months = cycles / perMonth;
-    if (months < 1) return `${cycles} ${frequency === "daily" ? "days" : frequency === "weekly" ? "weeks" : "months"}`;
-    return `about ${Math.round(months * 10) / 10} month${months >= 1.5 ? "s" : ""}`;
-  }, [cycles, frequency]);
+  const issue = validatePlanInput(input);
+
+  // Commitment level guidance
+  const commitmentTier = useMemo(() => {
+    if (penalty <= 3) {
+      return {
+        level: "Gentle Pace",
+        badge: "Light Commitment",
+        color: "bg-[#F7F8FA] text-neutral-900 border-neutral-200",
+        pill: "bg-neutral-200 text-neutral-800",
+        description: "Soft accountability. Best if you might face unexpected expenses.",
+      };
+    }
+    if (penalty <= 7) {
+      return {
+        level: "Balanced Discipline",
+        badge: "Recommended",
+        color: "bg-black text-white border-neutral-800",
+        pill: "bg-white text-black",
+        description: "The sweet spot. Strong enough to stop impulse buys, fair for real emergencies.",
+      };
+    }
+    if (penalty <= 12) {
+      return {
+        level: "Strict Focus",
+        badge: "High Accountability",
+        color: "bg-[#F7F8FA] text-neutral-900 border-neutral-300",
+        pill: "bg-neutral-900 text-white",
+        description: "Serious savings lock. Keeps your eyes firmly on the prize.",
+      };
+    }
+    return {
+      level: "Iron Fortress",
+      badge: "Maximum Discipline",
+      color: "bg-[#F7F8FA] text-neutral-900 border-neutral-300",
+      pill: "bg-neutral-900 text-white",
+      description: "Unbreakable vault pledge. For non-negotiable milestones like rent or tuition.",
+    };
+  }, [penalty]);
 
   if (!open) return null;
 
@@ -96,7 +241,12 @@ export function SavingsModal({
     setLockedUntil(0);
     try {
       const res = await create.mutateAsync({ ...input, pin });
-      notify.success("Savings pot created", `${name} · ${formatXAF(value)} ${frequencyEvery(frequency)}.`);
+      notify.success(
+        "Savings pot locked in! 🎯",
+        `${name} · ${formatXAF(value)} ${frequencyEvery(frequency)}${
+          activeDurationCycles ? ` for ${durationLabel(frequency, activeDurationCycles)}` : ""
+        }.`,
+      );
       setConfirmOpen(false);
       onClose();
       onCreated?.(res.plan);
@@ -108,263 +258,719 @@ export function SavingsModal({
     }
   }
 
+  function handleSelectTemplate(tmpl: (typeof TEMPLATES)[number]) {
+    setName(tmpl.name);
+    setIcon(tmpl.icon);
+    setFrequency(tmpl.frequency);
+    setAmount(String(tmpl.amount));
+    setIsCustomDuration(false);
+    setDurationCycles(tmpl.durationCycles);
+    setCustomTarget("");
+    setShowCustomTargetInput(false);
+  }
+
+  function handleAddAmount(delta: number) {
+    setAmount(String(Math.max(SAVINGS.minAmount, (Number(amount) || 0) + delta)));
+  }
+
+  const durationOptions = DURATION_PRESETS[frequency];
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+      {/* Phone Canvas Container */}
       <div
-        className="relative w-full max-w-lg max-h-[92vh] overflow-y-auto rounded-[2rem] bg-white p-5 sm:p-7 shadow-[0_24px_70px_rgba(0,0,0,0.22)] ring-1 ring-black/5"
+        className="w-full max-w-[420px] h-[92vh] max-h-[820px] bg-[#F7F8FA] overflow-hidden rounded-[32px] sm:rounded-[40px] shadow-2xl relative flex flex-col border-[6px] border-neutral-900/5 select-none"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="modal-title"
+        aria-labelledby="modal-step-title"
       >
-        {/* Modal Header */}
-        <div className="flex items-start justify-between gap-4 border-b border-line/60 pb-4">
-          <div className="flex items-center gap-3">
-            <PlanIcon icon={icon} size="lg" />
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-brand">Discipline Pot</p>
-              <h2 id="modal-title" className="text-xl font-black text-ink sm:text-2xl">
-                Create Savings Pot
-              </h2>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-paper text-muted transition hover:bg-line/60 hover:text-ink"
-            aria-label="Close modal"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        <form
-          className="mt-5 flex flex-col gap-5"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (issue) return;
-            setPinError("");
-            setConfirmOpen(true);
-          }}
-        >
-          {/* Quick presets */}
-          <div>
-            <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-muted">Quick templates</p>
-            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
-              {TEMPLATES.map((tmpl) => (
+        {/* iOS-Style Stepper Header */}
+        <header className="shrink-0 w-full pt-4 px-6 pb-3 bg-white border-b border-neutral-200/60 z-30">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              {step > 0 ? (
                 <button
-                  key={tmpl.name}
                   type="button"
-                  onClick={() => {
-                    setName(tmpl.name);
-                    setIcon(tmpl.icon);
-                    setFrequency(tmpl.frequency);
-                    setAmount(String(tmpl.amount));
-                    setTarget(tmpl.target ? String(tmpl.target) : "");
-                  }}
-                  className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-paper px-3 py-1.5 text-xs font-bold text-ink transition hover:bg-brand-soft hover:text-brand-dark"
+                  onClick={() => setStep(step - 1)}
+                  className="grid h-8 w-8 place-items-center rounded-full bg-[#EFF2F6] text-neutral-800 hover:bg-neutral-200 transition cursor-pointer"
+                  aria-label="Previous step"
                 >
-                  <PlanIcon icon={tmpl.icon} size="sm" className="h-5 w-5 rounded-md" />
-                  {tmpl.name}
+                  <ArrowLeft className="h-4 w-4" />
                 </button>
-              ))}
+              ) : null}
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 block leading-none">
+                  Step {step + 1} of 4
+                </span>
+                <h1 id="modal-step-title" className="text-sm font-bold text-neutral-900 tracking-tight mt-0.5">
+                  {step === 0 && "Define Goal"}
+                  {step === 1 && "Rhythm & Duration"}
+                  {step === 2 && "Discipline Shield"}
+                  {step === 3 && "Review & Lock"}
+                </h1>
+              </div>
             </div>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="grid h-8 w-8 place-items-center rounded-full bg-[#EFF2F6] text-neutral-600 hover:text-black hover:bg-neutral-200 transition cursor-pointer"
+              aria-label="Close"
+            >
+              <X className="h-4 w-4" />
+            </button>
           </div>
 
-          {/* Icon Selector (Clean Lucide Icons) */}
-          <div>
-            <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-muted">Select an icon</p>
-            <div className="grid grid-cols-6 gap-2">
-              {PLAN_ICON_OPTIONS.map((item) => {
-                const isSelected = icon === item.id;
+          {/* Stepper Progress Bar & Nodes */}
+          <div className="px-1 pt-1 pb-1">
+            <div className="relative flex items-center justify-between">
+              {/* Background Bar */}
+              <div className="absolute left-3 right-3 top-1/2 -translate-y-1/2 h-[2.5px] bg-neutral-200 z-0" />
+              {/* Active Filled Bar */}
+              <div
+                className="absolute left-3 top-1/2 -translate-y-1/2 h-[2.5px] bg-black transition-all duration-300 ease-out z-0"
+                style={{ width: `${(step / 3) * 92}%` }}
+              />
+
+              {STEPS.map((s, idx) => {
+                const isPassed = idx < step;
+                const isCurrent = idx === step;
                 return (
                   <button
-                    key={item.id}
+                    key={s.id}
                     type="button"
-                    onClick={() => setIcon(item.id)}
-                    className={cn(
-                      "flex flex-col items-center justify-center rounded-2xl p-2 transition",
-                      isSelected ? "bg-brand-soft ring-2 ring-brand" : "bg-paper hover:bg-paper/80",
-                    )}
-                    aria-label={item.label}
+                    disabled={idx > step && (!name || value < SAVINGS.minAmount)}
+                    onClick={() => {
+                      if (idx < step) setStep(idx);
+                    }}
+                    className="relative z-10 flex flex-col items-center group cursor-pointer disabled:cursor-not-allowed"
                   >
-                    <PlanIcon icon={item.id} size="sm" />
-                    <span className="mt-1 text-[9px] font-bold leading-tight text-muted truncate w-full text-center">
-                      {item.label}
-                    </span>
+                    <div
+                      className={cn(
+                        "w-5 h-5 rounded-full flex items-center justify-center transition-all duration-200 ring-4 ring-white",
+                        isPassed
+                          ? "bg-black text-white"
+                          : isCurrent
+                            ? "bg-black text-white ring-neutral-100 scale-110"
+                            : "bg-neutral-300 text-transparent",
+                      )}
+                    >
+                      {isPassed ? (
+                        <Check className="w-3 h-3 stroke-[3]" />
+                      ) : isCurrent ? (
+                        <div className="w-1.5 h-1.5 bg-white rounded-full" />
+                      ) : null}
+                    </div>
                   </button>
                 );
               })}
             </div>
-          </div>
 
-          {/* Name Field */}
-          <Field label="Pot Name">
-            <Input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Dream Trip, Rent 2026, New Laptop"
-              maxLength={40}
-              required
-            />
-          </Field>
-
-          {/* Frequency Selector */}
-          <Field label="Savings Rhythm">
-            <div className="grid grid-cols-3 gap-2">
-              {FREQUENCIES.map((f) => (
-                <button
-                  key={f.value}
-                  type="button"
-                  onClick={() => setFrequency(f.value)}
+            {/* Stepper Node Labels */}
+            <div className="flex justify-between items-center text-[10px] text-neutral-400 font-medium mt-1.5 px-0.5">
+              {STEPS.map((s, idx) => (
+                <span
+                  key={s.id}
                   className={cn(
-                    "flex flex-col items-center justify-center rounded-2xl border p-3 text-center transition",
-                    frequency === f.value
-                      ? "border-brand bg-brand-soft/60 text-brand-dark ring-1 ring-brand font-black"
-                      : "border-line bg-white text-ink font-bold hover:bg-paper",
+                    "transition-colors",
+                    idx === step ? "text-neutral-900 font-bold" : idx < step ? "text-neutral-700" : "text-neutral-400",
                   )}
                 >
-                  <span className="text-sm font-black">{f.label}</span>
-                  <span className="mt-0.5 text-[10px] font-semibold text-muted">{f.every}</span>
-                </button>
+                  {s.title}
+                </span>
               ))}
             </div>
-          </Field>
-
-          {/* Amount & Target */}
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Field
-              label={`Amount ${frequencyEvery(frequency)} (XAF)`}
-              hint={value ? `≈ ${formatXAF(pace)}/mo` : undefined}
-            >
-              <Input
-                type="number"
-                inputMode="numeric"
-                min={SAVINGS.minAmount}
-                className="font-mono text-lg font-black"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                required
-              />
-            </Field>
-
-            <Field
-              label="Goal Objective (XAF)"
-              hint={cycles ? `${cycles} saves · ${finishLabel}` : "Leave blank for open-ended"}
-            >
-              <Input
-                type="number"
-                inputMode="numeric"
-                className="font-mono text-lg font-black"
-                value={target}
-                onChange={(e) => setTarget(e.target.value)}
-                placeholder="Optional goal"
-              />
-            </Field>
           </div>
+        </header>
 
-          {/* Locked Objective Notice */}
-          {goal ? (
-            <div className="flex items-start gap-2.5 rounded-2xl bg-amber-50/70 p-3 text-amber-900 border border-amber-200/60">
-              <Lock className="h-4 w-4 shrink-0 text-amber-700 mt-0.5" />
-              <div className="text-xs">
-                <span className="font-bold block">Locked Objective Commitment:</span>
-                Once created, your goal of <span className="font-mono font-bold">{formatXAF(goal)}</span> cannot be
-                lowered or cancelled. You can only withdraw early by paying your chosen penalty fee.
+        {/* Animated Horizontal Slider Track */}
+        <div className="relative flex-1 min-h-0 overflow-hidden bg-[#F7F8FA]">
+          <div
+            className="flex h-full w-full transition-transform duration-300 ease-out"
+            style={{ transform: `translateX(-${step * 100}%)` }}
+          >
+            {/* ---------------- SLIDE 0: THE GOAL ---------------- */}
+            <div className="w-full shrink-0 h-full overflow-y-auto px-5 py-4 space-y-4 flex flex-col justify-between">
+              <div className="space-y-4">
+                {/* Intro Copy */}
+                <div>
+                  <h2 className="text-base font-bold text-neutral-900 tracking-tight">What are you saving for?</h2>
+                  <p className="text-xs text-neutral-400 mt-0.5">Give your pot a name and an identity.</p>
+                </div>
+
+                {/* Quick Inspiration Pills */}
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 block mb-1.5">
+                    Quick Blueprints
+                  </span>
+                  <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                    {TEMPLATES.map((tmpl) => (
+                      <button
+                        key={tmpl.name}
+                        type="button"
+                        onClick={() => handleSelectTemplate(tmpl)}
+                        className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-neutral-800 shadow-xs border border-neutral-200/60 transition hover:bg-neutral-50 active:scale-95 cursor-pointer"
+                      >
+                        <PlanIcon icon={tmpl.icon} size="sm" className="h-3.5 w-3.5" />
+                        <span>{tmpl.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Pot Name & Icon Selection Card */}
+                <div className="bg-white rounded-[24px] p-4 border border-neutral-200/60 shadow-xs space-y-3">
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setShowIconPicker(!showIconPicker)}
+                      className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-[#EFF2F6] text-black hover:bg-neutral-200 transition cursor-pointer border border-neutral-100"
+                      title="Choose icon"
+                    >
+                      <PlanIcon icon={icon} size="md" />
+                    </button>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 block mb-1">
+                        Pot Name
+                      </span>
+                      <input
+                        type="text"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="e.g. 10-Day Sprint, Laptop, Rent"
+                        maxLength={40}
+                        className="w-full bg-[#F7F8FA] text-sm font-semibold text-neutral-900 rounded-full px-4 py-2.5 border border-neutral-200/70 focus:outline-none focus:ring-1 focus:ring-black placeholder-neutral-400"
+                        autoFocus
+                      />
+                    </div>
+                  </div>
+
+                  {/* Icon Selector Grid (if expanded) */}
+                  {showIconPicker ? (
+                    <div className="pt-2 border-t border-neutral-100 animate-in fade-in duration-150">
+                      <span className="text-[10px] font-bold text-neutral-400 block mb-2">Pick an icon</span>
+                      <div className="grid grid-cols-6 gap-2">
+                        {PLAN_ICON_OPTIONS.map((item) => {
+                          const isSelected = icon === item.id;
+                          return (
+                            <button
+                              key={item.id}
+                              type="button"
+                              onClick={() => {
+                                setIcon(item.id);
+                                setShowIconPicker(false);
+                              }}
+                              className={cn(
+                                "grid h-10 w-10 place-items-center rounded-full transition cursor-pointer mx-auto",
+                                isSelected ? "bg-black text-white shadow-sm" : "bg-[#EFF2F6] hover:bg-neutral-200 text-neutral-800",
+                              )}
+                            >
+                              <PlanIcon icon={item.id} size="sm" />
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+
+                {/* Duolingo Teaser Banner */}
+                <div className="bg-[#EFF2F6] rounded-[22px] p-3.5 flex items-center gap-3 border border-neutral-200/50">
+                  <div className="grid h-8 w-8 place-items-center rounded-full bg-black text-white shrink-0">
+                    <Flame className="h-4 w-4 fill-white" />
+                  </div>
+                  <div className="text-xs">
+                    <p className="font-bold text-neutral-900">+25 Saver XP Points</p>
+                    <p className="text-[11px] text-neutral-400">Awarded immediately upon creating your pot.</p>
+                  </div>
+                </div>
               </div>
-            </div>
-          ) : null}
 
-          {/* Penalty Fee Selector */}
-          <div className="rounded-2xl bg-paper p-4">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-sm font-black text-ink">Early break & miss penalty</p>
-                <p className="text-xs text-muted">
-                  Deducted if you withdraw before meeting your objective or miss a cycle.
-                </p>
-              </div>
-              <span className="rounded-xl bg-white px-3 py-1 font-mono text-sm font-black text-brand-dark ring-1 ring-line">
-                {penalty}%
-              </span>
-            </div>
-
-            <div className="mt-3 flex gap-2">
-              {[5, 10, 15, 20].map((rate) => (
+              {/* Bottom Action */}
+              <div className="pt-3 pb-2">
                 <button
-                  key={rate}
                   type="button"
-                  onClick={() => setPenalty(rate)}
-                  className={cn(
-                    "flex-1 rounded-xl py-1.5 text-xs font-bold transition",
-                    penalty === rate ? "bg-brand text-white shadow-sm" : "bg-white text-ink hover:bg-line/40 ring-1 ring-line",
-                  )}
+                  disabled={!name.trim()}
+                  onClick={() => setStep(1)}
+                  className="w-full bg-black text-white font-semibold text-xs py-3.5 px-4 rounded-full flex items-center justify-center space-x-1.5 shadow-sm hover:bg-neutral-900 active:scale-98 transition disabled:opacity-40 cursor-pointer"
                 >
-                  {rate}%
+                  <span>Continue: Set Rhythm & Duration</span>
+                  <ArrowRight className="w-3.5 h-3.5 ml-1" />
                 </button>
-              ))}
+              </div>
             </div>
 
-            <input
-              type="range"
-              min={1}
-              max={25}
-              step={1}
-              value={penalty}
-              onChange={(e) => setPenalty(Number(e.target.value))}
-              className="mt-3 w-full accent-brand"
-              aria-label="Penalty percentage"
-            />
-            <div className="mt-1 flex justify-between text-[11px] text-muted">
-              <span>1% · Gentle</span>
-              <span>{value ? `${formatXAF(penaltyAmount)} per miss` : ""}</span>
-              <span>25% · Iron Will</span>
+            {/* ---------------- SLIDE 1: RHYTHM & DURATION ---------------- */}
+            <div className="w-full shrink-0 h-full overflow-y-auto px-5 py-4 space-y-4 flex flex-col justify-between">
+              <div className="space-y-4">
+                <div>
+                  <h2 className="text-base font-bold text-neutral-900 tracking-tight">Rhythm & Time Length</h2>
+                  <p className="text-xs text-neutral-400 mt-0.5">
+                    How often you deposit and how long this sprint runs.
+                  </p>
+                </div>
+
+                {/* Rhythm Pills */}
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 block mb-1.5">
+                    Deposit Rhythm (How Often)
+                  </span>
+                  <div className="grid grid-cols-3 gap-2">
+                    {FREQUENCIES.map((f) => {
+                      const isSelected = frequency === f.value;
+                      return (
+                        <button
+                          key={f.value}
+                          type="button"
+                          onClick={() => {
+                            setFrequency(f.value);
+                            setIsCustomDuration(false);
+                            setDurationCycles(f.value === "daily" ? 10 : f.value === "weekly" ? 8 : 6);
+                            setCustomTarget("");
+                          }}
+                          className={cn(
+                            "py-2.5 px-3 rounded-full text-xs font-semibold text-center transition active:scale-98 cursor-pointer",
+                            isSelected
+                              ? "bg-black text-white shadow-sm"
+                              : "bg-white text-neutral-700 border border-neutral-200/70 hover:bg-neutral-50",
+                          )}
+                        >
+                          {f.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Amount per save */}
+                <div className="bg-white rounded-[24px] p-4 border border-neutral-200/60 shadow-xs space-y-2.5">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-neutral-400 font-medium">Deposit per save</span>
+                    {value ? <span className="text-neutral-500 font-mono text-[11px]">≈ {formatXAF(pace)}/mo pace</span> : null}
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      min={SAVINGS.minAmount}
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                      className="font-mono text-2xl font-bold tracking-tight text-neutral-900 bg-transparent border-0 p-0 focus:ring-0 w-44"
+                      placeholder="5000"
+                    />
+                    <span className="text-xs font-bold text-neutral-400">XAF</span>
+                  </div>
+
+                  {/* Quick Add Chips */}
+                  <div className="flex items-center gap-1.5 pt-1 border-t border-neutral-100">
+                    <span className="text-[10px] text-neutral-400 mr-1">Add:</span>
+                    {[1000, 5000, 10000, 25000].map((stepVal) => (
+                      <button
+                        key={stepVal}
+                        type="button"
+                        onClick={() => handleAddAmount(stepVal)}
+                        className="rounded-full bg-[#EFF2F6] px-2.5 py-1 text-[10px] font-mono font-semibold text-neutral-800 hover:bg-neutral-200 transition cursor-pointer"
+                      >
+                        +{formatXAF(stepVal, { withCurrency: false })}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Duration / Time Horizon */}
+                <div>
+                  <div className="flex justify-between items-center mb-1.5">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">
+                      Duration / Horizon
+                    </span>
+                    <span className="text-[11px] font-bold text-black">
+                      {activeDurationCycles ? durationLabel(frequency, activeDurationCycles) : "Open-ended"}
+                    </span>
+                  </div>
+
+                  <div className="flex flex-wrap gap-1.5">
+                    {durationOptions.map((opt) => {
+                      const isSelected = !isCustomDuration && durationCycles === opt.cycles;
+                      return (
+                        <button
+                          key={opt.label}
+                          type="button"
+                          onClick={() => {
+                            setIsCustomDuration(false);
+                            setDurationCycles(opt.cycles);
+                            setCustomTarget("");
+                          }}
+                          className={cn(
+                            "rounded-full px-3 py-1.5 text-xs font-semibold transition active:scale-95 cursor-pointer",
+                            isSelected
+                              ? "bg-black text-white shadow-sm"
+                              : "bg-white text-neutral-700 border border-neutral-200/70 hover:bg-neutral-50",
+                          )}
+                        >
+                          {opt.label}
+                        </button>
+                      );
+                    })}
+                    <button
+                      type="button"
+                      onClick={() => setIsCustomDuration(true)}
+                      className={cn(
+                        "rounded-full px-3 py-1.5 text-xs font-semibold transition cursor-pointer",
+                        isCustomDuration
+                          ? "bg-black text-white shadow-sm"
+                          : "bg-white text-neutral-700 border border-neutral-200/70 hover:bg-neutral-50",
+                      )}
+                    >
+                      Custom
+                    </button>
+                  </div>
+
+                  {isCustomDuration ? (
+                    <div className="mt-2 bg-white rounded-2xl p-3 border border-neutral-200/60 space-y-2">
+                      <div className="flex gap-2 text-xs font-semibold">
+                        <button
+                          type="button"
+                          onClick={() => setCustomMode("cycles")}
+                          className={cn(
+                            "px-2.5 py-1 rounded-full text-[11px] transition",
+                            customMode === "cycles" ? "bg-black text-white" : "bg-[#EFF2F6] text-neutral-700",
+                          )}
+                        >
+                          By {frequency === "daily" ? "days" : frequency === "weekly" ? "weeks" : "months"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setCustomMode("date")}
+                          className={cn(
+                            "px-2.5 py-1 rounded-full text-[11px] transition",
+                            customMode === "date" ? "bg-black text-white" : "bg-[#EFF2F6] text-neutral-700",
+                          )}
+                        >
+                          Pick date
+                        </button>
+                      </div>
+
+                      {customMode === "cycles" ? (
+                        <input
+                          type="number"
+                          min={1}
+                          max={1000}
+                          placeholder="e.g. 10, 45, 90"
+                          value={customDurationInput}
+                          onChange={(e) => setCustomDurationInput(e.target.value)}
+                          className="w-full bg-[#F7F8FA] text-xs font-semibold text-neutral-900 rounded-full px-4 py-2 border border-neutral-200/70 focus:outline-none focus:ring-1 focus:ring-black"
+                        />
+                      ) : (
+                        <input
+                          type="date"
+                          min={new Date(Date.now() + 86400000).toISOString().split("T")[0]}
+                          value={customDateInput}
+                          onChange={(e) => setCustomDateInput(e.target.value)}
+                          className="w-full bg-[#F7F8FA] text-xs font-semibold text-neutral-900 rounded-full px-4 py-2 border border-neutral-200/70 focus:outline-none focus:ring-1 focus:ring-black"
+                        />
+                      )}
+                    </div>
+                  ) : null}
+                </div>
+
+                {/* Live Output Blueprint Card */}
+                <div className="bg-[#EFF2F6] rounded-[22px] p-3.5 border border-neutral-200/50 space-y-1.5">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-[10px] uppercase font-bold text-neutral-400">Sprint Objective</span>
+                    <span className="text-[10px] text-neutral-500 font-medium">
+                      {maturityDate ? `Matures: ${formatDate(maturityDate)}` : "Ongoing"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-baseline">
+                    <span className="font-mono text-xl font-bold text-neutral-900">
+                      {finalTarget ? formatXAF(finalTarget) : "Open-ended"}
+                    </span>
+                    <span className="text-[11px] text-neutral-500">
+                      {activeDurationCycles ? `${activeDurationCycles} saves` : "Open goal"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bottom Actions */}
+              <div className="pt-3 pb-2 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setStep(0)}
+                  className="bg-white text-black font-semibold text-xs py-3.5 px-4 rounded-full border border-neutral-200/60 shadow-xs hover:bg-neutral-50 active:scale-95 transition cursor-pointer"
+                >
+                  Back
+                </button>
+                <button
+                  type="button"
+                  disabled={value < SAVINGS.minAmount}
+                  onClick={() => setStep(2)}
+                  className="flex-1 bg-black text-white font-semibold text-xs py-3.5 px-4 rounded-full flex items-center justify-center space-x-1.5 shadow-sm hover:bg-neutral-900 active:scale-98 transition disabled:opacity-40 cursor-pointer"
+                >
+                  <span>Continue: Set Discipline Pledge</span>
+                  <ArrowRight className="w-3.5 h-3.5 ml-1" />
+                </button>
+              </div>
+            </div>
+
+            {/* ---------------- SLIDE 2: DISCIPLINE COMMITMENT (SLIDER) ---------------- */}
+            <div className="w-full shrink-0 h-full overflow-y-auto px-5 py-4 space-y-4 flex flex-col justify-between">
+              <div className="space-y-4">
+                <div>
+                  <h2 className="text-base font-bold text-neutral-900 tracking-tight">Your Commitment Shield</h2>
+                  <p className="text-xs text-neutral-400 mt-0.5">
+                    Choose your early-break fee to hold yourself accountable.
+                  </p>
+                </div>
+
+                {/* 100% Free Reassurance Pill */}
+                <div className="bg-[#E4F6EB] text-[#249652] rounded-[22px] p-3 flex items-center gap-2.5">
+                  <CheckCircle2 className="h-5 w-5 shrink-0" />
+                  <div className="text-xs leading-snug">
+                    <span className="font-bold block">100% Free Withdrawal on Completion</span>
+                    <span className="text-[11px] opacity-90">0 XAF fee once your duration completes or goal is met.</span>
+                  </div>
+                </div>
+
+                {/* Interactive Commitment Level Card */}
+                <div className={cn("rounded-[24px] p-4.5 border space-y-3 transition", commitmentTier.color)}>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 block">
+                        Accountability Level
+                      </span>
+                      <p className="text-sm font-bold mt-0.5">{commitmentTier.level}</p>
+                    </div>
+                    <div className="text-right">
+                      <span className="font-mono text-2xl font-bold">{penalty}%</span>
+                    </div>
+                  </div>
+
+                  <p className="text-xs opacity-80 leading-relaxed">{commitmentTier.description}</p>
+
+                  {/* Dedicated Prominent Range Slider */}
+                  <div className="space-y-2 pt-1">
+                    <input
+                      type="range"
+                      min={1}
+                      max={25}
+                      step={1}
+                      value={penalty}
+                      onChange={(e) => setPenalty(Number(e.target.value))}
+                      className="w-full h-3 bg-neutral-300 rounded-lg appearance-none cursor-pointer accent-black focus:outline-none"
+                      aria-label="Commitment penalty percentage"
+                    />
+
+                    {/* Scale markers */}
+                    <div className="flex justify-between text-[10px] font-semibold text-neutral-400 px-0.5">
+                      <span>1% Gentle</span>
+                      <span>5% Balanced</span>
+                      <span>10% Strict</span>
+                      <span>15% Fortress</span>
+                      <span>25% Max</span>
+                    </div>
+                  </div>
+
+                  {/* 4 Quick Sync Pills */}
+                  <div className="grid grid-cols-4 gap-1.5 pt-1">
+                    {[
+                      { label: "Gentle", val: 2 },
+                      { label: "Balanced", val: 5 },
+                      { label: "Strict", val: 10 },
+                      { label: "Fortress", val: 15 },
+                    ].map((tier) => (
+                      <button
+                        key={tier.label}
+                        type="button"
+                        onClick={() => setPenalty(tier.val)}
+                        className={cn(
+                          "py-1.5 rounded-full text-xs font-semibold text-center transition cursor-pointer",
+                          penalty === tier.val
+                            ? "bg-white text-black shadow-xs"
+                            : "bg-neutral-200/50 hover:bg-neutral-200 text-neutral-700",
+                        )}
+                      >
+                        {tier.val}%
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Simple 2-Row Details Card */}
+                <div className="bg-[#F8F9FA] rounded-[22px] p-3.5 text-xs space-y-2 border border-neutral-200/50">
+                  <div className="flex justify-between items-center">
+                    <span className="text-neutral-500 font-medium">Sprint completed:</span>
+                    <span className="font-bold text-[#249652]">0 XAF fee (Full payout)</span>
+                  </div>
+                  <div className="flex justify-between items-center border-t border-neutral-200/40 pt-1.5">
+                    <span className="text-neutral-500 font-medium">If broken prematurely:</span>
+                    <span className="font-bold text-neutral-900 font-mono">
+                      −{formatXAF(penaltyAmount)} ({penalty}% fee)
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bottom Actions */}
+              <div className="pt-3 pb-2 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setStep(1)}
+                  className="bg-white text-black font-semibold text-xs py-3.5 px-4 rounded-full border border-neutral-200/60 shadow-xs hover:bg-neutral-50 active:scale-95 transition cursor-pointer"
+                >
+                  Back
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStep(3)}
+                  className="flex-1 bg-black text-white font-semibold text-xs py-3.5 px-4 rounded-full flex items-center justify-center space-x-1.5 shadow-sm hover:bg-neutral-900 active:scale-98 transition cursor-pointer"
+                >
+                  <span>Continue: Review & Lock</span>
+                  <ArrowRight className="w-3.5 h-3.5 ml-1" />
+                </button>
+              </div>
+            </div>
+
+            {/* ---------------- SLIDE 3: REVIEW & LOCK IN ---------------- */}
+            <div className="w-full shrink-0 h-full overflow-y-auto px-5 py-4 space-y-4 flex flex-col justify-between">
+              <div className="space-y-4">
+                <div>
+                  <h2 className="text-base font-bold text-neutral-900 tracking-tight">Review Your Blueprint</h2>
+                  <p className="text-xs text-neutral-400 mt-0.5">
+                    Confirm your settings before sealing your vault.
+                  </p>
+                </div>
+
+                {/* Sleek Black Blueprint Card */}
+                <section className="bg-black text-white rounded-[26px] p-5 relative overflow-hidden space-y-3.5 shadow-lg">
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center ring-1 ring-white/20">
+                        <PlanIcon icon={icon} size="md" />
+                      </div>
+                      <div>
+                        <span className="text-neutral-400 text-[10px] font-bold uppercase tracking-wider block">
+                          Savings Pot
+                        </span>
+                        <h3 className="text-base font-bold tracking-tight">{name || "Your Pot"}</h3>
+                      </div>
+                    </div>
+
+                    <span className="bg-white/15 text-white text-[11px] font-semibold px-2.5 py-1 rounded-full">
+                      ⭐ +25 XP
+                    </span>
+                  </div>
+
+                  <div className="border-t border-neutral-800 pt-3">
+                    <span className="text-neutral-400 text-xs font-normal">Target Goal</span>
+                    <div className="flex items-baseline space-x-2 mt-0.5">
+                      <span className="text-2xl font-bold tracking-tight">
+                        {finalTarget ? formatXAF(finalTarget) : "Open-ended"}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Summary Rows */}
+                  <div className="grid grid-cols-2 gap-2 text-xs border-t border-neutral-800 pt-3 text-neutral-300">
+                    <div>
+                      <span className="text-[10px] text-neutral-400 block">Rhythm:</span>
+                      <span className="font-semibold text-white">
+                        {formatXAF(value)} / {frequency === "daily" ? "day" : frequency === "weekly" ? "wk" : "mo"}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-neutral-400 block">Duration:</span>
+                      <span className="font-semibold text-white">
+                        {activeDurationCycles ? durationLabel(frequency, activeDurationCycles) : "Open-ended"}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-neutral-400 block">Maturity:</span>
+                      <span className="font-semibold text-white">
+                        {maturityDate ? formatDate(maturityDate) : "When met"}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-neutral-400 block">Early Break Fee:</span>
+                      <span className="font-semibold text-white">{penalty}% ({formatXAF(penaltyAmount)})</span>
+                    </div>
+                  </div>
+                </section>
+
+                {/* Auto-save Toggle Card */}
+                <label className="bg-white rounded-[22px] p-3.5 border border-neutral-200/60 shadow-xs flex items-center justify-between cursor-pointer">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-[#EFF2F6] flex items-center justify-center text-black">
+                      <Zap className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <span className="text-xs font-bold text-neutral-900 block">Auto-save from wallet</span>
+                      <span className="text-[10px] text-neutral-400 block">
+                        Deposits {formatXAF(value)} when due.
+                      </span>
+                    </div>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={autoSave}
+                    onChange={(e) => setAutoSave(e.target.checked)}
+                    className="h-4 w-4 accent-black rounded cursor-pointer"
+                  />
+                </label>
+
+                {name && issue ? <p className="text-xs font-semibold text-danger">{issue}</p> : null}
+                {value > balance ? (
+                  <p className="text-[11px] text-neutral-400">
+                    Note: Your wallet holds {formatXAF(balance)}. You can deposit after sealing.
+                  </p>
+                ) : null}
+              </div>
+
+              {/* Bottom Actions */}
+              <div className="pt-3 pb-2 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setStep(2)}
+                  className="bg-white text-black font-semibold text-xs py-3.5 px-4 rounded-full border border-neutral-200/60 shadow-xs hover:bg-neutral-50 active:scale-95 transition cursor-pointer"
+                >
+                  Back
+                </button>
+                <button
+                  type="button"
+                  disabled={Boolean(issue)}
+                  onClick={() => {
+                    if (issue) return;
+                    setPinError("");
+                    setConfirmOpen(true);
+                  }}
+                  className="flex-1 bg-black text-white font-semibold text-xs py-3.5 px-4 rounded-full flex items-center justify-center space-x-2 shadow-sm hover:bg-neutral-900 active:scale-98 transition disabled:opacity-40 cursor-pointer"
+                >
+                  <Lock className="w-3.5 h-3.5" />
+                  <span>Lock In Pot & Enter PIN</span>
+                </button>
+              </div>
             </div>
           </div>
+        </div>
 
-          {/* Auto-save Toggle */}
-          <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-line p-3.5 hover:bg-paper/50 transition">
-            <input
-              type="checkbox"
-              checked={autoSave}
-              onChange={(e) => setAutoSave(e.target.checked)}
-              className="mt-1 h-4 w-4 accent-brand rounded"
-            />
-            <span className="min-w-0 flex-1">
-              <span className="flex items-center gap-1.5 text-sm font-black text-ink">
-                <Zap className="h-4 w-4 text-brand" /> Auto-save from wallet
-              </span>
-              <span className="block text-xs text-muted mt-0.5">
-                Automatically saves {value ? formatXAF(value) : "the amount"} when each cycle is due. If your wallet is short,
-                the penalty applies.
-              </span>
-            </span>
-          </label>
-
-          {/* Gamification Bonus Teaser */}
-          <div className="flex items-center gap-2 rounded-2xl bg-emerald-50 px-3.5 py-2.5 text-xs font-bold text-emerald-800">
-            <Sparkles className="h-4 w-4 text-emerald-600 shrink-0" />
-            <span>+25 Saver XP Welcome Points will be credited on creation!</span>
-          </div>
-
-          {name && issue ? <p className="text-sm font-semibold text-danger">{issue}</p> : null}
-
-          <Button type="submit" disabled={Boolean(issue)} className="h-12 text-base font-bold shadow-lg">
-            <Plus className="h-4 w-4 mr-1" /> Create Pot
-          </Button>
-        </form>
-
+        {/* PIN Confirm Sheet */}
         <ConfirmSheet
           open={confirmOpen}
-          title="Confirm savings pot"
+          title="Confirm Savings Pot"
           subtitle={`${name} · ${frequencyLabel(frequency)}`}
           amount={value}
           details={[
             { label: "Cycle Save", value: `${formatXAF(value)} ${frequencyEvery(frequency)}` },
-            { label: "Objective", value: goal ? formatXAF(goal) : "Open-ended" },
-            { label: "Commitment Penalty", value: `${penalty}% (${formatXAF(penaltyAmount)})` },
+            {
+              label: "Duration",
+              value: activeDurationCycles ? durationLabel(frequency, activeDurationCycles) : "Open-ended",
+            },
+            { label: "Target Goal", value: finalTarget ? formatXAF(finalTarget) : "Open-ended" },
+            { label: "Matures On", value: maturityDate ? formatDate(maturityDate) : "Open-ended" },
+            { label: "Accountability Fee", value: `${penalty}% (${formatXAF(penaltyAmount)}) if broken early` },
             { label: "Auto-save", value: autoSave ? "Enabled" : "Manual" },
           ]}
-          warning="No money moves right now. Your first save will be due at the end of the first cycle."
+          warning="No money moves right now. Your first save is due at the end of the first cycle."
           loading={create.isPending}
           error={pinError}
           lockedUntil={lockedUntil}

@@ -95,15 +95,58 @@ export function planProgress(plan: Pick<SavingsPlan, "balance" | "target">) {
   return Math.min(1, plan.balance / plan.target);
 }
 
-/** Checks whether a plan's savings objective has been met. */
-export function isObjectiveMet(plan: Pick<SavingsPlan, "balance" | "target">) {
-  if (!plan.target || plan.target <= 0) return true;
-  return plan.balance >= plan.target;
+/** Calculate target completion date given rhythm and cycle duration count. */
+export function calculateTargetDate(frequency: SavingsFrequency, count: number, fromDate = new Date()): string {
+  if (count <= 0) return fromDate.toISOString();
+  return advanceCycles(fromDate.toISOString(), frequency, count);
+}
+
+/** Formats a duration count nicely with unit. */
+export function durationLabel(frequency: SavingsFrequency, count: number): string {
+  if (frequency === "daily") {
+    if (count === 7) return "1 week (7 days)";
+    if (count === 14) return "2 weeks (14 days)";
+    if (count === 30) return "1 month (30 days)";
+    if (count === 60) return "2 months (60 days)";
+    if (count === 90) return "3 months (90 days)";
+    if (count === 365) return "1 year (365 days)";
+    return `${count} day${count === 1 ? "" : "s"}`;
+  }
+  if (frequency === "weekly") {
+    if (count === 4) return "1 month (4 weeks)";
+    if (count === 8) return "2 months (8 weeks)";
+    if (count === 12) return "3 months (12 weeks)";
+    if (count === 26) return "6 months (26 weeks)";
+    if (count === 52) return "1 year (52 weeks)";
+    return `${count} week${count === 1 ? "" : "s"}`;
+  }
+  if (frequency === "monthly") {
+    if (count === 12) return "1 year (12 months)";
+    if (count === 24) return "2 years (24 months)";
+    return `${count} month${count === 1 ? "" : "s"}`;
+  }
+  return `${count} cycles`;
+}
+
+/** Checks whether a plan's savings objective (target amount or maturity date) has been met. */
+export function isObjectiveMet(
+  plan: Pick<SavingsPlan, "balance" | "target"> & { targetDate?: string },
+  now = new Date(),
+) {
+  // If target amount is set and reached
+  if (plan.target && plan.target > 0 && plan.balance >= plan.target) return true;
+  // If target date is set and has arrived (maturity reached) with funds
+  if (plan.targetDate && +now >= +new Date(plan.targetDate) && plan.balance > 0) {
+    return true;
+  }
+  // Open pot with no target amount and no target date
+  if (!plan.target && !plan.targetDate) return true;
+  return false;
 }
 
 /** Computes the early withdrawal fee if objective is not yet reached. */
 export function earlyWithdrawalPenalty(
-  plan: Pick<SavingsPlan, "balance" | "target" | "penaltyRate">,
+  plan: Pick<SavingsPlan, "balance" | "target" | "penaltyRate"> & { targetDate?: string },
   amount: number,
 ) {
   if (isObjectiveMet(plan)) return 0;
@@ -167,6 +210,7 @@ export type SavingsInput = {
   amount: number;
   target?: number | null;
   targetDate?: string;
+  durationCycles?: number;
   penaltyRate?: number;
   autoSave?: boolean;
 };

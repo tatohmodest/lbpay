@@ -1,18 +1,20 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import type { SavingsPlan } from "./types";
+import type { SavingsPlan } from "./types.ts";
 import {
   SAVINGS,
   addCycle,
   applyDeposit,
   calculateAdvanceCoverage,
+  calculateTargetDate,
   clampPenaltyRate,
+  durationLabel,
   earlyWithdrawalPenalty,
   isObjectiveMet,
   penaltyFor,
   settlePlan,
   validatePlanInput,
-} from "./savings";
+} from "./savings.ts";
 
 function plan(overrides: Partial<SavingsPlan> = {}): SavingsPlan {
   return {
@@ -173,6 +175,15 @@ test("calculateAdvanceCoverage accurately breaks down prepaid cycles and due dat
   assert.equal(coverage.surplus, 0);
   assert.equal(coverage.nextDueAt, "2026-10-05T23:00:00.000Z");
   assert.ok(coverage.points >= 200);
+});
+
+test("calculateTargetDate and durationLabel correctly compute time length", () => {
+  const from = new Date("2026-10-01T23:00:00.000Z");
+  assert.equal(calculateTargetDate("daily", 10, from), "2026-10-11T23:00:00.000Z");
+  assert.equal(calculateTargetDate("weekly", 4, from), "2026-10-29T23:00:00.000Z");
+  assert.equal(durationLabel("daily", 10), "10 days");
+  assert.equal(durationLabel("weekly", 8), "2 months (8 weeks)");
+  assert.equal(durationLabel("monthly", 12), "1 year (12 months)");
 });
 
 test("validatePlanInput rejects bad names, amounts, goals and penalty rates", () => {

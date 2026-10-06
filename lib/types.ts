@@ -58,6 +58,10 @@ export type SavingsPlan = {
   closedAt?: string;
   points?: number;
   prepaidCycles?: number;
+  /** Maturity / completion date for the pot (ISO date string). */
+  targetDate?: string;
+  /** Total number of cycles planned (e.g. 10 for 10 days, 52 for 1 year). */
+  durationCycles?: number;
 };
 
 export type AccountKind = "personal" | "business" | "developer" | "admin";

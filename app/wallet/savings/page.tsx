@@ -21,20 +21,20 @@ const DISCIPLINE_PERKS = [
   {
     icon: Calendar,
     title: "Flexible Rhythm",
-    copy: "Daily, weekly, or monthly schedules",
-    color: "text-blue-600 bg-blue-50",
+    copy: "Daily, weekly, or monthly",
+    color: "text-neutral-900 bg-[#EFF2F6]",
   },
   {
     icon: ShieldCheck,
     title: "Prepay & Shield",
-    copy: "Deposit 4 days ahead and stay protected",
-    color: "text-emerald-600 bg-emerald-50",
+    copy: "Deposit ahead, shield your streak",
+    color: "text-neutral-900 bg-[#EFF2F6]",
   },
   {
     icon: Lock,
     title: "Locked Objective",
-    copy: "Pledge your penalty, stay committed",
-    color: "text-amber-600 bg-amber-50",
+    copy: "Pledge fee, 0% on completion",
+    color: "text-neutral-900 bg-[#EFF2F6]",
   },
 ];
 
@@ -78,12 +78,12 @@ function SavingsInner() {
       {/* Left Column: Hero & Discipline Features */}
       <div className="space-y-5 lg:col-span-5">
         <header className="flex items-center gap-3">
-          <div className="grid h-12 w-12 place-items-center rounded-2xl bg-emerald-50 text-brand shadow-sm">
-            <PiggyBank className="h-6 w-6" />
+          <div className="grid h-11 w-11 place-items-center rounded-full bg-black text-white shadow-sm">
+            <PiggyBank className="h-5 w-5" />
           </div>
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-brand">Finances & Discipline</p>
-            <h1 className="text-2xl font-black leading-none text-ink">Savings Pots</h1>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Vault & Discipline</p>
+            <h1 className="text-xl font-bold tracking-tight text-neutral-900">Savings Pots</h1>
           </div>
         </header>
 

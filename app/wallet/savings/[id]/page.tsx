@@ -195,10 +195,37 @@ export default function SavingsPlanPage() {
               <button
                 type="button"
                 onClick={() => setWithdrawOpen(true)}
-                className="rounded-lg bg-white px-3 py-1.5 text-xs font-black text-forest hover:bg-paper"
+                className="rounded-lg bg-white px-3 py-1.5 text-xs font-black text-forest hover:bg-paper cursor-pointer"
               >
                 Collect all
               </button>
+            </div>
+          ) : null}
+
+          {plan.durationCycles ? (
+            <div className="mt-4 rounded-xl bg-white/10 p-3 text-xs">
+              <div className="flex items-center justify-between font-bold text-white/90 mb-1">
+                <span>
+                  {plan.frequency === "daily" ? "Day" : plan.frequency === "weekly" ? "Week" : "Month"}{" "}
+                  {Math.min(plan.durationCycles, Math.floor(plan.balance / (plan.amount || 1)))} of {plan.durationCycles}
+                </span>
+                <span>
+                  {Math.min(100, Math.round((plan.balance / (plan.amount * plan.durationCycles)) * 100))}%
+                </span>
+              </div>
+              <div className="h-2 w-full rounded-full bg-white/20 overflow-hidden">
+                <div
+                  className="h-full bg-emerald-400 rounded-full transition-all duration-500"
+                  style={{
+                    width: `${Math.min(100, Math.round((plan.balance / (plan.amount * plan.durationCycles)) * 100))}%`,
+                  }}
+                />
+              </div>
+              {plan.targetDate ? (
+                <p className="mt-1.5 text-[10px] text-hero-muted font-medium">
+                  Target maturity: {formatDate(plan.targetDate)}
+                </p>
+              ) : null}
             </div>
           ) : null}
         </section>
@@ -227,7 +254,7 @@ export default function SavingsPlanPage() {
             icon={Lock}
             label="Commitment Fee"
             value={`${Math.round(plan.penaltyRate * 100)}%`}
-            hint={plan.target ? (met ? "0% (Goal met!)" : "Early break fee") : "Miss fee"}
+            hint={met ? "0% fee (Goal met!)" : "Early exit fee"}
           />
         </section>
 

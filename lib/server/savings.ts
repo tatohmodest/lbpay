@@ -131,6 +131,8 @@ export async function createSavingsPlan(userId: string, input: SavingsInput) {
       frequency: input.frequency,
       amount: Math.round(input.amount),
       target: input.target ? Math.round(input.target) : null,
+      targetDate: input.targetDate || undefined,
+      durationCycles: input.durationCycles ? Math.round(input.durationCycles) : undefined,
       penaltyRate: clampPenaltyRate(input.penaltyRate ?? SAVINGS.defaultPenaltyRate),
       autoSave: Boolean(input.autoSave),
       balance: 0,

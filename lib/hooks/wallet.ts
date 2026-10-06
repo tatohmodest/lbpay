@@ -194,6 +194,7 @@ export type SavingsPlanInput = {
   amount: number;
   target?: number | null;
   targetDate?: string;
+  durationCycles?: number;
   penaltyRate?: number;
   autoSave?: boolean;
   pin: string;

@@ -28,6 +28,7 @@ export async function POST(request: Request) {
       amount: Number(body.amount),
       target: body.target ? Number(body.target) : null,
       targetDate: body.targetDate ? String(body.targetDate) : undefined,
+      durationCycles: body.durationCycles ? Number(body.durationCycles) : undefined,
       penaltyRate: body.penaltyRate != null ? Number(body.penaltyRate) : undefined,
       autoSave: Boolean(body.autoSave),
     });
