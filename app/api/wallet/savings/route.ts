@@ -23,9 +23,11 @@ export async function POST(request: Request) {
     const plan = await createSavingsPlan(auth.user.id, {
       name: String(body.name || ""),
       emoji: body.emoji ? String(body.emoji) : undefined,
+      icon: body.icon ? String(body.icon) : undefined,
       frequency: String(body.frequency) as SavingsFrequency,
       amount: Number(body.amount),
       target: body.target ? Number(body.target) : null,
+      targetDate: body.targetDate ? String(body.targetDate) : undefined,
       penaltyRate: body.penaltyRate != null ? Number(body.penaltyRate) : undefined,
       autoSave: Boolean(body.autoSave),
     });

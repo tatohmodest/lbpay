@@ -7,7 +7,7 @@ export const SAVINGS = {
   maxAmount: 5_000_000,
   defaultPenaltyRate: 0.05,
   minPenaltyRate: 0.01,
-  maxPenaltyRate: 0.1,
+  maxPenaltyRate: 0.25,
   /** Never charge more than this many missed cycles in one catch-up pass. */
   maxPenaltiesPerSettle: 10,
   maxActivePlans: 12,
@@ -18,6 +18,21 @@ export const FREQUENCIES: Array<{ value: SavingsFrequency; label: string; every:
   { value: "weekly", label: "Weekly", every: "every week", perMonth: 4 },
   { value: "monthly", label: "Monthly", every: "every month", perMonth: 1 },
 ];
+
+export const PLAN_ICONS = [
+  { id: "target", label: "Goal" },
+  { id: "home", label: "Home" },
+  { id: "car", label: "Vehicle" },
+  { id: "graduation", label: "School" },
+  { id: "plane", label: "Travel" },
+  { id: "shield", label: "Emergency" },
+  { id: "smartphone", label: "Tech" },
+  { id: "shopping", label: "Shopping" },
+  { id: "briefcase", label: "Business" },
+  { id: "heart", label: "Health" },
+  { id: "gem", label: "Luxury" },
+  { id: "sparkles", label: "Dream" },
+] as const;
 
 export const PLAN_EMOJIS = ["🎯", "🏠", "🚗", "📚", "✈️", "💍", "🛡️", "📱", "🎓", "🏥", "🛍️", "💼"];
 
@@ -48,6 +63,15 @@ export function addCycle(iso: string, freq: SavingsFrequency) {
   return d.toISOString();
 }
 
+/** Advance a date by N cycles. */
+export function advanceCycles(iso: string, freq: SavingsFrequency, count: number): string {
+  let current = iso;
+  for (let i = 0; i < count; i++) {
+    current = addCycle(current, freq);
+  }
+  return current;
+}
+
 /** First due date: the end of the cycle that starts now (Cameroon midnight for daily plans). */
 export function firstDueAt(freq: SavingsFrequency, now = new Date()) {
   const start = new Date(now);
@@ -69,6 +93,36 @@ export function clampPenaltyRate(value: number) {
 export function planProgress(plan: Pick<SavingsPlan, "balance" | "target">) {
   if (!plan.target) return null;
   return Math.min(1, plan.balance / plan.target);
+}
+
+/** Checks whether a plan's savings objective has been met. */
+export function isObjectiveMet(plan: Pick<SavingsPlan, "balance" | "target">) {
+  if (!plan.target || plan.target <= 0) return true;
+  return plan.balance >= plan.target;
+}
+
+/** Computes the early withdrawal fee if objective is not yet reached. */
+export function earlyWithdrawalPenalty(
+  plan: Pick<SavingsPlan, "balance" | "target" | "penaltyRate">,
+  amount: number,
+) {
+  if (isObjectiveMet(plan)) return 0;
+  return Math.round(amount * plan.penaltyRate);
+}
+
+/** Calculate how many cycles an advance deposit covers and the new due date. */
+export function calculateAdvanceCoverage(
+  depositAmount: number,
+  cycleAmount: number,
+  frequency: SavingsFrequency,
+  currentDueAt: string,
+) {
+  if (cycleAmount <= 0) return { cycles: 0, nextDueAt: currentDueAt, surplus: 0, points: 0 };
+  const cycles = Math.floor(depositAmount / cycleAmount);
+  const surplus = depositAmount % cycleAmount;
+  const nextDueAt = cycles >= 1 ? advanceCycles(currentDueAt, frequency, cycles) : currentDueAt;
+  const points = cycles >= 1 ? cycles * 50 + (cycles > 1 ? (cycles - 1) * 25 : 0) : 10;
+  return { cycles, nextDueAt, surplus, points };
 }
 
 /** Whole cycles remaining to reach the target at the current pace. */
@@ -108,9 +162,11 @@ export function timeUntil(iso: string, now = new Date()) {
 export type SavingsInput = {
   name: string;
   emoji?: string;
+  icon?: string;
   frequency: SavingsFrequency;
   amount: number;
   target?: number | null;
+  targetDate?: string;
   penaltyRate?: number;
   autoSave?: boolean;
 };
@@ -130,7 +186,7 @@ export function validatePlanInput(input: Partial<SavingsInput>) {
   if (input.penaltyRate != null) {
     const rate = Number(input.penaltyRate);
     if (!Number.isFinite(rate) || rate < SAVINGS.minPenaltyRate - 1e-9 || rate > SAVINGS.maxPenaltyRate + 1e-9) {
-      return "Penalty must be between 1% and 10%.";
+      return `Penalty must be between 1% and ${Math.round(SAVINGS.maxPenaltyRate * 100)}%.`;
     }
   }
   return "";
@@ -166,6 +222,7 @@ export function settlePlan(
         streak: next.streak + 1,
         bestStreak: Math.max(next.bestStreak, next.streak + 1),
         lastDepositAt: dueAt,
+        points: (next.points || 0) + 50,
       };
       moves.push({ type: "auto_save", amount: next.amount, dueAt });
     } else {
@@ -189,27 +246,46 @@ export function settlePlan(
     next.nextDueAt = addCycle(dueAt, next.frequency);
     if (next.target && next.balance >= next.target) {
       next.status = "completed";
+      next.points = (next.points || 0) + 500;
       break;
     }
   }
   return { plan: next, moves };
 }
 
-/** Apply a manual deposit. Returns the updated plan. */
+/** Apply a manual deposit. Supports multi-cycle advance prepayments and streak bonuses. */
 export function applyDeposit(plan: SavingsPlan, amount: number, now = new Date()) {
+  const cyclesCovered = plan.amount > 0 ? Math.floor(amount / plan.amount) : 0;
+  let nextDue = plan.nextDueAt;
+  let newStreak = plan.streak;
+
+  if (cyclesCovered >= 1) {
+    nextDue = advanceCycles(plan.nextDueAt, plan.frequency, cyclesCovered);
+    newStreak = plan.streak + cyclesCovered;
+  }
+
+  // Calculate Points: 50 base per cycle + 25 bonus per advance cycle + streak milestone bonus
+  const basePts = cyclesCovered > 0 ? cyclesCovered * 50 : 10;
+  const prepayBonus = cyclesCovered > 1 ? (cyclesCovered - 1) * 25 : 0;
+  const streakBonus = Math.floor(newStreak / 5) * 10;
+  const earnedPts = basePts + prepayBonus + streakBonus;
+
   const next: SavingsPlan = {
     ...plan,
     balance: plan.balance + amount,
     saved: plan.saved + amount,
     lastDepositAt: now.toISOString(),
+    streak: newStreak,
+    bestStreak: Math.max(plan.bestStreak, newStreak),
+    nextDueAt: nextDue,
+    points: (plan.points || 0) + earnedPts,
+    prepaidCycles: (plan.prepaidCycles || 0) + (cyclesCovered > 1 ? cyclesCovered - 1 : 0),
   };
-  // A deposit of at least the cycle amount clears the current cycle.
-  if (amount >= plan.amount) {
-    next.streak = plan.streak + 1;
-    next.bestStreak = Math.max(plan.bestStreak, next.streak);
-    next.nextDueAt = addCycle(plan.nextDueAt, plan.frequency);
+
+  if (next.target && next.balance >= next.target) {
+    next.status = "completed";
+    next.points = (next.points || 0) + 500;
   }
-  if (next.target && next.balance >= next.target) next.status = "completed";
   return next;
 }
 

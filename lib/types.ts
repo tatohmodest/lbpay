@@ -35,12 +35,13 @@ export type SavingsPlan = {
   id: string;
   name: string;
   emoji: string;
+  icon?: string;
   frequency: SavingsFrequency;
   /** Amount due every cycle, in XAF. */
   amount: number;
-  /** Optional goal. When the pot reaches it the plan is completed. */
+  /** Optional goal. When the pot reaches it the plan is completed and withdrawal is free. */
   target: number | null;
-  /** Share of the cycle amount cut when a cycle is missed. 0.01 to 0.10. */
+  /** Share of the cycle amount cut when a cycle is missed or early withdrawal fee. 0.01 to 0.25. */
   penaltyRate: number;
   /** Pull the cycle amount from the wallet automatically when it falls due. */
   autoSave: boolean;
@@ -55,6 +56,8 @@ export type SavingsPlan = {
   status: SavingsStatus;
   createdAt: string;
   closedAt?: string;
+  points?: number;
+  prepaidCycles?: number;
 };
 
 export type AccountKind = "personal" | "business" | "developer" | "admin";

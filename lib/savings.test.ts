@@ -1,13 +1,25 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { SavingsPlan } from "./types";
-import { SAVINGS, addCycle, applyDeposit, clampPenaltyRate, penaltyFor, settlePlan, validatePlanInput } from "./savings";
+import {
+  SAVINGS,
+  addCycle,
+  applyDeposit,
+  calculateAdvanceCoverage,
+  clampPenaltyRate,
+  earlyWithdrawalPenalty,
+  isObjectiveMet,
+  penaltyFor,
+  settlePlan,
+  validatePlanInput,
+} from "./savings";
 
 function plan(overrides: Partial<SavingsPlan> = {}): SavingsPlan {
   return {
     id: "sav_t",
     name: "Rent",
     emoji: "🏠",
+    icon: "home",
     frequency: "daily",
     amount: 2_500,
     target: 75_000,
@@ -22,6 +34,8 @@ function plan(overrides: Partial<SavingsPlan> = {}): SavingsPlan {
     nextDueAt: "2026-09-05T23:00:00.000Z",
     status: "active",
     createdAt: "2026-09-01T10:00:00.000Z",
+    points: 200,
+    prepaidCycles: 0,
     ...overrides,
   };
 }
@@ -33,7 +47,7 @@ test("addCycle steps daily, weekly and clamps month ends", () => {
   assert.equal(addCycle("2026-02-28T23:00:00.000Z", "monthly"), "2026-03-28T23:00:00.000Z");
 });
 
-test("penalty is the configured share of the cycle amount, clamped to 1–10%", () => {
+test("penalty is the configured share of the cycle amount, clamped to 1–25%", () => {
   assert.equal(penaltyFor({ amount: 2_500, penaltyRate: 0.05 }), 125);
   assert.equal(penaltyFor({ amount: 10_000, penaltyRate: 0.1 }), 1_000);
   assert.equal(clampPenaltyRate(0.5), SAVINGS.maxPenaltyRate);
@@ -73,7 +87,6 @@ test("when the wallet is empty the penalty comes out of the pot, and a broke pot
 
 test("auto-save pulls the cycle amount when the wallet can cover it and extends the streak", () => {
   const out = settlePlan(plan({ autoSave: true }), 5_000, new Date("2026-09-07T08:00:00.000Z"));
-  // Two cycles are due (5th and 6th). First is covered, second is not (wallet left 2 500 → penalty 125 fits).
   assert.deepEqual(
     out.moves.map((m) => m.type),
     ["auto_save", "auto_save"],
@@ -122,6 +135,44 @@ test("applyDeposit of at least the cycle amount clears the cycle; smaller top-up
 
   const done = applyDeposit(plan({ balance: 74_000, saved: 74_000 }), 2_500, now);
   assert.equal(done.status, "completed");
+});
+
+test("prepaying 4 days in advance pushes nextDueAt 4 days forward and boosts streak", () => {
+  const now = new Date("2026-09-05T10:00:00.000Z");
+  // Daily rate is 2,500. User saves 10,000 (covers 4 days in advance!)
+  const p = plan();
+  const prepaid = applyDeposit(p, 10_000, now);
+
+  assert.equal(prepaid.balance, 20_000);
+  assert.equal(prepaid.streak, p.streak + 4);
+  assert.equal(prepaid.nextDueAt, "2026-09-09T23:00:00.000Z"); // 4 days forward!
+  assert.ok((prepaid.points || 0) > (p.points || 0));
+
+  // During the next 3 days, settlePlan should do nothing because nextDueAt is in the future!
+  const intermediateCheck = settlePlan(prepaid, 0, new Date("2026-09-08T10:00:00.000Z"));
+  assert.deepEqual(intermediateCheck.moves, []);
+  assert.equal(intermediateCheck.plan.missed, 0);
+  assert.equal(intermediateCheck.plan.streak, prepaid.streak);
+});
+
+test("isObjectiveMet and earlyWithdrawalPenalty enforce disciplinary locks", () => {
+  const p = plan({ target: 50_000, balance: 20_000, penaltyRate: 0.1 });
+  assert.equal(isObjectiveMet(p), false);
+  // Early withdrawal of 10,000 before reaching 50,000 target incurs 10% penalty (1,000)
+  assert.equal(earlyWithdrawalPenalty(p, 10_000), 1_000);
+
+  // When objective is reached, early penalty is 0!
+  const reached = plan({ target: 50_000, balance: 50_000, penaltyRate: 0.1 });
+  assert.equal(isObjectiveMet(reached), true);
+  assert.equal(earlyWithdrawalPenalty(reached, 10_000), 0);
+});
+
+test("calculateAdvanceCoverage accurately breaks down prepaid cycles and due date", () => {
+  const coverage = calculateAdvanceCoverage(20_000, 5_000, "daily", "2026-10-01T23:00:00.000Z");
+  assert.equal(coverage.cycles, 4);
+  assert.equal(coverage.surplus, 0);
+  assert.equal(coverage.nextDueAt, "2026-10-05T23:00:00.000Z");
+  assert.ok(coverage.points >= 200);
 });
 
 test("validatePlanInput rejects bad names, amounts, goals and penalty rates", () => {

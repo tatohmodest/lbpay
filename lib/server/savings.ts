@@ -5,7 +5,9 @@ import {
   SAVINGS,
   applyDeposit,
   clampPenaltyRate,
+  earlyWithdrawalPenalty,
   firstDueAt,
+  isObjectiveMet,
   settlePlan,
   validatePlanInput,
   type SavingsInput,
@@ -34,7 +36,7 @@ function txBase(userId: string, plan: StoredSavingsPlan, now: string): Omit<Stor
     fee: 0,
     status: "success",
     method: "wallet",
-    counterparty: `${plan.emoji} ${plan.name}`,
+    counterparty: plan.name,
     createdAt: now,
     rail: "internal",
     meta: { planId: plan.id, planName: plan.name },
@@ -119,11 +121,13 @@ export async function createSavingsPlan(userId: string, input: SavingsInput) {
     const mine = (db.savings || []).filter((p) => p.userId === userId && p.status === "active");
     if (mine.length >= SAVINGS.maxActivePlans) throw new Error(`You can run up to ${SAVINGS.maxActivePlans} plans at once.`);
     const now = new Date();
+    const icon = input.icon || "target";
     const plan: StoredSavingsPlan = {
       id: uid("SAV"),
       userId,
       name: input.name.trim(),
-      emoji: (input.emoji || "🎯").slice(0, 4),
+      emoji: input.emoji || "🎯",
+      icon,
       frequency: input.frequency,
       amount: Math.round(input.amount),
       target: input.target ? Math.round(input.target) : null,
@@ -138,9 +142,21 @@ export async function createSavingsPlan(userId: string, input: SavingsInput) {
       nextDueAt: firstDueAt(input.frequency, now),
       status: "active",
       createdAt: now.toISOString(),
+      points: 25, // Welcome bonus points for starting a pot!
+      prepaidCycles: 0,
     };
     db.savings = [...(db.savings || []), plan];
     await saveDb(db);
+
+    // Duolingo-style welcome nudge push
+    await emitPush((mod) =>
+      mod.sendPushToUser(userId, {
+        title: `🎯 New Pot Created: ${plan.name}`,
+        body: `Welcome to the discipline journey! +25 Saver Points earned. Your first save is due soon.`,
+        url: `/wallet/savings/${plan.id}`,
+      }),
+    );
+
     return publicPlan(plan);
   });
 }
@@ -157,20 +173,54 @@ export async function depositToPlan(userId: string, planId: string, amount: numb
     if (wallet.balance < amount) throw new Error("Insufficient wallet balance");
     wallet.balance -= amount;
     const now = new Date();
-    Object.assign(plan, applyDeposit(plan, amount, now), { userId });
+    const updated = applyDeposit(plan, amount, now);
+    const cyclesCovered = plan.amount > 0 ? Math.floor(amount / plan.amount) : 0;
+    Object.assign(plan, updated, { userId });
+    const note =
+      cyclesCovered > 1
+        ? `Saved · covered ${cyclesCovered} ${plan.frequency === "daily" ? "days" : plan.frequency === "weekly" ? "weeks" : "months"} in advance · streak ${plan.streak} 🔥`
+        : amount >= plan.amount
+          ? `Saved · streak ${plan.streak} 🔥`
+          : "Top-up (below cycle amount)";
     const tx: StoredTx = {
       ...txBase(userId, plan, now.toISOString()),
       kind: "savings_in",
       amount,
-      note: amount >= plan.amount ? `Saved · streak ${plan.streak}` : "Top-up (below the cycle amount)",
+      note,
     };
     db.transactions.unshift(tx);
     await saveDb(db);
+
+    // Duolingo-style notifications
+    if (cyclesCovered > 1) {
+      await emitPush((mod) =>
+        mod.sendPushToUser(userId, {
+          title: "🛡️ Streak Shield Activated!",
+          body: `High discipline! You just covered ${cyclesCovered} ${plan.frequency === "daily" ? "days" : "cycles"} in advance for "${plan.name}". Rest easy!`,
+          url: `/wallet/savings/${plan.id}`,
+        }),
+      );
+    } else if (plan.streak >= 3) {
+      await emitPush((mod) =>
+        mod.sendPushToUser(userId, {
+          title: "🔥 You're On Fire!",
+          body: `Keep it up! Your streak on "${plan.name}" is now ${plan.streak} saves. Consistency pays!`,
+          url: `/wallet/savings/${plan.id}`,
+        }),
+      );
+    }
+
     return { plan: publicPlan(plan), tx, balance: wallet.balance };
   });
 }
 
-export async function withdrawFromPlan(userId: string, planId: string, amount: number | "all", close = false) {
+export async function withdrawFromPlan(
+  userId: string,
+  planId: string,
+  amount: number | "all",
+  close = false,
+  breakPenaltyAgreed = false,
+) {
   return withLedgerLock(async () => {
     const db = await getDb();
     const plan = (db.savings || []).find((p) => p.userId === userId && p.id === planId);
@@ -181,30 +231,57 @@ export async function withdrawFromPlan(userId: string, planId: string, amount: n
     const value = amount === "all" ? plan.balance : Math.round(amount);
     if (value < 0 || (value === 0 && !close)) throw new Error("Enter an amount to move back.");
     if (value > plan.balance) throw new Error("That is more than the pot holds.");
+
     const now = new Date().toISOString();
+    const met = isObjectiveMet(plan);
+
+    // Check early withdrawal break fee
+    let penalty = 0;
+    if (!met && value > 0 && plan.target && plan.target > 0) {
+      penalty = earlyWithdrawalPenalty(plan, value);
+      if (penalty > 0 && !breakPenaltyAgreed) {
+        throw new Error(`EARLY_PENALTY_REQUIRED:${penalty}`);
+      }
+    }
+
+    const netValue = value - penalty;
+
     if (value > 0) {
-      wallet.balance += value;
       plan.balance -= value;
+      wallet.balance += netValue;
+
       db.transactions.unshift({
         ...txBase(userId, plan, now),
         kind: "savings_out",
-        amount: value,
+        amount: netValue,
         note: close ? "Plan closed · pot moved to wallet" : "Moved back to wallet",
       });
+
+      if (penalty > 0) {
+        plan.penalties = (plan.penalties || 0) + penalty;
+        db.transactions.unshift({
+          ...txBase(userId, plan, now),
+          kind: "penalty",
+          amount: penalty,
+          note: `Early withdrawal fee (${Math.round(plan.penaltyRate * 100)}%) · goal of ${plan.target ? plan.target.toLocaleString() : ""} XAF not yet met`,
+        });
+      }
     }
+
     if (close || plan.balance === 0) {
       plan.status = "closed";
       plan.closedAt = now;
     }
+
     await saveDb(db);
-    return { plan: publicPlan(plan), balance: wallet.balance };
+    return { plan: publicPlan(plan), balance: wallet.balance, penalty };
   });
 }
 
 export async function updatePlanSettings(
   userId: string,
   planId: string,
-  patch: Partial<Pick<SavingsPlan, "autoSave" | "penaltyRate" | "name" | "emoji" | "target">>,
+  patch: Partial<Pick<SavingsPlan, "autoSave" | "penaltyRate" | "name" | "icon" | "emoji" | "target">>,
 ) {
   return withLedgerLock(async () => {
     const db = await getDb();
@@ -218,12 +295,23 @@ export async function updatePlanSettings(
       if (name.length < 2 || name.length > 40) throw new Error("Plan name must be 2 to 40 characters.");
       plan.name = name;
     }
+    if (patch.icon) plan.icon = String(patch.icon);
     if (patch.emoji) plan.emoji = String(patch.emoji).slice(0, 4);
+
     if (patch.target !== undefined) {
       const target = patch.target ? Math.round(Number(patch.target)) : null;
+      // Objective is immutable: Once set, users cannot lower or cancel their goal!
+      if (plan.target !== null && plan.target > 0) {
+        if (target === null || target < plan.target) {
+          throw new Error("Your savings objective is locked and cannot be lowered or removed.");
+        }
+      }
       if (target !== null && target < plan.amount) throw new Error("The goal must be at least one cycle amount.");
       plan.target = target;
-      if (target && plan.balance >= target) plan.status = "completed";
+      if (target && plan.balance >= target) {
+        plan.status = "completed";
+        plan.points = (plan.points || 0) + 500;
+      }
     }
     await saveDb(db);
     return publicPlan(plan);

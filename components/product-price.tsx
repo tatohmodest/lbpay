@@ -13,7 +13,7 @@ export function SaleBadge({
   return (
     <span
       className={cn(
-        "rounded-full bg-gold px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-[#2a1d00] shadow-[0_8px_18px_rgba(201,164,92,0.35)]",
+        "inline-flex items-center rounded-full bg-white/95 backdrop-blur-md px-2.5 py-1 text-[11px] font-black text-emerald-800 shadow-[0_4px_14px_rgba(0,0,0,0.1)] ring-1 ring-black/5",
         className,
       )}
     >
@@ -41,7 +41,7 @@ export function ProductPrice({
       ? "text-[1.85rem] leading-none sm:text-[2.15rem]"
       : size === "sm"
         ? "text-base leading-none"
-        : "text-[1.45rem] leading-none";
+        : "text-[1.4rem] leading-none";
 
   if (!price) {
     return (
@@ -50,13 +50,13 @@ export function ProductPrice({
   }
 
   return (
-    <div className={cn("flex flex-wrap items-end gap-x-2.5 gap-y-1", className)}>
-      <p className={cn("font-mono font-black text-brand", priceClass)}>{formatXAF(price)}</p>
+    <div className={cn("flex flex-wrap items-baseline gap-x-2.5 gap-y-1", className)}>
+      <p className={cn("font-mono font-black text-ink", priceClass)}>{formatXAF(price)}</p>
       {onSale && original ? (
         <>
           <p
             className={cn(
-              "font-mono font-semibold text-muted/80 line-through decoration-ink/35",
+              "font-mono font-semibold text-muted/70 line-through decoration-ink/30",
               size === "lg" ? "text-base" : "text-sm",
             )}
           >

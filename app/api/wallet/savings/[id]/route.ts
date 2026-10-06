@@ -28,6 +28,7 @@ export async function POST(request: Request, { params }: Params) {
         autoSave: body.autoSave,
         penaltyRate: body.penaltyRate,
         name: body.name,
+        icon: body.icon,
         emoji: body.emoji,
         target: body.target,
       });
@@ -46,17 +47,29 @@ export async function POST(request: Request, { params }: Params) {
       return NextResponse.json({ ok: true, ...result });
     }
     if (action === "withdraw") {
-      const result = await withdrawFromPlan(auth.user.id, id, body.amount === "all" ? "all" : Number(body.amount));
+      const result = await withdrawFromPlan(
+        auth.user.id,
+        id,
+        body.amount === "all" ? "all" : Number(body.amount),
+        false,
+        Boolean(body.breakPenaltyAgreed),
+      );
       return NextResponse.json({ ok: true, ...result });
     }
     if (action === "close") {
-      const result = await withdrawFromPlan(auth.user.id, id, "all", true);
+      const result = await withdrawFromPlan(auth.user.id, id, "all", true, Boolean(body.breakPenaltyAgreed));
       return NextResponse.json({ ok: true, ...result });
     }
     return NextResponse.json({ error: "Unknown action." }, { status: 400 });
   } catch (error) {
     const raw = error instanceof Error ? error.message : "";
-    const message = /insufficient/i.test(raw) ? "Insufficient wallet balance. Add money or save a smaller amount." : raw || "Could not complete that.";
+    if (raw.startsWith("EARLY_PENALTY_REQUIRED:")) {
+      const penalty = Number(raw.split(":")[1]) || 0;
+      return NextResponse.json({ error: "EARLY_PENALTY_REQUIRED", penalty }, { status: 400 });
+    }
+    const message = /insufficient/i.test(raw)
+      ? "Insufficient wallet balance. Add money or save a smaller amount."
+      : raw || "Could not complete that.";
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }

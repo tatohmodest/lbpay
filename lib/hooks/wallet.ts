@@ -189,9 +189,11 @@ export function moneyLabel(amount: number) {
 export type SavingsPlanInput = {
   name: string;
   emoji?: string;
+  icon?: string;
   frequency: SavingsFrequency;
   amount: number;
   target?: number | null;
+  targetDate?: string;
   penaltyRate?: number;
   autoSave?: boolean;
   pin: string;
@@ -233,9 +235,9 @@ export function useCreateSavingsPlan() {
 
 export type SavingsAction =
   | { action: "deposit"; amount: number; pin: string }
-  | { action: "withdraw"; amount: number | "all"; pin: string }
-  | { action: "close"; pin: string }
-  | { action: "settings"; autoSave?: boolean; penaltyRate?: number; name?: string; emoji?: string; target?: number | null };
+  | { action: "withdraw"; amount: number | "all"; pin: string; breakPenaltyAgreed?: boolean }
+  | { action: "close"; pin: string; breakPenaltyAgreed?: boolean }
+  | { action: "settings"; autoSave?: boolean; penaltyRate?: number; name?: string; icon?: string; emoji?: string; target?: number | null };
 
 export function useSavingsAction(id: string) {
   const client = useQueryClient();

@@ -203,7 +203,7 @@ export default function WalletPage() {
                     <MoneyRow
                       key={tx.id}
                       href={txHref(tx.id)}
-                      mark={tx.kind === "savings_in" || tx.kind === "penalty" ? "🐷" : tx.kind === "international" ? "🌍" : tx.counterparty.trim().slice(0, 1).toUpperCase() || "?"}
+                      mark={tx.kind === "savings_in" || tx.kind === "savings_out" ? "S" : tx.kind === "penalty" ? "!" : tx.counterparty.trim().slice(0, 1).toUpperCase() || "?"}
                       title={tx.counterparty}
                       meta={`${kindTitle(tx.kind)} · ${formatDate(tx.createdAt)}`}
                       amount={`${out ? "−" : "+"}${formatXAF(tx.amount, { withCurrency: false })}`}
