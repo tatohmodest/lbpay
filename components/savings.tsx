@@ -74,20 +74,20 @@ export function DueChip({ plan, className }: { plan: SavingsPlan; className?: st
   const state = dueState(plan);
   if (plan.status === "completed") {
     return (
-      <span className={cn("inline-flex items-center gap-1 rounded-full bg-[#E4F6EB] px-2.5 py-0.5 text-[10px] font-bold text-[#249652]", className)}>
+      <span className={cn("inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-800", className)}>
         <Check className="h-3 w-3" /> Goal reached
       </span>
     );
   }
   if (plan.status === "closed") {
-    return <span className={cn("inline-flex rounded-full bg-[#EFF2F6] px-2.5 py-0.5 text-[10px] font-semibold text-neutral-500", className)}>Closed</span>;
+    return <span className={cn("inline-flex rounded-full bg-[#eef1ef] px-2 py-0.5 text-[11px] font-bold text-muted", className)}>Closed</span>;
   }
   const tone =
     state === "overdue"
-      ? "bg-[#FEE2E2] text-[#EF4444]"
+      ? "bg-red-50 text-danger"
       : state === "today"
-        ? "bg-[#FEF3C7] text-[#D97706]"
-        : "bg-[#EFF2F6] text-neutral-700";
+        ? "bg-amber-50 text-amber-800"
+        : "bg-paper text-muted";
   const label =
     state === "overdue"
       ? "Due now"
@@ -95,7 +95,7 @@ export function DueChip({ plan, className }: { plan: SavingsPlan; className?: st
         ? `Due in ${timeUntil(plan.nextDueAt)}`
         : `Next in ${timeUntil(plan.nextDueAt)}`;
   return (
-    <span className={cn("inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-semibold", tone, className)}>
+    <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold", tone, className)}>
       <AlarmClock className="h-3 w-3" /> {label}
     </span>
   );
@@ -106,13 +106,13 @@ export function Streak({ count, className }: { count: number; className?: string
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 text-[10px] font-semibold rounded-full px-2.5 py-0.5 bg-[#EFF2F6] text-neutral-800",
-        status.isHot ? "bg-amber-100/80 text-amber-900 font-bold" : "",
+        "inline-flex items-center gap-1 text-[11px] font-bold rounded-full px-2 py-0.5",
+        status.isHot ? "bg-amber-100/80 text-amber-800 font-black" : count ? "bg-paper text-ink" : "bg-paper text-muted",
         className,
       )}
     >
-      <Flame className={cn("h-3 w-3", status.isHot ? "fill-amber-500 text-amber-600 animate-pulse" : count ? "text-amber-500" : "text-neutral-400")} />
-      {count} streak
+      <Flame className={cn("h-3.5 w-3.5", status.isHot ? "fill-amber-500 text-amber-600 animate-pulse" : count ? "text-amber-500" : "text-muted")} />
+      {count} streak {status.isHot ? "🔥" : ""}
     </span>
   );
 }
@@ -128,32 +128,50 @@ export function DuolingoNudgeCard({
 }) {
   const nudge = getDuolingoNudge(plans);
 
+  const toneClasses = {
+    fire: "bg-linear-to-r from-amber-500/15 via-orange-500/10 to-transparent border-amber-300/80 text-amber-950",
+    shield: "bg-linear-to-r from-teal-500/15 via-emerald-500/10 to-transparent border-teal-300/80 text-teal-950",
+    urgent: "bg-linear-to-r from-rose-500/15 via-red-500/10 to-transparent border-rose-300/80 text-rose-950",
+    goal: "bg-linear-to-r from-indigo-500/15 via-blue-500/10 to-transparent border-indigo-300/80 text-indigo-950",
+    duo: "bg-linear-to-r from-emerald-500/15 via-teal-500/10 to-transparent border-emerald-300/80 text-emerald-950",
+  }[nudge.tone];
+
+  const iconClass = {
+    fire: "bg-amber-500 text-white",
+    shield: "bg-teal-600 text-white",
+    urgent: "bg-rose-600 text-white animate-bounce",
+    goal: "bg-indigo-600 text-white",
+    duo: "bg-brand text-white",
+  }[nudge.tone];
+
   return (
-    <div className="bg-[#EFF2F6] rounded-[24px] p-4 sm:p-5 border border-neutral-200/50 shadow-xs transition">
+    <div className={cn("relative overflow-hidden rounded-[1.75rem] border p-4 sm:p-5 transition shadow-sm", toneClasses)}>
       <div className="flex items-start gap-3 sm:gap-4">
-        <div className="w-10 h-10 rounded-full bg-black text-white flex items-center justify-center shrink-0 shadow-xs">
+        <div className={cn("grid h-11 w-11 shrink-0 place-items-center rounded-2xl shadow-sm text-lg", iconClass)}>
           {nudge.tone === "fire" ? (
-            <Flame className="h-5 w-5 fill-white" />
+            <Flame className="h-6 w-6 fill-white" />
           ) : nudge.tone === "shield" ? (
-            <Shield className="h-5 w-5 fill-white" />
+            <Shield className="h-6 w-6 fill-white" />
           ) : nudge.tone === "goal" ? (
-            <Trophy className="h-5 w-5" />
+            <Trophy className="h-6 w-6" />
           ) : (
-            <Sparkles className="h-5 w-5" />
+            <Sparkles className="h-6 w-6" />
           )}
         </div>
         <div className="min-w-0 flex-1">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 block">
-            Discipline Coach
-          </span>
-          <p className="mt-0.5 text-xs sm:text-sm font-bold text-neutral-900 leading-snug">{nudge.headline}</p>
-          <p className="mt-1 text-xs text-neutral-500 leading-relaxed">{nudge.message}</p>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-black uppercase tracking-[0.14em] text-brand-dark">
+              Discipline Coach
+            </span>
+          </div>
+          <p className="mt-0.5 text-sm font-black sm:text-base leading-snug">{nudge.headline}</p>
+          <p className="mt-1 text-xs opacity-90 leading-relaxed">{nudge.message}</p>
         </div>
         {nudge.actionLabel ? (
           <button
             type="button"
             onClick={() => onAction?.(nudge.targetPlanId)}
-            className="self-center shrink-0 rounded-full bg-white text-black px-3.5 py-1.5 text-xs font-semibold shadow-xs border border-neutral-200/60 hover:bg-neutral-50 active:scale-95 transition cursor-pointer"
+            className="self-center shrink-0 rounded-full bg-white px-3.5 py-2 text-xs font-black shadow-sm ring-1 ring-black/5 hover:bg-paper transition"
           >
             {nudge.actionLabel}
           </button>
@@ -181,64 +199,69 @@ export function SavingsHero({
   onNew: () => void;
 }) {
   const { hidden, toggle } = useHiddenAmount();
+  const gridId = useId().replace(/:/g, "");
   const shown = hidden ? "••••••" : formatXAF(amount, { withCurrency: false });
   const rank = getSaverRank(points);
 
   return (
-    <section className="bg-black text-white rounded-[26px] p-5 sm:p-6 shadow-xl relative overflow-hidden flex flex-col justify-between min-h-[14rem]">
-      {/* Top Half: Balance & New Pot */}
-      <div className="flex justify-between items-start">
-        <div>
-          <span className="text-neutral-400 text-xs font-normal">Savings Balance</span>
-          <div className="flex items-center space-x-2.5 mt-1">
-            <span className="text-2xl sm:text-3xl font-bold tracking-tight">
-              {shown}
-              {hidden ? null : <span className="ml-1.5 text-xs font-normal text-neutral-400">XAF</span>}
+    <section className="lb-house-card relative flex min-h-[14rem] flex-col overflow-hidden rounded-[1.75rem] p-5 text-white sm:min-h-[16rem]">
+      <svg className="pointer-events-none absolute inset-0 h-full w-full opacity-[0.28]" aria-hidden>
+        <defs>
+          <pattern id={gridId} width="28" height="48" patternUnits="userSpaceOnUse" patternTransform="rotate(28)">
+            <path d="M28 0H0V48" fill="none" stroke="white" strokeWidth="0.9" />
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill={`url(#${gridId})`} />
+      </svg>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={SAVINGS_FLOAT}
+        alt=""
+        width={80}
+        height={80}
+        className="pointer-events-none absolute right-2.5 top-2.5 z-10 h-[4.35rem] w-[4.35rem] object-contain drop-shadow-[0_10px_18px_rgba(6,38,28,0.28)] sm:right-3.5 sm:top-3.5 sm:h-[4.85rem] sm:w-[4.85rem]"
+      />
+      <div className="relative z-10 flex items-start justify-between gap-3 pr-[4.75rem]">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="rounded-full bg-white/20 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider">
+              {rank.tier} Saver · Lvl {rank.level}
             </span>
-            <button
-              type="button"
-              onClick={toggle}
-              className="text-neutral-400 hover:text-white transition-colors cursor-pointer"
-              aria-label={hidden ? "Show amount" : "Hide amount"}
-            >
-              {hidden ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </button>
+            <span className="text-xs text-white/80 font-bold">⭐ {points} XP</span>
           </div>
+          <p className="mt-1.5 text-[15px] font-semibold text-white/90">Total in your pots</p>
         </div>
-
         <button
           type="button"
-          onClick={onNew}
-          className="bg-white text-black font-semibold text-xs px-4 py-2 rounded-full hover:bg-neutral-100 active:scale-95 transition shadow-sm cursor-pointer"
+          onClick={toggle}
+          className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-white/80 transition hover:bg-white/15 hover:text-white"
+          aria-label={hidden ? "Show amount" : "Hide amount"}
         >
-          + New Pot
+          {hidden ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
         </button>
       </div>
-
-      {/* Middle Pills */}
-      <div className="flex flex-wrap gap-1.5 my-4">
-        <span className="bg-white/10 text-white rounded-full px-3 py-1 text-[11px] font-semibold">
-          {active} active {active === 1 ? "pot" : "pots"}
-        </span>
-        <span className="bg-white/10 text-white rounded-full px-3 py-1 text-[11px] font-semibold">
-          {hidden ? "••••" : formatXAF(pace, { withCurrency: false })} / mo
-        </span>
-        <span className="bg-white/10 text-white rounded-full px-3 py-1 text-[11px] font-semibold flex items-center gap-1">
-          <Flame className="h-3 w-3 fill-amber-300 text-amber-300" /> {streak} streak
-        </span>
-        <span className="bg-white/10 text-white rounded-full px-3 py-1 text-[11px] font-semibold">
-          ⭐ {points} XP ({rank.tier})
-        </span>
+      <div className="relative z-10 mt-4 min-w-0 pr-2">
+        <p className="font-mono text-[2.15rem] font-black leading-none tracking-tight sm:text-[2.4rem]">
+          {shown}
+          {hidden ? null : <span className="ml-1.5 text-sm font-semibold tracking-normal text-white/80">XAF</span>}
+        </p>
+        <div className="mt-3.5 flex flex-wrap gap-2">
+          <span className="rounded-full bg-white/18 px-2.5 py-1 text-[11px] font-bold">{active} active pots</span>
+          <span className="rounded-full bg-white/18 px-2.5 py-1 text-[11px] font-bold">
+            {hidden ? "••••" : formatXAF(pace, { withCurrency: false })} / mo
+          </span>
+          <span className="rounded-full bg-white/18 px-2.5 py-1 text-[11px] font-bold flex items-center gap-1">
+            <Flame className="h-3 w-3 fill-amber-300 text-amber-300" /> {streak} max streak
+          </span>
+        </div>
       </div>
-
-      {/* Bottom Action Pill */}
       <button
         type="button"
         onClick={onNew}
-        className="bg-white/10 hover:bg-white/15 text-white rounded-full py-2.5 px-4 flex items-center justify-between text-xs font-semibold active:scale-98 transition cursor-pointer"
+        className="relative z-10 mt-auto flex items-center justify-between border-t border-white/20 pt-3 text-sm font-black hover:text-white/90 transition"
       >
-        <span>Start new sprint or milestone</span>
-        <ArrowRight className="h-3.5 w-3.5 text-neutral-400" />
+        + Create new pot
+        <ArrowRight className="h-4 w-4" />
       </button>
     </section>
   );
@@ -263,56 +286,52 @@ export function PlanCard({
   return (
     <div
       className={cn(
-        "group block rounded-[24px] bg-white p-4.5 border transition",
-        urgent && plan.status === "active" ? "border-amber-300 shadow-sm" : "border-neutral-200/70 shadow-xs hover:border-black/30",
+        "group block rounded-[1.75rem] bg-white p-4 shadow-[0_8px_24px_rgba(12,25,19,0.05)] ring-1 transition hover:-translate-y-0.5 hover:ring-brand/40",
+        urgent && plan.status === "active" ? "ring-amber-200" : "ring-line/80",
       )}
     >
       <Link href={`/wallet/savings/${encodeURIComponent(plan.id)}`} className="block">
         <div className="flex items-center gap-3.5">
-          <span className="relative grid h-12 w-12 shrink-0 place-items-center text-black">
-            <ProgressRing value={progress} size={48} stroke={4} className="absolute inset-0" />
-            <PlanIcon icon={plan.icon || plan.emoji} size="sm" className="h-8 w-8 rounded-full" />
+          <span className="relative grid h-14 w-14 shrink-0 place-items-center text-brand">
+            <ProgressRing value={progress} size={56} stroke={5} className="absolute inset-0" />
+            <PlanIcon icon={plan.icon || plan.emoji} size="md" className="h-10 w-10 rounded-xl" />
           </span>
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1.5">
-              <p className="truncate text-sm font-bold text-neutral-900">{plan.name}</p>
-              {plan.autoSave ? <Zap className="h-3 w-3 shrink-0 text-black" aria-label="Auto-save on" /> : null}
+            <div className="flex items-center gap-2">
+              <p className="truncate text-[15px] font-black text-ink">{plan.name}</p>
+              {plan.autoSave ? <Zap className="h-3.5 w-3.5 shrink-0 text-brand" aria-label="Auto-save on" /> : null}
             </div>
-            <p className="truncate text-[11px] text-neutral-400 mt-0.5">
+            <p className="truncate text-xs text-muted">
               {formatXAF(plan.amount, { withCurrency: false })}
               {plan.frequency === "daily" ? "/day" : plan.frequency === "weekly" ? "/week" : "/month"}
-              {plan.durationCycles
-                ? ` · ${plan.durationCycles} ${plan.frequency === "daily" ? "days" : plan.frequency === "weekly" ? "weeks" : "months"}`
-                : ""}
-              {plan.target ? ` · goal ${formatXAF(plan.target, { withCurrency: false })}` : ""}
+              {plan.target ? ` · goal ${formatXAF(plan.target, { withCurrency: false })}` : " · open goal"}
             </p>
-
             <div className="mt-2 flex flex-wrap items-center gap-1.5">
               <DueChip plan={plan} />
               <Streak count={plan.streak} />
               {hasPrepay ? (
-                <span className="inline-flex items-center gap-1 rounded-full bg-[#E4F6EB] text-[#249652] px-2 py-0.5 text-[10px] font-bold">
+                <span className="inline-flex items-center gap-1 rounded-full bg-teal-50 px-2 py-0.5 text-[11px] font-bold text-teal-800">
                   <Shield className="h-3 w-3" /> Shielded
                 </span>
               ) : null}
               {plan.target ? (
-                <span className="inline-flex items-center gap-1 rounded-full bg-[#EFF2F6] px-2 py-0.5 text-[10px] font-semibold text-neutral-600">
+                <span className="inline-flex items-center gap-1 rounded-full bg-paper px-2 py-0.5 text-[10px] font-bold text-muted">
                   <Lock className="h-2.5 w-2.5" /> {Math.round(plan.penaltyRate * 100)}% lock
                 </span>
               ) : null}
             </div>
           </div>
           <div className="shrink-0 text-right">
-            <p className="font-mono text-base font-bold text-neutral-900">{formatXAF(plan.balance, { withCurrency: false })}</p>
-            <p className="text-[10px] text-neutral-400">{progress != null ? `${Math.round(progress * 100)}%` : "saved"}</p>
+            <p className="font-mono text-base font-black text-ink">{formatXAF(plan.balance, { withCurrency: false })}</p>
+            <p className="text-[11px] text-muted">{progress != null ? `${Math.round(progress * 100)}%` : "saved"}</p>
           </div>
         </div>
       </Link>
 
       {!compact && plan.status === "active" ? (
-        <div className="mt-3 flex items-center justify-between rounded-full bg-[#F8F9FA] px-3.5 py-1.5 text-xs border border-neutral-100">
-          <span className="text-[11px] text-neutral-400">
-            Pledge: <span className="font-bold text-neutral-900">{Math.round(plan.penaltyRate * 100)}%</span> (0% on goal)
+        <div className="mt-3.5 flex items-center justify-between rounded-xl bg-paper px-3 py-2 text-[12px]">
+          <span className="text-muted text-xs">
+            Miss a {plan.frequency} save: <span className="font-bold text-ink">{formatXAF(penaltyFor(plan))}</span> cut.
           </span>
           <button
             type="button"
@@ -321,7 +340,7 @@ export function PlanCard({
               e.stopPropagation();
               onSaveNow ? onSaveNow(plan) : undefined;
             }}
-            className="bg-black text-white text-[11px] font-semibold px-3 py-1 rounded-full hover:bg-neutral-800 transition active:scale-95 cursor-pointer"
+            className="font-black text-brand-deep hover:underline cursor-pointer"
           >
             Save / Prepay →
           </button>
