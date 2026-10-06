@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import type { SavingsPlan } from "./types.ts";
+import type { SavingsPlan } from "./types";
 import {
   SAVINGS,
   addCycle,
@@ -14,7 +14,7 @@ import {
   penaltyFor,
   settlePlan,
   validatePlanInput,
-} from "./savings.ts";
+} from "./savings";
 
 function plan(overrides: Partial<SavingsPlan> = {}): SavingsPlan {
   return {
