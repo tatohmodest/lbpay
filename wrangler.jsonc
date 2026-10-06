@@ -8,6 +8,8 @@
   "upload_source_maps": false,
   // Dashboard Build command is typically `npm run build`. wrangler deploy still
   // runs this so a Next-only compile still produces .open-next/worker.js.
+  // Workers CI then shims wrangler so `npx wrangler deploy` uploads that
+  // output instead of running `opennextjs-cloudflare deploy` (Miniflare).
   "build": {
     "command": "bash scripts/cf-build.sh"
   },
