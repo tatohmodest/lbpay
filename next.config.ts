@@ -15,6 +15,18 @@ const noIndexSources = [
   "/r/:path*",
 ];
 
+const frameProtectedSources = [
+  "/wallet/:path*",
+  "/business/:path*",
+  "/developers/:path*",
+  "/admin/:path*",
+  "/pin/:path*",
+  "/login",
+  "/signup",
+  "/verify",
+  "/forgot",
+];
+
 const nextConfig: NextConfig = {
   compress: true,
   poweredByHeader: false,
@@ -34,6 +46,23 @@ const nextConfig: NextConfig = {
   },
   async headers() {
     return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "Permissions-Policy", value: "camera=(self), microphone=(), geolocation=(), payment=(self)" },
+        ],
+      },
+      // Signed-in surfaces must never render inside someone else's frame.
+      ...frameProtectedSources.map((source) => ({
+        source,
+        headers: [
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
+          { key: "Content-Security-Policy", value: "frame-ancestors 'self'" },
+        ],
+      })),
       ...noIndexSources.map((source) => ({
         source,
         headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],

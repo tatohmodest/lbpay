@@ -1,11 +1,12 @@
 "use client";
 
+import { CodeInput } from "@/components/auth/code-input";
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { AuthCard, AuthScreen, AuthTitle } from "@/components/auth-shell";
 import { Button } from "@/components/ui/button";
-import { Field, Input } from "@/components/ui/input";
+import { Field } from "@/components/ui/input";
 import { readApiJson, type AuthApiResponse } from "@/lib/http";
 import { useNotify } from "@/lib/notify";
 import { useI18n } from "@/lib/i18n/use-i18n";
@@ -20,19 +21,21 @@ function VerifyInner() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  async function verify(e: React.FormEvent) {
-    e.preventDefault();
+  async function verify(e?: React.FormEvent, code = otp) {
+    e?.preventDefault();
+    if (code.length !== 6 || loading) return;
     setLoading(true);
     setError("");
     try {
       const res = await fetch("/api/auth/verify-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, otp }),
+        body: JSON.stringify({ email, otp: code }),
       });
       const data = await readApiJson<AuthApiResponse>(res);
       if (!res.ok) {
         setError(data.error || "Could not verify");
+        setOtp("");
         return;
       }
       notify.success(t("auth.emailVerified"), t("auth.setPinNext"));
@@ -81,14 +84,15 @@ function VerifyInner() {
           </div>
 
           <Field label={t("auth.verifyCode")}>
-            <Input
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              placeholder="000000"
-              className="text-center font-mono text-2xl tracking-[0.4em]"
+            <CodeInput
               value={otp}
-              onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-              required
+              onChange={(next) => {
+                setOtp(next);
+                setError("");
+              }}
+              onComplete={(code) => void verify(undefined, code)}
+              disabled={loading}
+              error={Boolean(error)}
             />
           </Field>
           {error ? <p className="text-sm font-semibold text-danger">{error}</p> : null}

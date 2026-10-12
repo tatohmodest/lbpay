@@ -1,5 +1,6 @@
 "use client";
 
+import { Lock, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -15,7 +16,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { cameroonMsisdn } from "@/lib/phone";
 import { secondsLeft, useNow } from "@/lib/use-now";
 import { normalizeHandle } from "@/lib/handle";
-import { slugify } from "@/lib/format";
+import { HandlePicker } from "@/components/auth/handle-picker";
 import { consumeAuthNext } from "@/lib/auth-next";
 import { useI18n } from "@/lib/i18n/use-i18n";
 
@@ -46,8 +47,6 @@ export function AuthForm({
   const [showHandleChange, setShowHandleChange] = useState(false);
   const now = useNow(lockedUntil > 0);
   const pinWait = secondsLeft(lockedUntil, now);
-  const autoId = slugify(name);
-  const previewId = idChoice || autoId;
   const inviteHandle = normalizeHandle(invitedBy || "");
   const { t } = useI18n();
 
@@ -66,7 +65,7 @@ export function AuthForm({
   }
 
   async function submitSignup(chosenId?: string) {
-    const handleToSend = normalizeHandle(chosenId || idChoice || autoId);
+    const handleToSend = normalizeHandle(chosenId || idChoice);
     const res = await fetch("/api/auth/signup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -195,17 +194,37 @@ export function AuthForm({
 
   return (
     <div className="grid min-h-[calc(100svh-var(--header-h))] lg:grid-cols-2">
-      <aside className="relative hidden overflow-hidden bg-forest px-10 py-12 text-white lg:flex lg:flex-col lg:justify-between">
-        <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-brand/25 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-24 left-8 h-40 w-40 rounded-full bg-white/5 blur-3xl" />
-        <div className="relative z-10">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand">LBPay</p>
-          <h2 className="mt-4 max-w-[11ch] text-4xl font-black leading-[1.08] xl:text-5xl">
-            {mode === "login" ? t("auth.asideLogin") : t("auth.asideSignup")}
+      <aside className="relative hidden overflow-hidden bg-forest px-10 py-12 text-white lg:flex lg:flex-col lg:justify-between xl:px-16">
+        <div className="lb-glow pointer-events-none absolute inset-0" />
+        <div className="lb-grid-bg pointer-events-none absolute inset-0" />
+        <div className="relative z-10 lb-rise">
+          <h2 className="max-w-[12ch] text-[2.75rem] font-bold leading-[1.05] tracking-[-0.03em] xl:text-[3.5rem]">
+            {mode === "login" ? (
+              t("auth.asideLogin")
+            ) : (
+              <>
+                {t("auth.asideSignup")}{" "}
+                <span className="font-display font-normal italic text-brand">{t("auth.asideAccent")}</span>
+              </>
+            )}
           </h2>
-          <p className="mt-4 max-w-sm text-sm leading-6 text-white/70">{t("auth.asideCopy")}</p>
+          <p className="mt-5 max-w-sm text-[16px] leading-7 text-hero-muted">{t("auth.asideCopy")}</p>
+          <ul className="mt-10 space-y-3">
+            {(["auth.trust1", "auth.trust2", "auth.trust3", "auth.trust4"] as const).map((key, i) => (
+              <li
+                key={key}
+                className="lb-rise flex max-w-sm items-center gap-3 rounded-2xl bg-white/[0.05] px-4 py-3 text-[14px] text-white/85 ring-1 ring-white/10"
+                style={{ animationDelay: `${150 + i * 100}ms` }}
+              >
+                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-brand/20 text-brand">
+                  <ShieldCheck className="h-3.5 w-3.5" />
+                </span>
+                {t(key)}
+              </li>
+            ))}
+          </ul>
         </div>
-        <p className="relative z-10 text-sm text-white/45">{t("auth.builtFor")}</p>
+        <p className="relative z-10 text-[13px] text-white/45">{t("auth.builtFor")}</p>
       </aside>
 
       <div className="flex flex-col justify-center bg-paper px-6 py-10 md:px-14 lg:px-16">
@@ -233,19 +252,18 @@ export function AuthForm({
                         value={name}
                         onChange={(e) => {
                           setName(e.target.value);
-                          resetHandleConflict();
+                          setIdConflict(null);
+                          setShowHandleChange(false);
                         }}
                         required
                       />
                     </Field>
-                    {previewId ? (
-                      <div className="rounded-2xl bg-paper px-4 py-3">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">
-                          {t("auth.yourId")}
-                        </p>
-                        <p className="mt-1 font-mono text-base font-black text-ink">@{previewId}</p>
-                      </div>
-                    ) : null}
+                    <HandlePicker
+                      name={name}
+                      value={idChoice}
+                      onChange={setIdChoice}
+                      label={t("auth.yourId")}
+                    />
                     {idConflict ? (
                       <div className="space-y-3 rounded-2xl bg-amber-50 p-4">
                         <p className="text-sm font-medium text-ink">
@@ -339,6 +357,13 @@ export function AuthForm({
                     {t("auth.signupEmailHint")}
                   </p>
                 ) : null}
+                <p className="flex items-center justify-center gap-1.5 text-center text-[12px] text-muted">
+                  <Lock className="h-3 w-3" />
+                  {t("auth.privacyNote")}{" "}
+                  <Link href="/privacy" className="font-semibold text-ink underline-offset-2 hover:underline">
+                    {t("auth.privacyLink")}
+                  </Link>
+                </p>
               </form>
             </AuthCard>
             <p className="mt-6 text-sm text-muted">

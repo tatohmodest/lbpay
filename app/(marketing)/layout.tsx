@@ -10,7 +10,9 @@ const marketingSans = Plus_Jakarta_Sans({
 
 export default function MarketingLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className={`${marketingSans.variable} marketing-root min-h-screen bg-paper antialiased`}>
+    <div
+      className={`${marketingSans.variable} marketing-root min-h-screen bg-paper antialiased`}
+    >
       <SiteHeader />
       <div className="pt-header">{children}</div>
       <SiteFooter />

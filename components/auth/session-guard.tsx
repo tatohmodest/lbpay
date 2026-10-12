@@ -22,6 +22,11 @@ const PUBLIC = [
   "/p",
   "/r",
   "/products",
+  "/pricing",
+  "/security",
+  "/about",
+  "/privacy",
+  "/copyright",
   "/pin",
   "/welcome",
 ];

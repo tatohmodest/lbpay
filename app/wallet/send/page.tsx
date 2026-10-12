@@ -6,6 +6,7 @@ import { Suspense } from "react";
 import { ArrowLeftRight } from "lucide-react";
 import { Field, Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { celebrate } from "@/components/success-moment";
 import { ConfirmSheet } from "@/components/confirm-sheet";
 import { NetworkMark } from "@/components/network-mark";
 import { MoneyCard, MoneyPage, RailTile } from "@/components/money-move";
@@ -94,10 +95,36 @@ function SendInner() {
     try {
       if (network === "wallet") {
         await transfer.mutateAsync({ to, amount: value, pin, note });
-        notify.moneyOut(value, `Transferred to @${lookup.data?.user?.lbpayId || to.replace(/^@/, "")}`);
+        const handle = lookup.data?.user?.lbpayId || to.replace(/^@/, "");
+        notify.moneyOut(value, `Transferred to @${handle}`);
+        celebrate({
+          title: "Sent!",
+          amount: value,
+          line: `to ${lookup.data?.user?.name || `@${handle}`}`,
+          details: [
+            { label: "To", value: `@${handle}` },
+            { label: "Fee", value: "Free" },
+          ],
+        });
       } else {
-        await disburse.mutateAsync({ amount: value, phone, network, pin, note });
+        const result = (await disburse.mutateAsync({ amount: value, phone, network, pin, note })) as {
+          status?: string;
+        };
         notify.moneyOut(debit, `Sent ${formatXAF(value)} to ${phone} on ${network.toUpperCase()}`);
+        const pending = result?.status !== "success";
+        celebrate({
+          title: pending ? "On its way" : "Sent!",
+          amount: value,
+          line: `to ${phone} on ${network === "orange" ? "Orange Money" : "MTN MoMo"}`,
+          details: [
+            ...(fee ? [{ label: "Fee", value: formatXAF(fee) }] : []),
+            { label: "Total from wallet", value: formatXAF(debit) },
+          ],
+          pending,
+          note: pending
+            ? "We'll let you know when it lands. If the network rejects it, the amount and fee come straight back."
+            : undefined,
+        });
       }
       setOpen(false);
       router.push("/wallet");

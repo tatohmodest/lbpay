@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { formatXAF } from "@/lib/format";
 import { findLinkBySlug, findUserById } from "@/lib/server/db";
-import { SITE_OG_IMAGE, SITE_URL } from "@/lib/site";
-import { publicProductImageUrl } from "@/lib/product-image";
+import { productExcerpt, productPricing } from "@/lib/shop";
+import { isSafeProductImageUrl } from "@/lib/product-image";
+import { shareImage, shareMetadata, shareOrigin } from "@/lib/server/share-meta";
 import { PayLinkClient } from "./pay-client";
 
 type Props = { params: Promise<{ slug: string }> };
@@ -16,30 +17,22 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
   const owner = await findUserById(link.userId);
   const merchant = owner?.businessName || owner?.name || "LBPay";
-  const amount = link.amount ? ` · ${formatXAF(link.amount)}` : "";
-  const title = `${link.title}${amount}`;
-  const description = `Pay ${merchant} on LBPay.`;
-  const productImage = publicProductImageUrl(link.imageUrl, SITE_URL);
-  const images = productImage
-    ? [{ url: productImage, alt: link.title }]
-    : [SITE_OG_IMAGE];
-  return {
-    title,
-    description,
-    robots: { index: false, follow: false },
-    openGraph: {
-      title,
-      description,
-      type: "website",
-      images,
-    },
-    twitter: {
-      card: "summary_large_image",
-      title,
-      description,
-      images: [productImage || SITE_OG_IMAGE.url],
-    },
-  };
+  const { price, original, onSale } = productPricing(link.amount, link.compareAtAmount);
+  const priceText = price ? ` · ${formatXAF(price)}` : "";
+  const sale = onSale && original ? ` (was ${formatXAF(original)})` : "";
+  const excerpt = productExcerpt(link.description, 120);
+  const origin = await shareOrigin();
+  return shareMetadata({
+    title: `${link.title}${priceText}`,
+    description: `${excerpt ? `${excerpt} ` : ""}${merchant} on LBPay${sale}. Pay safely with MTN MoMo, Orange Money or your LBPay wallet.`,
+    path: `/pay/${encodeURIComponent(link.slug)}`,
+    origin,
+    image: isSafeProductImageUrl(link.imageUrl || "") ? shareImage(link.imageUrl, origin, {
+      alt: link.title,
+      shape: "wide",
+      fallbackRoute: `/api/share-image/product/${encodeURIComponent(link.slug)}`,
+    }) : null,
+  });
 }
 
 export default async function CheckoutPage({ params }: Props) {

@@ -274,18 +274,41 @@ export function CheckoutPay({
       <CheckoutShell variant={variant}>
         <div className="mx-auto max-w-md">
           <CheckoutCard className="text-center">
-            <span className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-brand-soft text-brand">
-              <Check className="h-7 w-7" />
+            <span className="relative mx-auto grid h-20 w-20 place-items-center">
+              <span className="lb-live-dot absolute inset-0 rounded-full bg-brand-soft" />
+              <span className="lb-check relative grid h-14 w-14 place-items-center rounded-full bg-brand text-white shadow-[0_10px_30px_-8px_rgba(0,179,105,0.7)]">
+                <Check className="h-7 w-7" strokeWidth={3} />
+              </span>
             </span>
-            <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-brand">Paid</p>
-            <h1 className="mt-2 font-mono text-3xl font-black text-ink">{formatXAF(value || payAmount)}</h1>
-            <p className="mt-2 text-sm text-muted">{merchantName} has received this payment.</p>
+            <p className="mt-5 text-[11px] font-semibold uppercase tracking-[0.16em] text-brand-deep">Payment complete</p>
+            <h1 className="tabular mt-2 font-mono text-4xl font-black tracking-tight text-ink">{formatXAF(value || payAmount)}</h1>
+            <p className="mt-2 text-sm text-muted">
+              <span className="font-semibold text-ink">{merchantName}</span> has received your payment.
+            </p>
+            <p className="mt-1 text-xs text-muted">
+              {new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "short", timeZone: "Africa/Douala" }).format(new Date())}
+              {" · "}Keep this screen as your receipt
+            </p>
             {shopHref ? (
               <Link href={shopHref} className="mt-6 inline-flex h-11 items-center justify-center rounded-full bg-brand px-5 text-sm font-bold text-white">
                 Back to shop
               </Link>
             ) : null}
           </CheckoutCard>
+          {signedIn ? null : (
+            <div className="mt-4 rounded-[1.5rem] bg-forest p-5 text-left text-white">
+              <p className="text-sm font-bold">Pay with no fee next time</p>
+              <p className="mt-1 text-[13px] leading-5 text-white/70">
+                Open a free LBPay wallet. Paying shops and friends from your wallet costs nothing.
+              </p>
+              <Link
+                href="/signup"
+                className="mt-4 inline-flex h-10 items-center justify-center rounded-full bg-white px-4 text-[13px] font-bold text-forest"
+              >
+                Open a free wallet
+              </Link>
+            </div>
+          )}
         </div>
       </CheckoutShell>
     );

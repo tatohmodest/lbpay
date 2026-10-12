@@ -3,6 +3,8 @@ import { catchRoute, jsonError } from "@/lib/server/api";
 import { findUserById, upsertUser } from "@/lib/server/db";
 import { hashSecret } from "@/lib/server/crypto";
 import { clearPreauth, readPreauth } from "@/lib/server/session";
+import { sendPasswordChangedEmail } from "@/lib/server/mail";
+import { getRequestLocale } from "@/lib/i18n/server";
 
 export async function POST(request: Request) {
   try {
@@ -29,6 +31,7 @@ export async function POST(request: Request) {
     user.emailVerified = true;
     await upsertUser(user);
     await clearPreauth();
+    await sendPasswordChangedEmail(user.email, user.name, await getRequestLocale()).catch(() => undefined);
 
     return NextResponse.json({ ok: true });
   } catch (error) {

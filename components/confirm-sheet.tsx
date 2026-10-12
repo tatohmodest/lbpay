@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import Link from "next/link";
+import { Lock, ShieldCheck } from "lucide-react";
 import { PinPad } from "@/components/auth/pin-pad";
 import { Button } from "@/components/ui/button";
 import { formatXAF } from "@/lib/format";
@@ -39,19 +40,29 @@ function ConfirmSheetInner({
   const wait = secondsLeft(lockedUntil, now);
 
   return (
-    <div className="fixed inset-0 z-[100] grid place-items-end bg-navy/50 p-0 md:place-items-center md:p-6">
-      <div className="w-full max-w-md rounded-t-3xl bg-white p-6 shadow-2xl md:rounded-3xl">
+    <div className="fixed inset-0 z-[100] grid place-items-end bg-forest/60 p-0 backdrop-blur-sm md:place-items-center md:p-6">
+      <div className="lb-sheet w-full max-w-md rounded-t-[2rem] bg-white p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] shadow-2xl md:rounded-[2rem] md:pb-6">
+        <div className="mx-auto mb-5 h-1 w-10 rounded-full bg-line md:hidden" />
         {step === "review" ? (
           <>
-            <p className="text-xs font-bold uppercase tracking-wide text-brand">Confirm</p>
-            <h2 className="mt-1 text-2xl font-black">{title}</h2>
+            <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.14em] text-brand-deep">
+              <ShieldCheck className="h-3.5 w-3.5" /> Check before you confirm
+            </p>
+            <h2 className="mt-2 text-2xl font-black tracking-tight">{title}</h2>
             <p className="mt-1 text-sm text-muted">{subtitle}</p>
-            <p className="mt-4 font-mono text-4xl font-black text-brand">{formatXAF(amount)}</p>
-            <dl className="mt-4 space-y-2 rounded-2xl bg-paper p-4 text-sm">
-              {details.map((row) => (
-                <div key={row.label} className="flex justify-between gap-3">
+            <p className="tabular mt-5 font-mono text-4xl font-black tracking-tight text-ink">{formatXAF(amount)}</p>
+            <dl className="mt-5 space-y-2.5 rounded-2xl bg-paper p-4 text-sm">
+              {details.map((row, i) => (
+                <div
+                  key={row.label}
+                  className={
+                    i === details.length - 1 && details.length > 2
+                      ? "flex justify-between gap-3 border-t border-dashed border-line pt-2.5"
+                      : "flex justify-between gap-3"
+                  }
+                >
                   <dt className="text-muted">{row.label}</dt>
-                  <dd className="text-right font-semibold">{row.value}</dd>
+                  <dd className="tabular text-right font-semibold text-ink">{row.value}</dd>
                 </div>
               ))}
             </dl>
@@ -67,7 +78,13 @@ function ConfirmSheetInner({
           </>
         ) : (
           <>
-            <h2 className="mb-2 text-center text-xl font-black">{confirmLabel}</h2>
+            <span className="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-full bg-brand-soft text-brand-deep">
+              <Lock className="h-5 w-5" />
+            </span>
+            <h2 className="text-center text-xl font-black">{confirmLabel}</h2>
+            <p className="mb-3 mt-1 text-center text-[13px] text-muted">
+              <span className="tabular font-semibold text-ink">{formatXAF(amount)}</span> · LBPay will never ask for your PIN
+            </p>
             <PinPad
               value={pin}
               disabled={wait > 0}

@@ -16,7 +16,13 @@ export const FEATURES = {
   international: false,
 } as const;
 
-export const INTERNATIONAL_OPENS = "this Friday";
+export const INTERNATIONAL_OPENS = "soon";
 
+/**
+ * Public, user-facing disclosure. Shown in the footer and on money screens.
+ * Keep it plain and true: who runs LBPay and how money moves.
+ */
 export const LEGAL_NOTE =
-  "Stored balances, cross-network transfers, custody, savings, lending, and merchant settlement can trigger licensing, KYC/AML, and safeguarding requirements. Confirm what can be offered directly versus through a licensed partner before enabling live money movement.";
+  "LBPay is a product of Looping Binary, built in Cameroon. Mobile Money payments run on the MTN Mobile Money and Orange Money networks through our payment processing partner. LBPay is not a bank. MTN and Orange are trademarks of their respective owners.";
+
+export const CONTACT_EMAIL = "loopingbinary@gmail.com";

@@ -1,5 +1,6 @@
 "use client";
 
+import { canonicalizeHandlePath } from "@/lib/origin";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { Logo } from "@/components/logo";
@@ -24,6 +25,7 @@ export function ShopListing({ handle }: { handle: string }) {
       const res = await fetch(`/api/wallet/lookup?q=${encodeURIComponent(handle)}`);
       const data = (await res.json()) as ShopPayload;
       if (!res.ok) throw new Error("Could not load this shop.");
+      canonicalizeHandlePath(handle, data.user?.lbpayId);
       return data;
     },
     enabled: Boolean(handle),

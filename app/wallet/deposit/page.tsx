@@ -1,5 +1,6 @@
 "use client";
 
+import { celebrate } from "@/components/success-moment";
 import { useCallback, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Field, Input } from "@/components/ui/input";
@@ -66,6 +67,7 @@ export default function DepositPage() {
           if (data.status === "success") {
             setWaiting(null);
             notify.moneyIn(value, "Wallet deposit received");
+            celebrate({ title: "Money added!", amount: value, line: "Your wallet is topped up and ready to use." });
             router.push("/wallet");
             return;
           }
@@ -98,6 +100,7 @@ export default function DepositPage() {
       if (data.status === "success") {
         setWaiting(null);
         notify.moneyIn(value, "Wallet deposit received");
+        celebrate({ title: "Money added!", amount: value, line: "Your wallet is topped up and ready to use." });
         router.push("/wallet");
         return;
       }
@@ -142,6 +145,7 @@ export default function DepositPage() {
       }
       notify.moneyIn(value, "Wallet deposit received");
       setOpen(false);
+      celebrate({ title: "Money added!", amount: value, line: "Your wallet is topped up and ready to use." });
       router.push("/wallet");
     } catch (err) {
       const fail = readPinFail(err);

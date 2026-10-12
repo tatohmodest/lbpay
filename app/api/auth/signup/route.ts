@@ -13,7 +13,7 @@ import { applyPreauthCookie } from "@/lib/server/session";
 import { defaultKyc, isBootstrapAdmin } from "@/lib/roles";
 import { uid } from "@/lib/format";
 import { DEFAULT_AVATAR } from "@/lib/avatar";
-import { isReservedHandle, normalizeHandle } from "@/lib/handle";
+import { cleanHandleInput, isReservedHandle, shortHandleOptions } from "@/lib/handle";
 import { cameroonMsisdn, isCameroonMsisdn } from "@/lib/phone";
 import type { AccountKind } from "@/lib/types";
 import { localeFromRequest } from "@/lib/i18n/locale";
@@ -28,7 +28,9 @@ export async function POST(request: Request) {
     const email = String(body.email || "").trim().toLowerCase();
     const phone = cameroonMsisdn(body.phone);
     const password = String(body.password || "");
-    const requested = normalizeHandle(String(body.lbpayId || name || email.split("@")[0]));
+    const chosen = cleanHandleInput(String(body.lbpayId || ""));
+    const fallback = shortHandleOptions(name)[0] || cleanHandleInput(email.split("@")[0]);
+    let requested = chosen || fallback;
 
     if (!name || !email || !password || password.length < 6) {
       return jsonError(t("errors.requiredSignup"));
@@ -44,6 +46,10 @@ export async function POST(request: Request) {
       return jsonError(t("errors.emailExists"), 409);
     }
 
+    if (!chosen && (isReservedHandle(requested) || (await isHandleTaken(requested, existing?.id)))) {
+      // Nobody picked this one by hand, so quietly take the next free short ID.
+      requested = await nextAvailableHandle(requested, existing?.id);
+    }
     if (isReservedHandle(requested) || (await isHandleTaken(requested, existing?.id))) {
       const suggestion = await nextAvailableHandle(requested, existing?.id);
       return NextResponse.json(

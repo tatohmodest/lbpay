@@ -55,3 +55,12 @@ export function sameOriginReturnUrl(raw: string | undefined, origin: string, fal
     return fallback;
   }
 }
+
+/** When someone opens a link with an old LBPay ID, quietly show the current one in the address bar. */
+export function canonicalizeHandlePath(opened: string, current?: string) {
+  if (typeof window === "undefined" || !current || current === opened) return;
+  const { pathname, search, hash } = window.location;
+  const prefix = `/p/${opened}`;
+  if (!pathname.toLowerCase().startsWith(prefix)) return;
+  window.history.replaceState(null, "", `/p/${current}${pathname.slice(prefix.length)}${search}${hash}`);
+}

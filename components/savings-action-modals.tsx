@@ -1,5 +1,6 @@
 "use client";
 
+import { celebrate } from "@/components/success-moment";
 import { useMemo, useState } from "react";
 import {
   AlertTriangle,
@@ -86,6 +87,15 @@ export function SavingsDepositModal({
       } else {
         notify.moneyOut(value, `Saved into ${plan.name} · streak +1`);
       }
+      celebrate({
+        title: cycles > 1 ? "You're ahead!" : "Saved!",
+        amount: value,
+        line:
+          cycles > 1
+            ? `${cycles} ${cycleUnitPlural} covered in ${plan.name}`
+            : `into ${plan.name}. Your streak keeps growing.`,
+        doneLabel: "Keep going",
+      });
       setConfirmOpen(false);
       onClose();
       onSuccess?.();

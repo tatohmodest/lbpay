@@ -1,5 +1,6 @@
 "use client";
 
+import { celebrate } from "@/components/success-moment";
 import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Field, Input } from "@/components/ui/input";
@@ -79,8 +80,17 @@ export default function WithdrawPage() {
   const finishSuccess = useCallback(() => {
     setWaiting(null);
     notify.moneyOut(debit, `Withdrew ${formatXAF(value)} to ${clean} on ${network.toUpperCase()}`);
+    celebrate({
+      title: "Withdrawn!",
+      amount: value,
+      line: `to ${clean} on ${network === "orange" ? "Orange Money" : "MTN MoMo"}`,
+      details: [
+        ...(fee ? [{ label: "Fee", value: formatXAF(fee) }] : []),
+        { label: "Total from wallet", value: formatXAF(debit) },
+      ],
+    });
     router.push("/wallet");
-  }, [clean, debit, network, notify, router, value]);
+  }, [clean, debit, fee, network, notify, router, value]);
 
   async function pollPayment(tx: string) {
     const data = await pollWithdrawStatus(tx, () => {
@@ -158,6 +168,15 @@ export default function WithdrawPage() {
       }
       notify.moneyOut(debit, `Withdrew ${formatXAF(value)} to ${clean} on ${network.toUpperCase()}`);
       setOpen(false);
+      celebrate({
+        title: "Withdrawn!",
+        amount: value,
+        line: `to ${clean} on ${network === "orange" ? "Orange Money" : "MTN MoMo"}`,
+        details: [
+          ...(fee ? [{ label: "Fee", value: formatXAF(fee) }] : []),
+          { label: "Total from wallet", value: formatXAF(debit) },
+        ],
+      });
       router.push("/wallet");
     } catch (err) {
       const fail = readPinFail(err);

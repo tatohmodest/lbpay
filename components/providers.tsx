@@ -10,6 +10,7 @@ import { PushPrompt } from "@/components/pwa/push-prompt";
 import { RegisterServiceWorker } from "@/components/pwa/register-sw";
 import { NotificationInbox } from "@/components/notification-inbox";
 import { NativeShell } from "@/components/native-shell";
+import { SuccessMomentHost } from "@/components/success-moment";
 import { I18nProvider } from "@/lib/i18n/use-i18n";
 import type { Locale } from "@/lib/i18n/locale";
 
@@ -34,6 +35,7 @@ export function AppProviders({ locale, children }: { locale: Locale; children: R
             <InstallPrompt />
             <PushPrompt />
             <NotificationInbox />
+            <SuccessMomentHost />
           </AppProvider>
         </NotifyProvider>
       </I18nProvider>

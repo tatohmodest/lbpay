@@ -107,22 +107,47 @@ export const SITE_FAQS = [
   {
     question: "What is LBPay?",
     answer:
-      "LBPay is a Cameroon payment and wallet platform. People send and receive XAF, businesses collect with QR and payment links, and developers call a payments API. MTN Mobile Money, Orange Money, cards, and the LBPay wallet are rails underneath the product.",
+      "LBPay is a payments app built in Cameroon. You get an XAF wallet with your own @handle to send, receive and save money. Businesses collect with shop links and QR codes, and developers use the payments API. MTN Mobile Money and Orange Money work underneath, so you can pay and get paid by anyone.",
+  },
+  {
+    question: "How much does LBPay cost?",
+    answer:
+      "Opening an account is free and LBPay to LBPay transfers are always free. Adding money costs 1.5%, sending to an MTN or Orange number costs 2.5%, and a direct MTN to Orange transfer costs 3.5%. The fee is added on top, so the person you pay receives the full amount, and you see the total before you enter your PIN.",
+  },
+  {
+    question: "Is my money safe with LBPay?",
+    answer:
+      "Every payment needs your 4-digit PIN, and four wrong tries lock it. Passwords and PINs are stored as salted scrypt hashes, never in plain text. Every movement is posted to a ledger with its own reference, web sessions lock after 15 minutes of inactivity, and outgoing transfers are capped at 500,000 XAF a day until your ID is verified.",
+  },
+  {
+    question: "What happens if a transfer to Mobile Money fails?",
+    answer:
+      "If MTN or Orange rejects the payout, LBPay returns the full amount and the fee to your wallet automatically. It happens once per transfer, and both entries show in your history so you can see exactly what happened.",
   },
   {
     question: "Can I send money from MTN to Orange with LBPay?",
     answer:
-      "Yes. You send to a phone number or an @handle. If the money stays on LBPay it is an internal wallet transfer. If it must leave to MTN or Orange, LBPay runs a disbursement on the payment rail.",
+      "Yes. Send to a phone number or an @handle. If the person is on LBPay the money arrives instantly and free. If it has to go to MTN or Orange, LBPay pays it out on that network for you.",
   },
   {
-    question: "Does LBPay support a payments API and sandbox?",
+    question: "How do businesses get paid with LBPay?",
     answer:
-      "Developers apply from Profile. After approval, sandbox and live keys appear in the Developer Portal. The API covers payments, payouts, payment links, webhooks, and balance.",
+      "Merchants share a shop page, a single product link, or a QR code at the counter. Customers pay with MTN Mobile Money, Orange Money, or their LBPay wallet, and every payment lands in one balance with its own record.",
   },
   {
-    question: "How do merchants collect payments in Cameroon?",
+    question: "Does LBPay have a payments API and sandbox?",
     answer:
-      "Businesses use one checkout for MTN Mobile Money, Orange Money, cards, and LBPay wallet. Customers can pay by QR code or a payment link. The merchant does not integrate each network separately.",
+      "Yes. Apply for developer access from your profile and you get sandbox keys right away. Live keys unlock after verification. The API covers payments, payouts, payment links and balance.",
+  },
+  {
+    question: "Is LBPay a bank?",
+    answer:
+      "No. LBPay is a payments product made by Looping Binary in Cameroon. Mobile Money payments run on the MTN Mobile Money and Orange Money networks through our payment processing partner.",
+  },
+  {
+    question: "How do I reach a real person?",
+    answer:
+      "Open Support in the app to chat with the team, or email loopingbinary@gmail.com. Messages go straight to the LBPay team.",
   },
 ] as const;
 

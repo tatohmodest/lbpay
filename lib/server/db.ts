@@ -50,6 +50,9 @@ export type StoredUser = {
   businessName?: string;
   businessKind?: BusinessKind;
   extraLinkPacks?: number;
+  /** Earlier LBPay IDs. Still reserved to this user so old links keep working. */
+  previousHandles?: string[];
+  handleChangedAt?: string;
   createdAt: string;
 };
 
@@ -596,8 +599,43 @@ export async function findUserByHandle(handle: string) {
   const db = await getDb();
   const id = handle.replace(/^@/, "").trim().toLowerCase();
   if (!id) return null;
-  const user = db.users.find((u) => u.lbpayId.toLowerCase() === id) ?? null;
+  const user =
+    db.users.find((u) => u.lbpayId.toLowerCase() === id) ??
+    db.users.find((u) => u.previousHandles?.includes(id)) ??
+    null;
   return user ? normalizeUser(user) : null;
+}
+
+export const HANDLE_CHANGE_COOLDOWN_DAYS = 30;
+
+/** Move a user to a new LBPay ID. The old one stays theirs, so shared links still resolve. */
+export async function changeHandle(userId: string, desired: string) {
+  const user = await findUserById(userId);
+  if (!user) throw new Error("Account not found.");
+  const next = normalizeHandle(desired);
+  if (next === user.lbpayId) return user;
+  if (user.handleChangedAt) {
+    const wait = new Date(user.handleChangedAt).getTime() + HANDLE_CHANGE_COOLDOWN_DAYS * 86_400_000 - Date.now();
+    if (wait > 0) {
+      const days = Math.ceil(wait / 86_400_000);
+      throw new Error(`You can change your LBPay ID again in ${days} day${days === 1 ? "" : "s"}.`);
+    }
+  }
+  if (isReservedHandle(next)) throw new Error("Choose a different LBPay ID.");
+  const owner = await findUserByHandle(next);
+  const reclaimingOwn = owner?.id === userId;
+  if ((owner && !reclaimingOwn) || (!reclaimingOwn && (await isHandleTaken(next, userId)))) {
+    throw new Error(`@${next} is already taken.`);
+  }
+  const previous = Array.from(new Set([user.lbpayId, ...(user.previousHandles || [])])).filter((h) => h !== next);
+  const updated: StoredUser = {
+    ...user,
+    lbpayId: next,
+    previousHandles: previous.slice(0, 5),
+    handleChangedAt: new Date().toISOString(),
+  };
+  await upsertUser(updated);
+  return updated;
 }
 
 export async function isHandleTaken(handle: string, exceptUserId?: string) {

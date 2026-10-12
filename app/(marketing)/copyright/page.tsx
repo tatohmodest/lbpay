@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { Container } from "@/components/marketing/container";
+import { LegalLayout, LegalSection } from "@/components/marketing/legal";
+import { CONTACT_EMAIL } from "@/lib/flags";
 import { SITE_OG_IMAGE } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -21,43 +22,49 @@ export const metadata: Metadata = {
   },
 };
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section className="space-y-3">
-      <h2 className="text-xl font-semibold tracking-tight text-ink md:text-2xl">{title}</h2>
-      <div className="space-y-3 text-[15px] leading-7 text-[#3c4257]">{children}</div>
-    </section>
-  );
-}
+const TOC = [
+  "1. LBPay Intellectual Property",
+  "2. Restrictions on Use",
+  "3. User Content",
+  "4. Reporting Copyright Infringement",
+  "5. Review and Removal",
+  "6. Repeat Infringement",
+  "7. False Claims",
+  "8. Trademarks",
+  "9. Contact",
+];
 
 export default function CopyrightPolicyPage() {
   return (
-    <div className="bg-paper py-12 md:py-16">
-      <Container className="max-w-4xl">
-        <article className="rounded-2xl border border-line bg-white p-6 shadow-[0_1px_2px_rgba(10,37,64,0.04)] md:p-10">
-          <header className="space-y-3 border-b border-line pb-6">
-            <h1 className="text-3xl font-extrabold tracking-tight text-ink md:text-4xl">
-              Copyright &amp; Intellectual Property Policy
-            </h1>
-            <p className="text-sm text-muted">Last Updated: September 7, 2026</p>
-            <p className="text-[15px] leading-7 text-[#3c4257]">
+    <LegalLayout
+      eyebrow="Legal"
+      title="Copyright & Intellectual Property"
+      updated="September 7, 2026"
+      summary={[
+        "The LBPay name, logo, app and website belong to LBPay and Looping Binary.",
+        "If you upload content such as product photos, make sure you have the right to use it.",
+        "If you believe something on LBPay infringes your rights, email us and we'll review it.",
+      ]}
+      toc={TOC}
+    >
+      <div className="space-y-4 text-[16px] leading-[1.8] text-ink/75">
+      <p>
               LBPay and Looping Binary respect intellectual property rights and expect all users
               of the LBPay Services to do the same.
             </p>
-            <p className="text-[15px] leading-7 text-[#3c4257]">
+      <p>
               This policy explains the ownership of intellectual property associated with LBPay
               and the process for reporting material that you believe infringes your copyright or
               other intellectual property rights.
             </p>
-          </header>
+      </div>
 
-          <div className="mt-8 space-y-8">
-            <Section title="1. LBPay Intellectual Property">
+            <LegalSection title="1. LBPay Intellectual Property">
               <p>
                 Unless otherwise stated, the following materials are owned by or licensed to LBPay
                 or Looping Binary:
               </p>
-              <ul className="list-disc space-y-1 pl-5">
+              <ul>
                 <li>LBPay name and branding</li>
                 <li>LBPay logos and trademarks</li>
                 <li>Website design</li>
@@ -81,11 +88,11 @@ export default function CopyrightPolicyPage() {
                 These materials are protected by applicable copyright, trademark, intellectual
                 property, and other laws.
               </p>
-            </Section>
+            </LegalSection>
 
-            <Section title="2. Restrictions on Use">
+            <LegalSection title="2. Restrictions on Use">
               <p>Unless LBPay provides written permission, you may not:</p>
-              <ul className="list-disc space-y-1 pl-5">
+              <ul>
                 <li>Copy substantial portions of LBPay&apos;s website or software</li>
                 <li>Reproduce LBPay&apos;s branding or logo</li>
                 <li>
@@ -107,16 +114,16 @@ export default function CopyrightPolicyPage() {
                 Using LBPay&apos;s Services does not transfer ownership of LBPay&apos;s intellectual
                 property to you.
               </p>
-            </Section>
+            </LegalSection>
 
-            <Section title="3. User Content">
+            <LegalSection title="3. User Content">
               <p>
                 If users are permitted to upload, submit, publish, or otherwise provide content
                 through LBPay, users remain responsible for ensuring that they have the necessary
                 rights and permissions to use that content.
               </p>
               <p>You must not upload or submit material that:</p>
-              <ul className="list-disc space-y-1 pl-5">
+              <ul>
                 <li>Infringes another person&apos;s copyright</li>
                 <li>Violates trademark rights</li>
                 <li>Violates intellectual property rights</li>
@@ -127,9 +134,9 @@ export default function CopyrightPolicyPage() {
                 By submitting content to LBPay, you represent that you have the necessary rights to
                 provide that content.
               </p>
-            </Section>
+            </LegalSection>
 
-            <Section title="4. Reporting Copyright Infringement">
+            <LegalSection title="4. Reporting Copyright Infringement">
               <p>
                 If you believe that content available through LBPay infringes your copyright, you
                 may submit a written copyright complaint.
@@ -154,15 +161,15 @@ export default function CopyrightPolicyPage() {
                 </li>
                 <li>Your physical or electronic signature.</li>
               </ol>
-            </Section>
+            </LegalSection>
 
-            <Section title="5. Review and Removal">
+            <LegalSection title="5. Review and Removal">
               <p>
                 Upon receiving a sufficiently detailed complaint, LBPay may investigate the reported
                 material.
               </p>
               <p>Where appropriate and legally permitted, LBPay may:</p>
-              <ul className="list-disc space-y-1 pl-5">
+              <ul>
                 <li>Remove or restrict access to the reported material</li>
                 <li>Contact the relevant user</li>
                 <li>Request additional information</li>
@@ -170,26 +177,26 @@ export default function CopyrightPolicyPage() {
                 <li>Take other appropriate action</li>
               </ul>
               <p>LBPay does not guarantee that every complaint will result in removal.</p>
-            </Section>
+            </LegalSection>
 
-            <Section title="6. Repeat Infringement">
+            <LegalSection title="6. Repeat Infringement">
               <p>
                 LBPay may suspend or terminate accounts that repeatedly infringe the intellectual
                 property rights of others.
               </p>
               <p>The action taken will depend on the circumstances and applicable law.</p>
-            </Section>
+            </LegalSection>
 
-            <Section title="7. False Claims">
+            <LegalSection title="7. False Claims">
               <p>Copyright complaints must be made in good faith.</p>
               <p>
                 Knowingly submitting false or misleading copyright complaints may result in
                 appropriate action and may expose the person submitting the complaint to legal
                 consequences.
               </p>
-            </Section>
+            </LegalSection>
 
-            <Section title="8. Trademarks">
+            <LegalSection title="8. Trademarks">
               <p>
                 LBPay, the LBPay logo, Looping Binary, and associated names, logos, designs, and
                 marks may constitute trademarks or other protected identifiers.
@@ -199,27 +206,19 @@ export default function CopyrightPolicyPage() {
                 suggests sponsorship, partnership, endorsement, or affiliation without written
                 authorization.
               </p>
-            </Section>
+            </LegalSection>
 
-            <Section title="9. Contact">
+            <LegalSection title="9. Contact">
               <p>Copyright and intellectual property complaints should be sent to:</p>
               <p>
                 <strong>LBPay / Looping Binary</strong>
-                <br />Copyright Contact: [INSERT COPYRIGHT EMAIL]
+                <br />Copyright Contact: {CONTACT_EMAIL}
               </p>
               <p>
                 Subject: <strong>Copyright Infringement Notice</strong>
               </p>
               <p>We may request additional information where necessary to investigate a complaint.</p>
-            </Section>
-
-            <p className="border-t border-line pt-6 text-sm leading-6 text-muted">
-              This policy does not constitute legal advice and may be updated as LBPay&apos;s Services
-              and applicable legal requirements develop.
-            </p>
-          </div>
-        </article>
-      </Container>
-    </div>
+            </LegalSection>
+    </LegalLayout>
   );
 }

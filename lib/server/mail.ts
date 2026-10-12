@@ -1,4 +1,5 @@
 import type { Locale } from "@/lib/i18n/locale";
+import { SITE_URL } from "@/lib/site";
 
 function isWorkersRuntime() {
   return typeof (globalThis as { WebSocketPair?: unknown }).WebSocketPair === "function";
@@ -322,4 +323,30 @@ export async function sendSupportNotice(input: {
     text: `${input.intro}\n\n${input.body}\n\n${input.href}`,
     replyTo: input.replyTo,
   });
+}
+
+/**
+ * "Your password was changed" alert. Sent after every reset so a stolen
+ * account is noticed within minutes. Failure to send never blocks the reset.
+ */
+export async function sendPasswordChangedEmail(to: string, name: string | undefined, locale: Locale = "en") {
+  const fr = locale === "fr";
+  const when = new Intl.DateTimeFormat(fr ? "fr-FR" : "en-GB", {
+    dateStyle: "long",
+    timeStyle: "short",
+    timeZone: "Africa/Douala",
+  }).format(new Date());
+  const hello = name ? (fr ? `Bonjour ${name},` : `Hi ${name},`) : fr ? "Bonjour," : "Hi,";
+  const title = fr ? "Votre mot de passe LBPay a été modifié" : "Your LBPay password was changed";
+  const body = fr
+    ? `${hello}\n\nLe mot de passe de votre compte LBPay a été modifié le ${when} (heure du Cameroun).\n\nSi c'était vous, vous n'avez rien à faire.\n\nSi ce n'était pas vous, répondez immédiatement à cet email ou écrivez-nous depuis l'application. Ne partagez jamais votre PIN ni vos codes : LBPay ne vous les demandera jamais.`
+    : `${hello}\n\nThe password on your LBPay account was changed on ${when} (Cameroon time).\n\nIf this was you, there's nothing else to do.\n\nIf it wasn't you, reply to this email right away or message us from the app. Never share your PIN or codes: LBPay will never ask for them.`;
+  const html = supportShell(
+    title,
+    fr ? "Alerte de sécurité" : "Security alert",
+    body,
+    `${SITE_URL}/security`,
+    fr ? "Comment nous protégeons votre compte" : "How we protect your account",
+  );
+  return sendRawEmail({ to, subject: title, html, text: body });
 }

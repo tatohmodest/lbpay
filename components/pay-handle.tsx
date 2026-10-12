@@ -1,5 +1,6 @@
 "use client";
 
+import { canonicalizeHandlePath } from "@/lib/origin";
 import { useQuery } from "@tanstack/react-query";
 import { CheckoutPay } from "@/components/checkout-pay";
 import { Logo } from "@/components/logo";
@@ -16,6 +17,7 @@ export function PayHandle({ handle }: { handle: string }) {
       const res = await fetch(`/api/wallet/lookup?q=${encodeURIComponent(handle)}`);
       const data = (await res.json()) as HandlePayload;
       if (!res.ok) throw new Error("Could not load this account.");
+      canonicalizeHandlePath(handle, data?.user?.lbpayId);
       return data;
     },
     enabled: Boolean(handle),

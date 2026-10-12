@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
 import { AppProviders } from "@/components/providers";
 import { SiteJsonLd } from "@/components/json-ld";
 import { getRequestLocale } from "@/lib/i18n/server";
@@ -22,6 +22,15 @@ const geist = Geist({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+});
+
+/** Serif accent used for one or two warm words in headlines (`.font-display`). */
+const displaySerif = Instrument_Serif({
+  variable: "--font-marketing-serif",
+  subsets: ["latin"],
+  weight: "400",
+  style: ["normal", "italic"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -96,7 +105,7 @@ export default async function RootLayout({
 }>) {
   const locale = await getRequestLocale();
   return (
-    <html lang={locale} data-scroll-behavior="smooth" className={`${geist.variable} ${geistMono.variable} h-full`}>
+    <html lang={locale} data-scroll-behavior="smooth" className={`${geist.variable} ${geistMono.variable} ${displaySerif.variable} h-full`}>
       <body className="min-h-full bg-paper font-sans text-ink antialiased">
         <SiteJsonLd />
         <AppProviders locale={locale}>{children}</AppProviders>

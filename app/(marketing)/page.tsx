@@ -1,29 +1,49 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRight,
-  Check,
-  Flame,
-  Globe,
+  Code2,
+  Eye,
+  FileCheck2,
+  Fingerprint,
+  KeyRound,
   Lock,
-  PiggyBank,
-  Play,
+  RotateCcw,
   ShieldCheck,
+  Store,
+  TimerReset,
   Wallet,
-  Zap,
 } from "lucide-react";
 import { Suspense } from "react";
+import { AppImg } from "@/components/app-img";
 import { FaqJsonLd } from "@/components/json-ld";
 import { Container } from "@/components/marketing/container";
 import { FaqAccordion } from "@/components/marketing/faq-accordion";
+import { FeeCalculator } from "@/components/marketing/fee-calculator";
 import { HomeReviews } from "@/components/marketing/home-reviews";
-import { SendWidget } from "@/components/marketing/send-widget";
 import { AfricaCorridors, SavingsShowcase } from "@/components/marketing/growth-sections";
-import { Button } from "@/components/ui/button";
+import {
+  ApiConsole,
+  CheckoutCard,
+  PhoneFrame,
+  SecureToast,
+  SentToast,
+  WalletScreen,
+} from "@/components/marketing/mocks";
+import {
+  Accent,
+  ButtonLink,
+  CtaBand,
+  Eyebrow,
+  Feature,
+  Lead,
+  SectionTitle,
+} from "@/components/marketing/ui";
 import { SITE_DESCRIPTION, SITE_OG_IMAGE, SITE_TITLE, SITE_URL } from "@/lib/site";
 import { getRequestLocale } from "@/lib/i18n/server";
 import { translate } from "@/lib/i18n/messages";
+import { FEE_RATES, feePercent } from "@/lib/fees";
+import { CONTACT_EMAIL } from "@/lib/flags";
 
 export const metadata: Metadata = {
   title: { absolute: SITE_TITLE },
@@ -43,284 +63,339 @@ export const metadata: Metadata = {
   },
 };
 
-const rails = ["MTN Mobile Money", "Orange Money", "Cards", "LBPay wallet"];
+const cities = ["Douala", "Yaoundé", "Bafoussam", "Bamenda", "Garoua", "Buea"];
 
-const features = [
-  { icon: Zap, title: "Fast & affordable", copy: "Wallet to wallet is instant. No waiting on a float agent." },
-  { icon: PiggyBank, title: "Savings with teeth", copy: "Daily, weekly or monthly pots. Miss a cycle and the penalty you chose is cut." },
-  { icon: Globe, title: "Cameroon first, Africa next", copy: "XAF at home. Naira, cedi and CFA delivered in 9 more countries." },
-  { icon: Wallet, title: "Extra clear fees", copy: "Deposits 1.5%. Withdrawals 2.5%. MTN ↔ Orange is 3.5%. Wallet transfers are free." },
-  { icon: Lock, title: "Secure & trusted", copy: "Email OTP, a 4-digit PIN, and a ledger that posts every move." },
+const protections = [
+  {
+    icon: KeyRound,
+    title: "Your PIN on every payment",
+    copy: "Nothing leaves your wallet without your 4-digit PIN. Four wrong tries and it locks.",
+  },
+  {
+    icon: Fingerprint,
+    title: "Secrets we can't read",
+    copy: "Passwords and PINs are stored as salted scrypt hashes. Not even our team can see them.",
+  },
+  {
+    icon: FileCheck2,
+    title: "A ledger for every franc",
+    copy: "Each movement is posted with its own reference, so your history always adds up.",
+  },
+  {
+    icon: RotateCcw,
+    title: "Automatic refunds",
+    copy: "If MTN or Orange rejects a payout, the amount and the fee come back to you.",
+  },
+  {
+    icon: TimerReset,
+    title: "Sessions that lock themselves",
+    copy: "Leave LBPay open on the web and it signs out after 15 quiet minutes.",
+  },
+  {
+    icon: Eye,
+    title: "Limits until we know it's you",
+    copy: "Outgoing transfers are capped at 500,000 XAF a day until your ID is verified.",
+  },
 ];
 
 const steps = [
-  { n: "01", title: "Create account", copy: "Name, email, phone, password. Confirm with a 6-digit code." },
-  { n: "02", title: "Set your PIN", copy: "Four digits. You use it on every send, deposit, and withdrawal." },
-  { n: "03", title: "Send money", copy: "A number or an @handle. LBPay picks the rail underneath." },
+  {
+    n: "1",
+    title: "Create your account",
+    copy: "Name, email, phone number. Confirm with the 6-digit code we email you. About two minutes.",
+  },
+  {
+    n: "2",
+    title: "Set your PIN",
+    copy: "Four digits that only you know. You'll use it every time money moves.",
+  },
+  {
+    n: "3",
+    title: "Send, save, get paid",
+    copy: "Pick an @handle, add money from MTN or Orange, and you're ready.",
+  },
 ];
-
-const cities = ["Douala", "Yaoundé", "Bafoussam", "Bamenda", "Garoua", "Buea"];
-
-function Tick({ children }: { children: React.ReactNode }) {
-  return (
-    <li className="flex items-start gap-3 text-[15px] leading-6 text-ink">
-      <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-brand text-white">
-        <Check className="h-3 w-3" strokeWidth={3} />
-      </span>
-      {children}
-    </li>
-  );
-}
 
 export default async function LandingPage() {
   const locale = await getRequestLocale();
   const t = (path: string) => translate(locale, path);
+
   return (
     <div className="bg-paper">
       <FaqJsonLd />
 
-      <section className="-mt-[var(--header-h)] bg-forest text-white">
-        <Container className="pb-10 pt-[calc(var(--header-h)+3.5rem)] text-center md:pb-6 md:pt-[calc(var(--header-h)+4.5rem)]">
-          <p className="mx-auto mb-5 inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 text-[12px] font-semibold text-hero-muted ring-1 ring-white/15">
-            <Flame className="h-3.5 w-3.5 text-brand" /> {t("home.heroPill")}
-          </p>
-          <h1 className="mx-auto max-w-[16ch] text-[2.6rem] font-extrabold leading-[1.08] tracking-tight md:text-[4.25rem]">
-            {t("home.heroTitle")}
-          </h1>
-          <p className="mx-auto mt-5 max-w-xl text-[16px] leading-8 text-hero-muted md:text-lg">
-            {t("home.heroCopy")}
-          </p>
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <Link href="/signup">
-              <Button size="lg" className="rounded-full px-7">
-                {t("home.openAccount")} <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
-            <Link href="/#how-lbpay-works">
-              <Button
-                size="lg"
-                variant="secondary"
-                className="rounded-full border-white/25 bg-transparent px-7 text-white hover:bg-white/10"
-              >
-                <Play className="h-4 w-4 fill-current" /> {t("home.howItWorks")}
-              </Button>
-            </Link>
-          </div>
-          <dl className="mx-auto mt-10 grid max-w-2xl grid-cols-3 divide-x divide-white/10 text-center">
-            {[
-              { v: "0 XAF", k: "Wallet to wallet" },
-              { v: "2.5%", k: "Send abroad" },
-              { v: "10", k: "Countries" },
-            ].map((item) => (
-              <div key={item.k} className="px-3">
-                <dt className="font-mono text-xl font-black tracking-tight md:text-2xl">{item.v}</dt>
-                <dd className="mt-0.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-hero-muted">{item.k}</dd>
-              </div>
-            ))}
-          </dl>
-        </Container>
-        <div className="relative mx-auto max-w-[1180px] px-5 md:px-8">
-          <Image
-            src="/illustrations/hero-devices.webp"
-            alt="LBPay wallet on desktop and phone, balances in XAF"
-            width={1600}
-            height={900}
-            priority
-            className="h-auto w-full rounded-t-[1.5rem] md:rounded-t-[2rem]"
-          />
-        </div>
-      </section>
-
-      <section className="bg-white">
-        <Container className="flex flex-wrap items-center justify-between gap-4 py-6">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
-            Works with
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {rails.map((rail) => (
-              <span
-                key={rail}
-                className="rounded-full bg-paper px-4 py-1.5 text-sm font-medium text-ink"
-              >
-                {rail}
-              </span>
-            ))}
-          </div>
-        </Container>
-      </section>
-
-      <section id="products" className="bg-paper py-20 lg:py-24">
-        <Container>
-          <h2 className="mx-auto max-w-3xl text-center text-3xl font-extrabold tracking-tight text-ink md:text-[2.6rem] md:leading-[1.15]">
-            Fast and secure money transfers for people and businesses.
-          </h2>
-          <div className="mt-12 grid gap-5 lg:grid-cols-2">
-            <Link
-              href="/products/wallet"
-              className="overflow-hidden rounded-[1.75rem] bg-forest text-white shadow-[0_20px_50px_rgba(6,38,28,0.18)]"
-            >
-              <div className="p-8 pb-4">
-                <p className="text-sm font-semibold text-brand">For personal</p>
-                <h3 className="mt-2 text-2xl font-extrabold tracking-tight">Your XAF wallet, with an @handle.</h3>
-                <p className="mt-3 text-sm leading-6 text-white/70">
-                  Send, request, split, and cash out to Mobile Money.
-                </p>
-                <span className="mt-6 inline-flex items-center gap-2 rounded-full bg-brand px-4 py-2 text-sm font-semibold text-white">
-                  Open wallet <ArrowRight className="h-4 w-4" />
-                </span>
-              </div>
-              <Image
-                src="/illustrations/personal-phone.webp"
-                alt="LBPay personal wallet on a phone"
-                width={1200}
-                height={900}
-                className="h-auto w-full"
-              />
-            </Link>
-            <Link
-              href="/products/business"
-              className="overflow-hidden rounded-[1.75rem] bg-forest text-white shadow-[0_20px_50px_rgba(6,38,28,0.18)]"
-            >
-              <div className="p-8 pb-4">
-                <p className="text-sm font-semibold text-brand">For businesses</p>
-                <h3 className="mt-2 text-2xl font-extrabold tracking-tight">Run your business with product links.</h3>
-                <p className="mt-3 text-sm leading-6 text-white/70">
-                  Share a shop page or one product. Customers pay with MTN, Orange, or wallet.
-                </p>
-                <span className="mt-6 inline-flex items-center gap-2 rounded-full bg-brand px-4 py-2 text-sm font-semibold text-white">
-                  See checkout <ArrowRight className="h-4 w-4" />
-                </span>
-              </div>
-              <Image
-                src="/illustrations/business-kit.webp"
-                alt="LBPay merchant QR, card, and dashboard"
-                width={1200}
-                height={900}
-                className="h-auto w-full"
-              />
-            </Link>
-          </div>
-        </Container>
-      </section>
-
-      <section className="bg-white py-20 lg:py-24">
-        <Container>
-          <div className="flex flex-col items-start justify-between gap-6 md:flex-row md:items-end">
-            <h2 className="max-w-xl text-3xl font-extrabold tracking-tight md:text-[2.4rem] md:leading-[1.15]">
-              The money transfer layer Cameroon already needed.
-            </h2>
-            <Link href="/signup">
-              <Button className="rounded-full px-6">Get started</Button>
-            </Link>
-          </div>
-          <div className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-5">
-            {features.map((item) => (
-              <div key={item.title}>
-                <span className="grid h-12 w-12 place-items-center rounded-full bg-brand text-white">
-                  <item.icon className="h-5 w-5" />
-                </span>
-                <h3 className="mt-4 text-base font-semibold text-ink">{item.title}</h3>
-                <p className="mt-2 text-sm leading-6 text-muted">{item.copy}</p>
-              </div>
-            ))}
-          </div>
-        </Container>
-      </section>
-
-      <section className="bg-paper py-20 lg:py-24">
-        <Container className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
-          <div>
-            <h2 className="text-3xl font-extrabold tracking-tight md:text-[2.4rem] md:leading-[1.15]">
-              One account for MTN, Orange, and XAF.
-            </h2>
-            <p className="mt-4 text-[16px] leading-7 text-muted">
-              Hold a balance, send to a phone or @handle, and only settle out to Mobile Money when
-              cash has to leave the ledger.
+      {/* ------------------------------------------------------------ Hero */}
+      <section className="relative -mt-[var(--header-h)] overflow-hidden bg-forest text-white">
+        <div className="lb-glow pointer-events-none absolute inset-0" />
+        <div className="lb-grid-bg pointer-events-none absolute inset-0" />
+        <Container className="relative grid items-center gap-14 pb-20 pt-[calc(var(--header-h)+3rem)] md:pt-[calc(var(--header-h)+4.5rem)] lg:grid-cols-[1.1fr_0.9fr] lg:pb-28">
+          <div className="lb-rise text-center lg:text-left">
+            <p className="inline-flex items-center gap-2 rounded-full bg-white/[0.07] px-3.5 py-1.5 text-[12px] font-medium text-hero-muted ring-1 ring-white/10">
+              <span className="lb-live-dot h-1.5 w-1.5 rounded-full bg-brand" />
+              {t("home.heroPill")}
             </p>
-            <ul className="mt-6 space-y-3">
-              <Tick>@handle instead of memorising numbers</Tick>
-              <Tick>Wallet to wallet posts instantly</Tick>
-              <Tick>Cash out to MTN or Orange when you need it</Tick>
+            <h1 className="mx-auto mt-7 max-w-[13ch] text-balance text-[3rem] font-bold leading-[1] tracking-[-0.035em] sm:text-[3.75rem] lg:mx-0 lg:text-[5rem]">
+              {t("home.heroTitle")} <Accent className="text-brand">{t("home.heroAccent")}</Accent>
+            </h1>
+            <p className="mx-auto mt-7 max-w-xl text-pretty text-[17px] leading-8 text-hero-muted lg:mx-0 lg:text-lg">
+              {t("home.heroCopy")}
+            </p>
+            <div className="mt-9 flex flex-wrap items-center justify-center gap-3 lg:justify-start">
+              <ButtonLink href="/signup" arrow>
+                {t("home.openAccount")}
+              </ButtonLink>
+              <ButtonLink href="/#fees" variant="ghost-dark">
+                {t("home.howItWorks")}
+              </ButtonLink>
+            </div>
+            <ul className="mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-[13px] text-white/60 lg:justify-start">
+              <li className="flex items-center gap-2">
+                <Lock className="h-3.5 w-3.5 text-brand" /> PIN on every payment
+              </li>
+              <li className="flex items-center gap-2">
+                <ShieldCheck className="h-3.5 w-3.5 text-brand" /> Fees shown before you pay
+              </li>
+              <li className="flex items-center gap-2">
+                <RotateCcw className="h-3.5 w-3.5 text-brand" /> Failed payouts refunded
+              </li>
             </ul>
-            <Link href="/products/wallet" className="mt-8 inline-block">
-              <Button className="rounded-full px-6">See the wallet</Button>
+          </div>
+
+          <div className="lb-rise relative mx-auto [animation-delay:200ms]">
+            <div className="absolute -inset-10 rounded-full bg-brand/20 blur-3xl" />
+            <PhoneFrame className="relative">
+              <WalletScreen />
+            </PhoneFrame>
+            <SentToast className="lb-float absolute -left-20 top-[46%] hidden sm:flex" />
+            <SecureToast className="lb-float-delayed absolute -right-12 top-20 hidden sm:flex" />
+          </div>
+        </Container>
+      </section>
+
+      {/* ------------------------------------------------------------ Rails */}
+      <section className="border-b border-line bg-white">
+        <Container className="flex flex-col items-center justify-between gap-5 py-7 md:flex-row">
+          <p className="text-[13px] font-medium text-muted">Works with the money Cameroon already uses</p>
+          <ul className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
+            {[
+              { short: "MTN", label: "MTN Mobile Money", tone: "bg-mtn text-black" },
+              { short: "OM", label: "Orange Money", tone: "bg-om text-white" },
+              { short: "LB", label: "LBPay wallet", tone: "bg-brand text-white" },
+            ].map((r) => (
+              <li key={r.label} className="flex items-center gap-2.5 text-[14px] font-semibold text-ink">
+                <span className={`grid h-7 w-7 place-items-center rounded-lg text-[8px] font-black ${r.tone}`}>
+                  {r.short}
+                </span>
+                {r.label}
+              </li>
+            ))}
+            <li className="text-[13px] font-medium text-muted">Cards coming soon</li>
+          </ul>
+        </Container>
+      </section>
+
+      {/* ------------------------------------------------------------ Products */}
+      <section id="products" className="py-20 lg:py-28">
+        <Container>
+          <div className="mx-auto max-w-2xl text-center">
+            <Eyebrow className="justify-center">One account</Eyebrow>
+            <SectionTitle className="mt-4">
+              Everything you do with money, <Accent>in one place.</Accent>
+            </SectionTitle>
+            <Lead className="mx-auto mt-5 max-w-xl">
+              Start with a personal wallet. Open a shop when you&apos;re ready to sell. Build with the API when
+              your product needs to take payments.
+            </Lead>
+          </div>
+
+          <div className="mt-14 grid gap-5 lg:grid-cols-3">
+            <ProductTile
+              href="/products/wallet"
+              icon={Wallet}
+              eyebrow="Personal"
+              title="Your XAF wallet, with your name on it."
+              copy="Send to an @handle or any MTN and Orange number. Request money, save toward goals, cash out."
+              visual={
+                <div className="lb-house-card mx-auto w-full max-w-[280px] rounded-2xl p-4 text-white">
+                  <p className="text-[11px] text-white/75">@ngono · Wallet</p>
+                  <p className="tabular mt-1 text-2xl font-bold">84 200 XAF</p>
+                  <div className="mt-4 flex gap-1.5">
+                    {["Send", "Request", "Save"].map((a) => (
+                      <span key={a} className="rounded-full bg-white/20 px-2.5 py-1 text-[10px] font-semibold">
+                        {a}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              }
+            />
+            <ProductTile
+              href="/products/business"
+              icon={Store}
+              eyebrow="Business"
+              title="Get paid by link, QR, or shop page."
+              copy="Share a product on WhatsApp. Customers pay with MTN, Orange, or wallet. You get one balance."
+              visual={
+                <div className="mx-auto w-full max-w-[280px] rounded-2xl bg-white p-4 text-ink shadow-sm ring-1 ring-line">
+                  <div className="flex items-center gap-2.5">
+                    <span className="grid h-9 w-9 place-items-center rounded-xl bg-gold-soft">👗</span>
+                    <div className="min-w-0 leading-tight">
+                      <p className="truncate text-[12px] font-bold">Boutique Ndolo</p>
+                      <p className="text-[10px] text-muted">3 new payments today</p>
+                    </div>
+                  </div>
+                  <div className="mt-3 flex items-center justify-between rounded-xl bg-paper px-3 py-2">
+                    <span className="text-[11px] text-muted">Today</span>
+                    <span className="tabular text-[13px] font-bold">+ 46 500 XAF</span>
+                  </div>
+                </div>
+              }
+            />
+            <ProductTile
+              href="/products/developers"
+              icon={Code2}
+              eyebrow="Developers"
+              title="A payments API that speaks XAF."
+              copy="Collect and pay out on MTN and Orange with one integration. Sandbox first, live when verified."
+              visual={
+                <div className="mx-auto w-full max-w-[280px] rounded-2xl bg-[#07120e] p-4 font-mono text-[11px] leading-5 text-white/70">
+                  <p>
+                    <span className="text-brand">POST</span> /v1/payments
+                  </p>
+                  <p className="text-white/40">→ 201 · pay_8Kq2…</p>
+                  <p className="mt-1">
+                    status: <span className="text-[#9fe8c4]">&quot;success&quot;</span>
+                  </p>
+                </div>
+              }
+            />
+          </div>
+        </Container>
+      </section>
+
+      {/* ------------------------------------------------------------ Fees */}
+      <section id="fees" className="bg-white py-20 lg:py-28">
+        <Container className="grid items-center gap-14 lg:grid-cols-[0.9fr_1.1fr] lg:gap-20">
+          <div>
+            <Eyebrow>Pricing</Eyebrow>
+            <SectionTitle className="mt-4">
+              Fees on the wall, <Accent>not in the fine print.</Accent>
+            </SectionTitle>
+            <Lead className="mt-5">
+              No monthly fee and no exchange-rate tricks. You see the fee and the total before you enter your PIN,
+              and the person you pay always receives the full amount.
+            </Lead>
+            <dl className="mt-10 grid grid-cols-2 gap-px overflow-hidden rounded-2xl bg-line ring-1 ring-line">
+              {[
+                { k: "LBPay to LBPay", v: "Free" },
+                { k: "Add money", v: `${feePercent(FEE_RATES.deposit)}%` },
+                { k: "To MTN or Orange", v: `${feePercent(FEE_RATES.withdraw)}%` },
+                { k: "MTN ↔ Orange direct", v: `${feePercent(FEE_RATES.crossNetwork)}%` },
+              ].map((row) => (
+                <div key={row.k} className="bg-white p-5">
+                  <dt className="text-[13px] text-muted">{row.k}</dt>
+                  <dd className="tabular mt-1 text-2xl font-bold tracking-tight text-ink">{row.v}</dd>
+                </div>
+              ))}
+            </dl>
+            <Link
+              href="/pricing"
+              className="mt-6 inline-flex items-center gap-1.5 text-[15px] font-semibold text-brand-deep hover:underline"
+            >
+              See full pricing and limits <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
-          <Image
-            src="/illustrations/wallet-panel.webp"
-            alt="LBPay XAF balances across MTN, Orange, wallet, and cards"
-            width={1200}
-            height={900}
-            className="h-auto w-full"
-          />
+          <FeeCalculator />
+        </Container>
+      </section>
+
+      {/* ------------------------------------------------------------ Security */}
+      <section className="relative overflow-hidden bg-forest py-20 text-white lg:py-28">
+        <div className="lb-grid-bg pointer-events-none absolute inset-0" />
+        <Container className="relative">
+          <div className="grid gap-10 lg:grid-cols-[1fr_1fr] lg:items-end">
+            <div>
+              <Eyebrow tone="dark">Security</Eyebrow>
+              <SectionTitle className="mt-4">
+                Built to guard <Accent className="text-brand">every franc.</Accent>
+              </SectionTitle>
+            </div>
+            <p className="max-w-lg text-[17px] leading-8 text-hero-muted">
+              Trust isn&apos;t a badge we put on a page. It&apos;s a set of rules the app follows every
+              single time money moves. Here are the ones that matter most.
+            </p>
+          </div>
+          <div className="mt-14 grid gap-x-10 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
+            {protections.map((p) => (
+              <Feature key={p.title} icon={p.icon} title={p.title} tone="dark">
+                {p.copy}
+              </Feature>
+            ))}
+          </div>
+          <div className="mt-14 flex flex-wrap items-center gap-4 border-t border-white/10 pt-8">
+            <ButtonLink href="/security" variant="white" size="md" arrow>
+              How we protect your money
+            </ButtonLink>
+            <p className="text-[14px] text-white/50">Written in plain language, no jargon.</p>
+          </div>
+        </Container>
+      </section>
+
+      {/* ------------------------------------------------------------ Business + API */}
+      <section className="py-20 lg:py-28">
+        <Container className="grid items-center gap-14 lg:grid-cols-2 lg:gap-20">
+          <div className="relative order-2 flex justify-center lg:order-1">
+            <div className="absolute inset-6 rounded-[2.5rem] bg-forest" />
+            <div className="relative px-6 py-10 sm:px-12">
+              <CheckoutCard />
+            </div>
+          </div>
+          <div className="order-1 lg:order-2">
+            <Eyebrow>For business</Eyebrow>
+            <SectionTitle className="mt-4">
+              Your shop, <Accent>open everywhere</Accent> your customers are.
+            </SectionTitle>
+            <Lead className="mt-5">
+              Make a link for a product, a whole shop page, or a QR code for the counter. Customers pay from the
+              phone in their hand. You see every payment arrive, with a record you can trust.
+            </Lead>
+            <div className="mt-9 flex flex-wrap gap-3">
+              <ButtonLink href="/products/business" arrow>
+                Start selling
+              </ButtonLink>
+              <ButtonLink href="/products/developers" variant="secondary">
+                Use the API
+              </ButtonLink>
+            </div>
+          </div>
         </Container>
       </section>
 
       <SavingsShowcase />
 
-      <section className="bg-forest py-20 text-white lg:py-24">
-        <Container className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
-          <Image
-            src="/illustrations/debit-card.webp"
-            alt="LBPay emerald payment card for Cameroon XAF"
-            width={1600}
-            height={900}
-            className="h-auto w-full"
-          />
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-brand">Coming soon</p>
-            <h2 className="mt-3 text-3xl font-extrabold tracking-tight md:text-[2.4rem] md:leading-[1.15]">
-              Checkout that feels native across Cameroon.
-            </h2>
-            <ul className="mt-6 space-y-3">
-              <li className="flex gap-3 text-[15px] leading-6 text-white/80">
-                <Check className="mt-0.5 h-5 w-5 shrink-0 text-brand" />
-                QR at the counter, payment links in WhatsApp
-              </li>
-              <li className="flex gap-3 text-[15px] leading-6 text-white/80">
-                <Check className="mt-0.5 h-5 w-5 shrink-0 text-brand" />
-                MTN, Orange, cards, and wallet on one settlement
-              </li>
-              <li className="flex gap-3 text-[15px] leading-6 text-white/80">
-                <Check className="mt-0.5 h-5 w-5 shrink-0 text-brand" />
-                Same XAF ledger the personal wallet uses
-              </li>
-            </ul>
-            <Link href="/products/business" className="mt-8 inline-block">
-              <Button className="rounded-full px-6">Start collecting</Button>
-            </Link>
+      {/* ------------------------------------------------------------ Steps */}
+      <section id="how-lbpay-works" className="bg-white py-20 lg:py-28">
+        <Container>
+          <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
+            <div>
+              <Eyebrow>Getting started</Eyebrow>
+              <SectionTitle className="mt-4 max-w-xl">
+                Ready in <Accent>two minutes.</Accent>
+              </SectionTitle>
+            </div>
+            <ButtonLink href="/signup" arrow className="self-start md:self-auto">
+              Open your free account
+            </ButtonLink>
           </div>
-        </Container>
-      </section>
-
-      <section className="bg-white py-20 lg:py-24">
-        <Container className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
-          <div>
-            <h2 className="text-3xl font-extrabold tracking-tight md:text-[2.4rem] md:leading-[1.15]">
-              One app for all your XAF transfers.
-            </h2>
-            <p className="mt-4 text-[16px] leading-7 text-muted">
-              Send, request, split, deposit, and withdraw. Install LBPay on your phone or keep it in
-              the browser.
-            </p>
-            <ul className="mt-6 space-y-3">
-              <Tick>PIN on every money move</Tick>
-              <Tick>History, beneficiaries, and QR receive</Tick>
-              <Tick>Works as a PWA on iOS and Android</Tick>
-            </ul>
-            <Link href="/signup" className="mt-8 inline-block">
-              <Button className="rounded-full px-6">Get the app</Button>
-            </Link>
-          </div>
-          <div className="mx-auto w-full max-w-[320px]">
-            <Image
-              src="/illustrations/app-phone.webp"
-              alt="LBPay mobile app home screen"
-              width={900}
-              height={1600}
-              className="h-auto w-full"
-            />
-          </div>
+          <ol className="mt-14 grid gap-5 md:grid-cols-3">
+            {steps.map((step) => (
+              <li key={step.n} className="relative rounded-[1.5rem] bg-paper p-7 ring-1 ring-line/60">
+                <span className="font-display text-6xl italic leading-none text-brand">{step.n}</span>
+                <h3 className="mt-6 text-lg font-semibold text-ink">{step.title}</h3>
+                <p className="mt-2 text-[15px] leading-7 text-muted">{step.copy}</p>
+              </li>
+            ))}
+          </ol>
         </Container>
       </section>
 
@@ -328,103 +403,145 @@ export default async function LandingPage() {
         <HomeReviews />
       </Suspense>
 
-      <section id="how-lbpay-works" className="bg-white py-20 lg:py-24">
-        <Container className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
-          <SendWidget />
+      {/* ------------------------------------------------------------ API */}
+      <section className="relative overflow-hidden bg-forest py-20 text-white lg:py-28">
+        <div className="lb-glow pointer-events-none absolute inset-0" />
+        <Container className="relative grid items-center gap-14 lg:grid-cols-2 lg:gap-20">
           <div>
-            <p className="text-sm font-semibold text-brand-deep">Getting started</p>
-            <h2 className="mt-2 text-3xl font-extrabold tracking-tight md:text-[2.4rem] md:leading-[1.15]">
-              It is simple to start using LBPay.
-            </h2>
-            <ol className="mt-8 space-y-6">
-              {steps.map((step) => (
-                <li key={step.n} className="flex gap-4">
-                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-brand text-sm font-bold text-white">
-                    {step.n}
-                  </span>
-                  <span>
-                    <span className="block font-semibold text-ink">{step.title}</span>
-                    <span className="mt-1 block text-sm leading-6 text-muted">{step.copy}</span>
-                  </span>
-                </li>
-              ))}
-            </ol>
-          </div>
-        </Container>
-      </section>
-
-      <section className="bg-paper py-10 lg:py-14">
-        <Container>
-          <div className="grid items-center gap-8 overflow-hidden rounded-[1.75rem] bg-forest px-8 py-10 text-white md:grid-cols-2 md:px-12">
-            <div>
-              <h2 className="text-3xl font-extrabold tracking-tight md:text-4xl">
-                Wallet transfers are free.
-              </h2>
-              <p className="mt-3 max-w-md text-sm leading-7 text-white/70">
-                LBPay to LBPay posts on the ledger with no fee. You only pay when money leaves to
-                MTN or Orange.
-              </p>
-              <Link href="/signup" className="mt-6 inline-block">
-                <Button className="rounded-full px-6">Register now</Button>
-              </Link>
+            <Eyebrow tone="dark">For developers</Eyebrow>
+            <SectionTitle className="mt-4">
+              One integration. <Accent className="text-brand">Both networks.</Accent>
+            </SectionTitle>
+            <p className="mt-5 max-w-lg text-[17px] leading-8 text-hero-muted">
+              Take payments and send payouts on MTN Mobile Money and Orange Money with a single REST API. Test
+              everything in the sandbox. Go live once you&apos;re verified.
+            </p>
+            <div className="mt-9 flex flex-wrap gap-3">
+              <ButtonLink href="/docs" variant="white" arrow>
+                Read the docs
+              </ButtonLink>
+              <ButtonLink href="/products/developers" variant="ghost-dark">
+                Developer platform
+              </ButtonLink>
             </div>
-            <Image
-              src="/illustrations/wallet-3d.webp"
-              alt=""
-              width={1200}
-              height={675}
-              className="h-auto w-full justify-self-end md:max-w-sm"
-            />
           </div>
+          <ApiConsole />
         </Container>
       </section>
 
       <AfricaCorridors cities={cities} />
 
-      <section id="faq" className="bg-paper py-20 lg:py-24" aria-labelledby="faq-heading">
-        <Container className="grid gap-10 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-16">
-          <div>
-            <h2 id="faq-heading" className="text-3xl font-extrabold tracking-tight md:text-[2.4rem]">
-              Common questions.
-            </h2>
-            <p className="mt-4 text-sm leading-6 text-muted">
-              Wallet, checkout, and the payments API, answered without the jargon.
+      {/* ------------------------------------------------------------ Made here */}
+      <section className="bg-white py-20 lg:py-28">
+        <Container className="grid gap-12 lg:grid-cols-[1.2fr_0.8fr] lg:items-center lg:gap-20">
+          <figure>
+            <Eyebrow>Made in Cameroon</Eyebrow>
+            <blockquote className="mt-6 text-balance text-[1.75rem] font-medium leading-[1.3] tracking-[-0.02em] text-ink md:text-[2.25rem]">
+              <span className="font-display italic text-brand">&ldquo;</span>We built LBPay because sending money at home
+              shouldn&apos;t mean guessing the fee, waiting on an agent, or wondering if it arrived.
+              <span className="font-display italic text-brand">&rdquo;</span>
+            </blockquote>
+            <figcaption className="mt-8 flex items-center gap-3">
+              <AppImg
+                src="/illustrations/lbpay-mark.webp"
+                alt=""
+                width={44}
+                height={44}
+                className="h-11 w-11 rounded-xl object-cover"
+              />
+              <span className="leading-tight">
+                <span className="block text-[15px] font-semibold text-ink">The LBPay team</span>
+                <span className="block text-[13px] text-muted">Looping Binary · Cameroon</span>
+              </span>
+            </figcaption>
+          </figure>
+          <div className="rounded-[1.75rem] bg-paper p-7 ring-1 ring-line/60">
+            <p className="text-[15px] font-semibold text-ink">Talk to us directly</p>
+            <p className="mt-2 text-[15px] leading-7 text-muted">
+              Questions, a payment that looks wrong, or an idea? Write to the people who build the app.
             </p>
+            <a
+              href={`mailto:${CONTACT_EMAIL}`}
+              className="mt-5 flex items-center justify-between rounded-2xl bg-white px-4 py-3.5 text-[15px] font-semibold text-ink ring-1 ring-line transition hover:ring-brand/40"
+            >
+              {CONTACT_EMAIL}
+              <ArrowRight className="h-4 w-4 text-brand-deep" />
+            </a>
+            <Link
+              href="/about"
+              className="mt-4 inline-flex items-center gap-1.5 text-[14px] font-semibold text-brand-deep hover:underline"
+            >
+              Read our story <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+        </Container>
+      </section>
+
+      {/* ------------------------------------------------------------ FAQ */}
+      <section id="faq" className="py-20 lg:py-28" aria-labelledby="faq-heading">
+        <Container className="grid gap-12 lg:grid-cols-[0.75fr_1.25fr] lg:gap-16">
+          <div>
+            <Eyebrow>Help</Eyebrow>
+            <SectionTitle className="mt-4">
+              <span id="faq-heading">
+                Questions, <Accent>answered.</Accent>
+              </span>
+            </SectionTitle>
+            <Lead className="mt-5">
+              The honest answers to what people ask us most: fees, safety, and what happens when something goes
+              wrong.
+            </Lead>
           </div>
           <FaqAccordion />
         </Container>
       </section>
 
-      <section className="bg-forest py-16 text-center text-white md:py-20">
-        <Container>
-          <h2 className="mx-auto max-w-2xl text-3xl font-extrabold tracking-tight md:text-4xl">
-            Send it. Save it. Send it further.
-          </h2>
-          <p className="mx-auto mt-3 max-w-lg text-sm leading-7 text-white/70">
-            Email, a one-time code, a PIN. Then send XAF across Cameroon, lock a savings pot, or pay someone in Lagos.
-          </p>
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <Link href="/signup">
-              <Button size="lg" className="rounded-full px-8">
-                Open an account
-              </Button>
-            </Link>
-            <Link href="/docs">
-              <Button
-                size="lg"
-                variant="secondary"
-                className="rounded-full border-white/25 bg-transparent px-8 text-white hover:bg-white/10"
-              >
-                Read the docs
-              </Button>
-            </Link>
-          </div>
-          <p className="mt-6 inline-flex items-center gap-2 text-sm text-white/60">
-            <ShieldCheck className="h-4 w-4 text-brand" />
-            PIN confirmed. Ledger posted. Home in XAF, delivered in local money abroad.
-          </p>
-        </Container>
-      </section>
+      <CtaBand
+        title={
+          <>
+            Your money deserves a <Accent className="text-brand">home.</Accent>
+          </>
+        }
+        copy="Free to open, free between wallets, and every fee shown before you pay. Set up in two minutes."
+        secondary={{ href: "/security", label: "How we keep it safe" }}
+      />
     </div>
+  );
+}
+
+function ProductTile({
+  href,
+  icon: Icon,
+  eyebrow,
+  title,
+  copy,
+  visual,
+}: {
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  eyebrow: string;
+  title: string;
+  copy: string;
+  visual: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      className="group flex flex-col overflow-hidden rounded-[1.75rem] bg-white ring-1 ring-line transition duration-300 hover:-translate-y-1 hover:shadow-[0_30px_60px_-30px_rgba(6,38,28,0.3)] hover:ring-brand/30"
+    >
+      <div className="flex-1 p-7">
+        <p className="flex items-center gap-2 text-[13px] font-semibold text-brand-deep">
+          <Icon className="h-4 w-4" /> {eyebrow}
+        </p>
+        <h3 className="mt-4 text-[1.35rem] font-bold leading-snug tracking-tight text-ink">{title}</h3>
+        <p className="mt-3 text-[15px] leading-7 text-muted">{copy}</p>
+      </div>
+      <div className="relative mx-3 mb-3 rounded-[1.25rem] bg-paper px-5 py-8">
+        {visual}
+        <span className="absolute bottom-4 right-4 grid h-9 w-9 place-items-center rounded-full bg-white text-ink shadow-sm ring-1 ring-line transition group-hover:bg-brand group-hover:text-white group-hover:ring-brand">
+          <ArrowRight className="h-4 w-4" />
+        </span>
+      </div>
+    </Link>
   );
 }

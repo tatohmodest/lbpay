@@ -12,6 +12,7 @@ import { useMe } from "@/lib/hooks/wallet";
 import { useNotify } from "@/lib/notify";
 import { isAdmin, productUnlocked } from "@/lib/roles";
 import { CopyHandle } from "@/components/copy-handle";
+import { ChangeHandle } from "@/components/change-handle-sheet";
 import { ProfileAvatar } from "@/components/profile-avatar";
 import { ReviewForm } from "@/components/review-form";
 import { disablePush, enablePush, openPushPrompt, pushPermission, pushSupported } from "@/lib/push-client";
@@ -33,7 +34,10 @@ export default function ProfilePage() {
           name={me.data?.user?.name || state.user.name}
         />
         <h1 className="mt-4 text-2xl font-black">{state.user.name}</h1>
-        <CopyHandle handle={me.data?.user?.lbpayId || state.user.lbpayId} className="mt-1 text-brand hover:text-brand-dark" />
+        <div className="mt-1 flex flex-wrap items-center justify-center gap-2">
+          <CopyHandle handle={me.data?.user?.lbpayId || state.user.lbpayId} className="text-brand hover:text-brand-dark" />
+          <ChangeHandle name={user?.name || state.user.name} current={me.data?.user?.lbpayId || state.user.lbpayId} />
+        </div>
         <p className="mt-1 text-sm text-muted">
           {state.user.phone} · {user?.status || "active"}
         </p>

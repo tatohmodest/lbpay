@@ -141,6 +141,7 @@ export function PaymentLinkForm({
             Customer preview
           </p>
           <p className="mb-3 text-sm text-muted">This is the card on your shop page.</p>
+          <div className="max-w-[260px]">
           <ProductCard
             mode="preview"
             merchantName={merchantName}
@@ -153,6 +154,7 @@ export function PaymentLinkForm({
               imageUrl: imageUrl || undefined,
             }}
           />
+          </div>
         </div>
       </div>
       <Button type="submit" disabled={submitting} className="w-full sm:w-auto">

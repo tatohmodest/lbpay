@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { Copy, Eye, Pencil, Trash2 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -115,9 +116,7 @@ export function PaymentLinkManageList({
     <div
       className={
         layout === "cards"
-          ? links.length === 1
-            ? "max-w-md"
-            : "grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
+          ? "grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-4"
           : "space-y-3"
       }
     >
@@ -128,9 +127,11 @@ export function PaymentLinkManageList({
           <Card
             key={link.id}
             className={
-              isEditing || layout === "rows"
-                ? "rounded-[1.75rem] p-4"
-                : "overflow-hidden rounded-[1.75rem] border-0 bg-transparent p-0 shadow-none"
+              isEditing
+                ? "col-span-full rounded-[1.75rem] p-4"
+                : layout === "rows"
+                  ? "rounded-[1.75rem] p-4"
+                  : "border-0 bg-transparent p-0 shadow-none"
             }
           >
             {isEditing ? (
@@ -234,28 +235,31 @@ function LinkActions({
   onDelete: () => void;
 }) {
   return (
-    <div className="mt-3 space-y-2">
-      <Link
-        href={payLinkPath(slug)}
-        target="_blank"
-        rel="noreferrer"
-        className="inline-flex h-12 w-full items-center justify-center rounded-full bg-brand text-sm font-bold text-white shadow-[0_10px_24px_rgba(0,179,105,0.28)] hover:bg-brand-dark"
-      >
-        View as customer
-      </Link>
-      <button
-        type="button"
-        className="inline-flex h-11 w-full items-center justify-center rounded-full border border-line bg-white text-sm font-bold text-ink hover:border-brand/30 hover:bg-paper"
-        onClick={onCopy}
-      >
-        Copy product link
-      </button>
-      <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 pt-1">
-        <button type="button" className="text-sm font-bold text-brand" onClick={onEdit} disabled={busy}>
-          Edit
+    <div className="space-y-1.5">
+      <div className="grid grid-cols-2 gap-1.5">
+        <Link
+          href={payLinkPath(slug)}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex h-9 items-center justify-center gap-1 rounded-xl bg-ink text-[12px] font-semibold text-white transition hover:bg-ink/90"
+        >
+          <Eye className="h-3.5 w-3.5" /> View
+        </Link>
+        <button
+          type="button"
+          className="inline-flex h-9 items-center justify-center gap-1 rounded-xl bg-paper text-[12px] font-semibold text-ink ring-1 ring-line transition hover:ring-brand/40"
+          onClick={onCopy}
+        >
+          <Copy className="h-3.5 w-3.5" /> Copy
         </button>
-        <button type="button" className="text-sm font-bold text-rose-600" onClick={onDelete} disabled={busy}>
-          {busy ? "Deleting…" : "Delete"}
+      </div>
+      <div className="flex items-center justify-center gap-3 pt-0.5 text-[12px]">
+        <button type="button" className="inline-flex items-center gap-1 font-semibold text-muted hover:text-ink" onClick={onEdit} disabled={busy}>
+          <Pencil className="h-3 w-3" /> Edit
+        </button>
+        <span className="h-3 w-px bg-line" />
+        <button type="button" className="inline-flex items-center gap-1 font-semibold text-rose-600 hover:text-rose-700" onClick={onDelete} disabled={busy}>
+          <Trash2 className="h-3 w-3" /> {busy ? "Deleting…" : "Delete"}
         </button>
       </div>
     </div>
