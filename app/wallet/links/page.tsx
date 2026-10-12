@@ -7,7 +7,10 @@ import { PaymentLinkManageList } from "@/components/payment-link-manage";
 import { ShareRow } from "@/components/share-row";
 import { ConfirmSheet } from "@/components/confirm-sheet";
 import { Button } from "@/components/ui/button";
-import { ACTION_ART, ONBOARD_ART } from "@/lib/assets";
+import { ACTION_ART } from "@/lib/assets";
+import { AppImg } from "@/components/app-img";
+import { Copy, ExternalLink, Plus } from "lucide-react";
+import { copyText } from "@/lib/clipboard";
 import { formatXAF } from "@/lib/format";
 import { useNotify } from "@/lib/notify";
 import { useMe } from "@/lib/hooks/wallet";
@@ -33,6 +36,7 @@ export default function WalletLinksPage() {
   const client = useQueryClient();
   const me = useMe();
   const [pinOpen, setPinOpen] = useState(false);
+  const [adding, setAdding] = useState(false);
   const [pinError, setPinError] = useState("");
   const [pinLockedUntil, setPinLockedUntil] = useState(0);
   const data = useQuery({
@@ -109,58 +113,64 @@ export default function WalletLinksPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-5">
-      <section className="relative overflow-hidden rounded-[1.85rem] bg-forest px-5 py-6 text-white sm:px-8 sm:py-8">
-        <div className="relative z-10 max-w-lg">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand">Your shop</p>
-          <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">Your shop, your prices.</h1>
-          <p className="mt-3 max-w-md text-sm leading-6 text-hero-muted sm:text-base">
-            Photo, details, and a sale price. Customers browse the shop, open a product, and pay with MTN,
-            Orange, or wallet.
-          </p>
-          <p className="mt-4 text-xs font-semibold text-white/70">
-            {quota.used} of {quota.limit} products
-          </p>
+      <section className="relative overflow-hidden rounded-[2rem] bg-forest p-5 text-white sm:p-8">
+        <div className="lb-glow pointer-events-none absolute inset-0" />
+        <div className="lb-grid-bg pointer-events-none absolute inset-0" />
+        <div className="relative grid gap-6 lg:grid-cols-[1fr_auto] lg:items-end">
+          <div className="min-w-0">
+            <div className="flex items-center gap-3">
+              <AppImg
+                src={me.data?.user?.avatar}
+                alt=""
+                className="h-14 w-14 rounded-2xl object-cover ring-2 ring-white/20"
+              />
+              <div className="min-w-0">
+                <p className="text-[12px] font-semibold text-hero-muted">Your shop</p>
+                <h1 className="truncate text-[1.75rem] font-black leading-tight tracking-tight">{shopName}</h1>
+              </div>
+            </div>
+            {handle ? <p className="mt-3 truncate font-mono text-[12px] text-hero-muted">{listingUrl}</p> : null}
+            <div className="mt-4 max-w-sm">
+              <div className="flex justify-between text-[12px] font-semibold text-hero-muted">
+                <span>
+                  {quota.used} of {quota.limit} products
+                </span>
+                <span>{quota.remaining} free slots</span>
+              </div>
+              <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-white/15">
+                <div
+                  className="h-full rounded-full bg-brand transition-all"
+                  style={{ width: `${Math.min(100, Math.round((quota.used / Math.max(1, quota.limit)) * 100))}%` }}
+                />
+              </div>
+            </div>
+          </div>
+          {handle ? (
+            <div className="grid w-full grid-cols-2 gap-2 lg:w-80">
+              <a
+                href={shopHandlePath(handle)}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex h-12 items-center justify-center gap-1.5 rounded-2xl bg-white text-[14px] font-bold text-forest transition hover:bg-white/90"
+              >
+                <ExternalLink className="h-4 w-4" /> View shop
+              </a>
+              <button
+                type="button"
+                onClick={() =>
+                  void copyText(listingUrl).then(() => notify.success("Shop link copied", "Paste it in WhatsApp or Instagram."))
+                }
+                className="inline-flex h-12 items-center justify-center gap-1.5 rounded-2xl bg-white/10 text-[14px] font-bold text-white ring-1 ring-white/20 transition hover:bg-white/15"
+              >
+                <Copy className="h-4 w-4" /> Copy link
+              </button>
+            </div>
+          ) : null}
         </div>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={ONBOARD_ART.business}
-          alt=""
-          className="pointer-events-none absolute -bottom-6 -right-4 h-40 w-40 object-contain sm:h-52 sm:w-52"
-        />
       </section>
 
       {handle ? (
-        <section className="overflow-hidden rounded-[1.75rem] bg-white ring-1 ring-line/80">
-          <div className="grid gap-5 p-5 sm:grid-cols-[1fr_auto] sm:items-center sm:p-6">
-            <div className="min-w-0">
-              <div className="flex items-center gap-3">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={ACTION_ART.products} alt="" className="h-12 w-12 object-contain" />
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand">Share the shop</p>
-                  <h2 className="text-lg font-black">{shopName}</h2>
-                </div>
-              </div>
-              <p className="mt-2 text-sm text-muted">
-                One page for every product. Open it the way a customer does, or copy the link.
-              </p>
-              <p className="mt-2 truncate font-mono text-xs font-semibold text-ink">{listingUrl}</p>
-            </div>
-            <div className="w-full space-y-3 sm:w-72">
-              {handle ? (
-                <a
-                  href={shopHandlePath(handle)}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex h-12 w-full items-center justify-center rounded-full bg-brand text-sm font-bold text-white shadow-[0_10px_24px_rgba(0,179,105,0.28)] hover:bg-brand-dark"
-                >
-                  View shop as customer
-                </a>
-              ) : null}
-              <ShareRow url={listingUrl} text={shopShareText(shopName, listingUrl)} copyLabel="Copy shop link" />
-            </div>
-          </div>
-        </section>
+        <ShareRow url={listingUrl} text={shopShareText(shopName, listingUrl)} copyLabel="Share my shop" className="sm:hidden" />
       ) : null}
 
       {atLimit ? (
@@ -181,6 +191,20 @@ export default function WalletLinksPage() {
             Add {SHOP_LIMITS.packSize} slots · {formatXAF(SHOP_LIMITS.packPrice)}
           </Button>
         </section>
+      ) : links.length > 0 && !adding ? (
+        <button
+          type="button"
+          onClick={() => setAdding(true)}
+          className="flex w-full items-center gap-4 rounded-[1.75rem] border-2 border-dashed border-line bg-white p-5 text-left transition hover:border-brand/50"
+        >
+          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-brand text-white">
+            <Plus className="h-5 w-5" />
+          </span>
+          <span>
+            <span className="block text-[16px] font-bold text-ink">Add a product</span>
+            <span className="block text-[13px] text-muted">A photo and a price. It goes live on your shop instantly.</span>
+          </span>
+        </button>
       ) : (
         <section className="rounded-[1.75rem] bg-white p-4 ring-1 ring-line/80 md:p-6">
           <div className="flex items-end justify-between gap-3">
@@ -195,7 +219,7 @@ export default function WalletLinksPage() {
             <PaymentLinkForm
               merchantName={shopName}
               submitting={create.isPending}
-              onSubmit={(input) => create.mutateAsync(input)}
+              onSubmit={(input) => create.mutateAsync(input).then((r) => (setAdding(false), r))}
             />
           </div>
         </section>
@@ -203,16 +227,18 @@ export default function WalletLinksPage() {
 
       {links.length > 0 ? (
         <div>
-          <h2 className="text-base font-black md:text-lg">Your products</h2>
-          <p className="mt-1 mb-3 text-sm text-muted">
-            Open a product as a customer, or copy the page link to share.
-          </p>
+          <div className="mb-4 flex items-end justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-black text-ink">Your products</h2>
+              <p className="mt-0.5 text-[13px] text-muted">Exactly what customers see. Tap Copy to share one product.</p>
+            </div>
+          </div>
             <PaymentLinkManageList
             links={links}
             merchantName={shopName}
             apiPath="/api/wallet/links"
             queryKeys={[["wallet-links"], ["business"]]}
-              layout="rows"
+              layout="cards"
           />
         </div>
       ) : (

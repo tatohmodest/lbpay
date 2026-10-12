@@ -17,6 +17,8 @@ export async function GET(request: Request) {
       lbpayId: user.lbpayId,
       avatar: resolveAvatar(user.avatar),
       businessName: user.businessName || "",
+      /** Only true after a person on our team approved the business. */
+      verified: user.kyc?.business === "verified",
     },
     products,
   });

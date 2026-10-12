@@ -29,7 +29,7 @@ export type TransactionKind =
   | "shop_slots";
 
 export type SavingsFrequency = "daily" | "weekly" | "monthly";
-export type SavingsStatus = "active" | "completed" | "closed";
+export type SavingsStatus = "active" | "paused" | "completed" | "closed";
 
 export type SavingsPlan = {
   id: string;
@@ -62,6 +62,11 @@ export type SavingsPlan = {
   targetDate?: string;
   /** Total number of cycles planned (e.g. 10 for 10 days, 52 for 1 year). */
   durationCycles?: number;
+  /** Set while status is "paused". No saves are due and no missed-save fees apply. */
+  pausedAt?: string;
+  pausedUntil?: string;
+  /** Pauses used so far. Limited by PAUSE.maxPauses. */
+  pauseCount?: number;
 };
 
 export type AccountKind = "personal" | "business" | "developer" | "admin";

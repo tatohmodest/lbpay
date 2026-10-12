@@ -16,6 +16,7 @@ import {
   Sparkles,
   Trophy,
   Zap,
+  Pause,
 } from "lucide-react";
 import { useHiddenAmount } from "@/components/house-card";
 import { SAVINGS_FLOAT } from "@/lib/assets";
@@ -81,6 +82,13 @@ export function DueChip({ plan, className }: { plan: SavingsPlan; className?: st
   }
   if (plan.status === "closed") {
     return <span className={cn("inline-flex rounded-full bg-[#eef1ef] px-2 py-0.5 text-[11px] font-bold text-muted", className)}>Closed</span>;
+  }
+  if (state === "paused") {
+    return (
+      <span className={cn("inline-flex items-center gap-1 rounded-full bg-gold-soft px-2 py-0.5 text-[11px] font-bold text-[#7a5a1c]", className)}>
+        <Pause className="h-3 w-3" /> On a break
+      </span>
+    );
   }
   const tone =
     state === "overdue"

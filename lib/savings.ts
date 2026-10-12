@@ -182,9 +182,10 @@ export function estimatedFinishAt(plan: Pick<SavingsPlan, "balance" | "target" |
   return when;
 }
 
-export type DueState = "overdue" | "today" | "soon" | "later" | "done";
+export type DueState = "overdue" | "today" | "soon" | "later" | "paused" | "done";
 
 export function dueState(plan: Pick<SavingsPlan, "nextDueAt" | "status">, now = new Date()): DueState {
+  if (plan.status === "paused") return "paused";
   if (plan.status !== "active") return "done";
   const ms = +new Date(plan.nextDueAt) - +now;
   if (ms <= 0) return "overdue";
@@ -335,4 +336,77 @@ export function applyDeposit(plan: SavingsPlan, amount: number, now = new Date()
 
 export function monthlyPace(plan: Pick<SavingsPlan, "amount" | "frequency">) {
   return plan.amount * cyclesPerMonth(plan.frequency);
+}
+
+
+/* ------------------------------------------------------------------ */
+/* Pause and stop                                                      */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Pausing is a pressure valve, not an exit: a few free breaks per pot, each
+ * at most about one cycle long. Stopping early is always possible but costs
+ * the fee the saver promised when they created the pot.
+ */
+export const PAUSE = {
+  maxPauses: 2,
+  maxDays: { daily: 7, weekly: 14, monthly: 31 } as Record<SavingsFrequency, number>,
+} as const;
+
+/** True for pots that are still running, whether saving or on a break. */
+export function isLivePlan(plan: Pick<SavingsPlan, "status">) {
+  return plan.status === "active" || plan.status === "paused";
+}
+
+export function pauseAllowance(plan: Pick<SavingsPlan, "frequency" | "pauseCount" | "status">) {
+  const used = plan.pauseCount || 0;
+  const left = Math.max(0, PAUSE.maxPauses - used);
+  return { used, left, maxDays: PAUSE.maxDays[plan.frequency], canPause: plan.status === "active" && left > 0 };
+}
+
+export function pauseOptions(frequency: SavingsFrequency) {
+  const max = PAUSE.maxDays[frequency];
+  return [3, 7, 14, 31].filter((d) => d <= max);
+}
+
+/** Put a plan on a break for `days`. */
+export function pausedPlan<T extends SavingsPlan>(plan: T, days: number, now = new Date()): T {
+  const { maxDays, canPause } = pauseAllowance(plan);
+  if (!canPause) throw new Error(plan.status !== "active" ? "Only active pots can be paused." : "You've used all your pauses for this pot.");
+  const length = Math.round(days);
+  if (!Number.isFinite(length) || length < 1 || length > maxDays) {
+    throw new Error(`You can pause for up to ${maxDays} days.`);
+  }
+  return {
+    ...plan,
+    status: "paused",
+    pausedAt: now.toISOString(),
+    pausedUntil: new Date(now.getTime() + length * 86_400_000).toISOString(),
+    pauseCount: (plan.pauseCount || 0) + 1,
+  };
+}
+
+/**
+ * Bring a paused plan back. The schedule (next due date and end date) moves
+ * forward by however long the break lasted, so nothing is "missed" because of it.
+ */
+export function resumedPlan<T extends SavingsPlan>(plan: T, at = new Date()): T {
+  if (plan.status !== "paused" || !plan.pausedAt) return plan;
+  const shift = Math.max(0, at.getTime() - new Date(plan.pausedAt).getTime());
+  const shiftIso = (iso?: string) => (iso ? new Date(new Date(iso).getTime() + shift).toISOString() : iso);
+  const next: T = {
+    ...plan,
+    status: "active",
+    nextDueAt: shiftIso(plan.nextDueAt) as string,
+    targetDate: shiftIso(plan.targetDate),
+  };
+  delete next.pausedAt;
+  delete next.pausedUntil;
+  return next;
+}
+
+/** What stopping a pot right now would cost and return. */
+export function stopQuote(plan: Pick<SavingsPlan, "balance" | "target" | "penaltyRate"> & { targetDate?: string }) {
+  const fee = plan.target && plan.target > 0 ? earlyWithdrawalPenalty(plan, plan.balance) : 0;
+  return { fee, returned: plan.balance - fee, free: fee === 0 };
 }

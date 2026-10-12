@@ -1,7 +1,16 @@
 import { NextResponse } from "next/server";
 import { requireActiveUser } from "@/lib/server/guard";
 import { pinFailResponse, verifyUserPin } from "@/lib/server/pin";
-import { depositToPlan, findPlan, publicPlan, settleSavings, updatePlanSettings, withdrawFromPlan } from "@/lib/server/savings";
+import {
+  depositToPlan,
+  findPlan,
+  pauseSavingsPlan,
+  publicPlan,
+  resumeSavingsPlan,
+  settleSavings,
+  updatePlanSettings,
+  withdrawFromPlan,
+} from "@/lib/server/savings";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -35,6 +44,19 @@ export async function POST(request: Request, { params }: Params) {
       return NextResponse.json({ ok: true, plan });
     } catch (error) {
       return NextResponse.json({ error: error instanceof Error ? error.message : "Could not update the plan." }, { status: 400 });
+    }
+  }
+
+  // Breaks never move money, so they don't need a PIN.
+  if (action === "pause" || action === "resume") {
+    try {
+      const plan =
+        action === "pause"
+          ? await pauseSavingsPlan(auth.user.id, id, Number(body.days))
+          : await resumeSavingsPlan(auth.user.id, id);
+      return NextResponse.json({ ok: true, plan });
+    } catch (error) {
+      return NextResponse.json({ error: error instanceof Error ? error.message : "Could not update the pot." }, { status: 400 });
     }
   }
 

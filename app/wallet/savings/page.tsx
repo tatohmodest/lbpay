@@ -12,7 +12,7 @@ import {
 } from "@/components/savings";
 import { ACTION_ART } from "@/lib/assets";
 import { useMe, useSavings } from "@/lib/hooks/wallet";
-import { monthlyPace } from "@/lib/savings";
+import { isLivePlan, monthlyPace } from "@/lib/savings";
 import { cn } from "@/lib/cn";
 import type { SavingsPlan } from "@/lib/types";
 
@@ -20,17 +20,17 @@ const POINTS = [
   {
     art: ACTION_ART.save,
     title: "Pick a rhythm",
-    copy: "Daily, weekly, or monthly schedules",
+    copy: "Daily, weekly or monthly",
   },
   {
     art: ACTION_ART.deposit,
-    title: "Prepay & Shield",
-    copy: "Pay ahead anytime to protect your streak",
+    title: "Pay ahead",
+    copy: "Save early to protect your streak",
   },
   {
     art: ACTION_ART.withdraw,
-    title: "Zero-fee finish",
-    copy: "100% free cashout once objective is met",
+    title: "Free at the goal",
+    copy: "Collect everything with no fee",
   },
 ];
 
@@ -50,11 +50,11 @@ function SavingsInner() {
   }
 
   const plans = savings.data?.savings ?? me.data?.savings ?? [];
-  const active = plans.filter((p) => p.status === "active");
-  const done = plans.filter((p) => p.status !== "active");
+  const active = plans.filter((p) => isLivePlan(p));
+  const done = plans.filter((p) => !isLivePlan(p));
   const balance = savings.data?.balance ?? me.data?.balance ?? 0;
   const potTotal = plans.reduce((sum, p) => sum + p.balance, 0);
-  const pace = active.reduce((sum, p) => sum + monthlyPace(p), 0);
+  const pace = active.filter((p) => p.status === "active").reduce((sum, p) => sum + monthlyPace(p), 0);
   const bestStreak = plans.reduce((max, p) => Math.max(max, p.bestStreak), 0);
   const totalPoints = plans.reduce((sum, p) => sum + (p.points || 0), 0);
 
@@ -77,7 +77,7 @@ function SavingsInner() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={ACTION_ART.save} alt="" width={48} height={48} className="h-12 w-12 object-contain" />
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-brand">Finances & Discipline</p>
+            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-brand">Savings</p>
             <h1 className="text-2xl font-black leading-none text-ink">Savings Pots</h1>
           </div>
         </header>
@@ -156,7 +156,7 @@ function SavingsInner() {
         {done.length ? (
           <section>
             <h2 className="mb-2 px-1 text-[13px] font-black uppercase tracking-[0.14em] text-muted">
-              Completed and Closed
+              Finished pots
             </h2>
             <div className="space-y-2.5">
               {done.map((plan) => (

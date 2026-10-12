@@ -7,7 +7,10 @@ import {
   clampPenaltyRate,
   earlyWithdrawalPenalty,
   firstDueAt,
+  isLivePlan,
   isObjectiveMet,
+  pausedPlan,
+  resumedPlan,
   settlePlan,
   validatePlanInput,
   type SavingsInput,
@@ -53,11 +56,21 @@ export async function settleSavings(userId: string) {
     const db = await getDb();
     const wallet = db.wallets.find((w) => w.userId === userId);
     if (!wallet) return;
-    const plans = (db.savings || []).filter((p) => p.userId === userId && p.status === "active");
-    if (!plans.length) return;
     const nowDate = new Date();
     const now = nowDate.toISOString();
     let changed = false;
+    // Breaks end on their own: resume as of the scheduled end, shifting the schedule.
+    for (const plan of db.savings || []) {
+      if (plan.userId !== userId || plan.status !== "paused" || !plan.pausedUntil) continue;
+      if (+new Date(plan.pausedUntil) > +nowDate) continue;
+      Object.assign(plan, resumedPlan(plan, new Date(plan.pausedUntil)), { userId });
+      changed = true;
+    }
+    const plans = (db.savings || []).filter((p) => p.userId === userId && p.status === "active");
+    if (!plans.length) {
+      if (changed) await saveDb(db);
+      return;
+    }
     const pushes: StoredTx[] = [];
     for (const plan of plans) {
       const result = settlePlan(plan, wallet.balance, nowDate);
@@ -118,7 +131,7 @@ export async function createSavingsPlan(userId: string, input: SavingsInput) {
   if (issue) throw new Error(issue);
   return withLedgerLock(async () => {
     const db = await getDb();
-    const mine = (db.savings || []).filter((p) => p.userId === userId && p.status === "active");
+    const mine = (db.savings || []).filter((p) => p.userId === userId && isLivePlan(p));
     if (mine.length >= SAVINGS.maxActivePlans) throw new Error(`You can run up to ${SAVINGS.maxActivePlans} plans at once.`);
     const now = new Date();
     const icon = input.icon || "target";
@@ -169,7 +182,7 @@ export async function depositToPlan(userId: string, planId: string, amount: numb
     const db = await getDb();
     const plan = (db.savings || []).find((p) => p.userId === userId && p.id === planId);
     if (!plan) throw new Error("Savings plan not found.");
-    if (plan.status !== "active") throw new Error("This plan is no longer active.");
+    if (!isLivePlan(plan)) throw new Error("This plan is no longer active.");
     const wallet = db.wallets.find((w) => w.userId === userId);
     if (!wallet) throw new Error("Wallet missing");
     if (wallet.balance < amount) throw new Error("Insufficient wallet balance");
@@ -289,9 +302,15 @@ export async function updatePlanSettings(
     const db = await getDb();
     const plan = (db.savings || []).find((p) => p.userId === userId && p.id === planId);
     if (!plan) throw new Error("Savings plan not found.");
-    if (plan.status !== "active") throw new Error("This plan is no longer active.");
+    if (!isLivePlan(plan)) throw new Error("This plan is no longer active.");
     if (patch.autoSave != null) plan.autoSave = Boolean(patch.autoSave);
-    if (patch.penaltyRate != null) plan.penaltyRate = clampPenaltyRate(Number(patch.penaltyRate));
+    if (patch.penaltyRate != null) {
+      const next = clampPenaltyRate(Number(patch.penaltyRate));
+      // A promise can be made stronger, never weaker: otherwise anyone could drop
+      // the fee to 1% the minute before quitting.
+      if (next < plan.penaltyRate) throw new Error("Your fee is part of your promise. You can raise it, but not lower it.");
+      plan.penaltyRate = next;
+    }
     if (patch.name != null) {
       const name = String(patch.name).trim();
       if (name.length < 2 || name.length > 40) throw new Error("Plan name must be 2 to 40 characters.");
@@ -315,6 +334,30 @@ export async function updatePlanSettings(
         plan.points = (plan.points || 0) + 500;
       }
     }
+    await saveDb(db);
+    return publicPlan(plan);
+  });
+}
+
+
+export async function pauseSavingsPlan(userId: string, planId: string, days: number) {
+  return withLedgerLock(async () => {
+    const db = await getDb();
+    const plan = (db.savings || []).find((p) => p.userId === userId && p.id === planId);
+    if (!plan) throw new Error("Savings plan not found.");
+    Object.assign(plan, pausedPlan(plan, days), { userId });
+    await saveDb(db);
+    return publicPlan(plan);
+  });
+}
+
+export async function resumeSavingsPlan(userId: string, planId: string) {
+  return withLedgerLock(async () => {
+    const db = await getDb();
+    const plan = (db.savings || []).find((p) => p.userId === userId && p.id === planId);
+    if (!plan) throw new Error("Savings plan not found.");
+    if (plan.status !== "paused") throw new Error("This pot isn't paused.");
+    Object.assign(plan, resumedPlan(plan, new Date()), { userId });
     await saveDb(db);
     return publicPlan(plan);
   });

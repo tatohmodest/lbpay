@@ -2,17 +2,19 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Field, Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ConfirmSheet } from "@/components/confirm-sheet";
 import { MoneyCard, MoneyPage } from "@/components/money-move";
-import { NetworkToggle } from "@/components/network-toggle";
+import { NetworkMark } from "@/components/network-mark";
+import { WaitingOnPhone } from "@/components/money-ui";
+import { ArrowUpDown } from "lucide-react";
+import { cn } from "@/lib/cn";
 import { useApp } from "@/lib/store";
 import { formatXAF } from "@/lib/format";
-import { useMe, useQuickTransfer } from "@/lib/hooks/wallet";
+import { useQuickTransfer } from "@/lib/hooks/wallet";
 import { useNotify } from "@/lib/notify";
 import { cameroonMsisdn, isCameroonMsisdn } from "@/lib/phone";
-import { directTransferFee } from "@/lib/fees";
+import { directTransferFee, directTransferRate, feePercentLabel } from "@/lib/fees";
 import { AmountField } from "@/components/amount-field";
 import { amountIssue } from "@/lib/limits";
 import { readPinFail, isPinError } from "@/lib/pin-fail";
@@ -43,7 +45,6 @@ async function pollQuickStatus(
 
 export default function QuickTransferPage() {
   const { state } = useApp();
-  const me = useMe();
   const router = useRouter();
   const notify = useNotify();
   const quick = useQuickTransfer();
@@ -196,35 +197,22 @@ export default function QuickTransferPage() {
   }
 
   return (
-    <MoneyPage title="Quick Transfer" copy="Send money to any Mobile Money network. MTN to Orange, easily.">
+    <MoneyPage title="Quick transfer" copy="MoMo to MoMo, across networks. No wallet balance needed." trust="refund">
       {waiting ? (
-        <MoneyCard className="text-center">
-          <p className="text-sm font-bold uppercase tracking-wide text-brand">
-            {waiting.stage === "paying" ? "Sending" : "Waiting for payment"}
-          </p>
-          <h2 className="mt-2 text-2xl font-black">
-            {waiting.stage === "paying" ? "Paying the recipient" : "Approve on your phone"}
-          </h2>
-          {waiting.stage === "collecting" ? (
-            <p className="mt-4 rounded-2xl bg-paper px-4 py-3 text-sm leading-6 text-ink">
-              If you have not seen a popup, dial <span className="font-mono font-semibold">{ussdCode}</span>{" "}
-              and confirm pay.
-            </p>
-          ) : null}
-          <p className="mt-6 font-mono text-4xl font-black">{waiting.seconds}s</p>
-          <div className="mt-6 grid gap-2">
-            <Button onClick={() => void verifyNow()} disabled={checking}>
-              {checking ? "Checking…" : waiting.stage === "paying" ? "Check status" : "I've paid"}
-            </Button>
-            <Button variant="ghost" onClick={() => setWaiting(null)}>
-              Cancel wait
-            </Button>
-          </div>
-        </MoneyCard>
+        <WaitingOnPhone
+          network={waiting.stage === "paying" ? toNetwork : fromNetwork}
+          stage={waiting.stage === "paying" ? "sending" : "approve"}
+          amountLabel={waiting.stage === "paying" ? `${formatXAF(value)} to ${toPhone}` : formatXAF(payAmount)}
+          seconds={waiting.seconds}
+          ussd={ussdCode}
+          checking={checking}
+          onCheck={() => void verifyNow()}
+          onCancel={() => setWaiting(null)}
+        />
       ) : (
         <MoneyCard>
           <form
-            className="flex flex-col gap-5"
+            className="flex flex-col gap-6"
             onSubmit={(e) => {
               e.preventDefault();
               if (!ready) return;
@@ -233,46 +221,56 @@ export default function QuickTransferPage() {
               setOpen(true);
             }}
           >
-            <div className="space-y-2">
-              <p className="text-xs font-medium text-muted">From</p>
-              <NetworkToggle value={fromNetwork} onChange={setFromNetwork} />
-              <Field label="Number">
-                <Input
-                  inputMode="numeric"
-                  placeholder="677000000"
-                  value={from}
-                  onChange={(e) => setFrom(cameroonMsisdn(e.target.value))}
-                  required
-                />
-              </Field>
-            </div>
-            <div className="space-y-2">
-              <p className="text-xs font-medium text-muted">To</p>
-              <NetworkToggle value={toNetwork} onChange={setToNetwork} />
-              <Field label="Number">
-                <Input
-                  inputMode="numeric"
-                  placeholder="690000000"
-                  value={to}
-                  onChange={(e) => setTo(cameroonMsisdn(e.target.value))}
-                  required
-                />
-              </Field>
+            <div className="relative space-y-2">
+              <Endpoint
+                label="From"
+                network={fromNetwork}
+                onNetwork={setFromNetwork}
+                phone={from}
+                onPhone={setFrom}
+                placeholder="677000000"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  setFromNetwork(toNetwork);
+                  setToNetwork(fromNetwork);
+                  setFrom(to);
+                  setTo(from);
+                }}
+                className="absolute left-1/2 top-1/2 z-10 grid h-10 w-10 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-ink text-white shadow-lg ring-4 ring-white transition hover:rotate-180"
+                aria-label="Swap from and to"
+              >
+                <ArrowUpDown className="h-4 w-4" />
+              </button>
+              <Endpoint
+                label="To"
+                network={toNetwork}
+                onNetwork={setToNetwork}
+                phone={to}
+                onPhone={setTo}
+                placeholder="690000000"
+              />
             </div>
             {fromPhone && toPhone && fromPhone === toPhone ? (
-              <p className="text-sm font-semibold text-danger">Use two different numbers.</p>
+              <p className="rounded-2xl bg-[#fdf3f2] px-4 py-3 text-[13px] font-semibold text-danger">
+                Use two different numbers.
+              </p>
             ) : null}
             <AmountField
               value={amount}
               onChange={setAmount}
               kind="momo"
+              label="How much should they get?"
               receive={value}
               fee={fee}
-              feeLabel="Deducted"
+              receiveLabel={`They receive on ${toNetwork === "orange" ? "Orange" : "MTN"}`}
+              feeLabel={feePercentLabel(directTransferRate(fromNetwork, toNetwork), "Fee")}
               pay={payAmount}
+              payLabel={`You pay from ${fromNetwork === "orange" ? "Orange" : "MTN"}`}
             />
-            <Button type="submit" disabled={!ready}>
-              Continue
+            <Button type="submit" disabled={!ready} className="h-14 rounded-2xl text-[16px] font-bold">
+              {value ? `Send ${formatXAF(value)}` : "Send"}
             </Button>
           </form>
         </MoneyCard>
@@ -291,7 +289,58 @@ export default function QuickTransferPage() {
         onClose={() => setOpen(false)}
         onConfirm={confirm}
       />
-      <p className="text-center text-xs text-muted">@{me.data?.user?.lbpayId || state.user.lbpayId}</p>
     </MoneyPage>
+  );
+}
+
+function Endpoint({
+  label,
+  network,
+  onNetwork,
+  phone,
+  onPhone,
+  placeholder,
+}: {
+  label: string;
+  network: "mtn" | "orange";
+  onNetwork: (n: "mtn" | "orange") => void;
+  phone: string;
+  onPhone: (p: string) => void;
+  placeholder: string;
+}) {
+  return (
+    <div className="rounded-2xl bg-paper p-4 ring-1 ring-line">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-[13px] font-bold text-muted">{label}</p>
+        <div className="flex gap-1 rounded-xl bg-white p-1 ring-1 ring-line" role="radiogroup" aria-label={`${label} network`}>
+          {(["mtn", "orange"] as const).map((n) => (
+            <button
+              key={n}
+              type="button"
+              role="radio"
+              aria-checked={network === n}
+              onClick={() => onNetwork(n)}
+              className={cn(
+                "flex items-center gap-1.5 rounded-lg px-2 py-1 text-[12px] font-bold transition",
+                network === n ? "bg-ink text-white" : "text-muted hover:text-ink",
+              )}
+            >
+              <NetworkMark network={n} className="h-5 w-5 rounded-md text-[6px]" />
+              {n === "mtn" ? "MTN" : "Orange"}
+            </button>
+          ))}
+        </div>
+      </div>
+      <input
+        inputMode="numeric"
+        autoComplete="tel"
+        aria-label={`${label} number`}
+        placeholder={placeholder}
+        value={phone}
+        onChange={(e) => onPhone(cameroonMsisdn(e.target.value))}
+        required
+        className="tabular mt-3 h-11 w-full bg-transparent font-mono text-[22px] font-bold tracking-wide text-ink outline-none placeholder:text-line"
+      />
+    </div>
   );
 }

@@ -32,7 +32,7 @@ const personal = [
   {
     what: "Savings pots",
     fee: "Free",
-    note: `Only if you skip a cycle: the penalty you picked, ${Math.round(SAVINGS.minPenaltyRate * 100)}–${Math.round(SAVINGS.maxPenaltyRate * 100)}%.`,
+    note: `Free at your goal. The fee you pick (${Math.round(SAVINGS.minPenaltyRate * 100)}–${Math.round(SAVINGS.maxPenaltyRate * 100)}%) applies only if you miss a save or withdraw before the goal.`,
   },
   {
     what: "Send abroad",

@@ -108,18 +108,23 @@ export function SavingsDepositModal({
   }
 
   return (
-    <div className="fixed inset-0 z-[95] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+    <div
+      className="fixed inset-0 z-[95] grid place-items-end bg-forest/60 backdrop-blur-sm md:place-items-center md:p-6"
+      onClick={onClose}
+    >
       <div
-        className="relative w-full max-w-lg max-h-[92vh] overflow-y-auto rounded-[2rem] bg-white p-5 sm:p-7 shadow-[0_24px_70px_rgba(0,0,0,0.22)] ring-1 ring-black/5"
+        className="lb-sheet relative max-h-[92dvh] w-full max-w-lg overflow-y-auto rounded-t-[2rem] bg-white p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] shadow-2xl sm:p-7 md:rounded-[2rem]"
         role="dialog"
         aria-modal="true"
+        onClick={(e) => e.stopPropagation()}
       >
+        <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-line md:hidden" />
         <div className="flex items-start justify-between gap-4 border-b border-line/60 pb-4">
           <div className="flex items-center gap-3">
             <PlanIcon icon={plan.icon || plan.emoji} size="lg" />
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-brand">Deposit & Prepay</p>
-              <h2 className="text-xl font-black text-ink sm:text-2xl">Save into {plan.name}</h2>
+              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-brand">Save into your pot</p>
+              <h2 className="text-xl font-black text-ink sm:text-2xl">{plan.name}</h2>
             </div>
           </div>
           <button
@@ -203,13 +208,13 @@ export function SavingsDepositModal({
                         : `Covers current ${cycleUnit} save!`}
                     </span>
                     <span className="rounded-full bg-emerald-200/70 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
-                      +{points} XP
+                      +{points} pts
                     </span>
                   </div>
                   <p className="mt-1 text-xs text-emerald-800 leading-relaxed">
                     {cycles > 1 ? (
                       <>
-                        <strong>Streak Shield Active:</strong> Your next save won&apos;t be due until{" "}
+                        <strong>Streak protected:</strong> Your next save won&apos;t be due until{" "}
                         <strong className="underline">{formatDate(nextDueAt)}</strong>. You are protected from missed-save
                         penalties during this time!
                       </>
@@ -252,7 +257,7 @@ export function SavingsDepositModal({
             { label: "Amount", value: formatXAF(value) },
             { label: "Cycles Covered", value: `${cycles} ${cycles === 1 ? cycleUnit : cycleUnitPlural}` },
             { label: "Protected Until", value: formatDate(nextDueAt) },
-            { label: "Saver XP", value: `+${points} Points` },
+            { label: "Saver points", value: `+${points}` },
           ]}
           loading={act.isPending}
           error={pinError}
@@ -315,8 +320,15 @@ export function SavingsWithdrawModal({
           `Returned ${formatXAF(netReturned)} to wallet. ${formatXAF(earlyPenalty)} early break fee deducted.`,
         );
       } else {
-        notify.moneyIn(value, `Moved back to wallet with 0% fees!`);
+        notify.moneyIn(value, "Moved back to your wallet, no fee");
       }
+      celebrate({
+        title: met ? "Goal reached. It's all yours!" : "Back in your wallet",
+        amount: netReturned,
+        line: `from ${plan.name}`,
+        details: earlyPenalty > 0 ? [{ label: "Early withdrawal fee", value: `−${formatXAF(earlyPenalty)}` }] : undefined,
+        doneLabel: met ? "Celebrate" : "Done",
+      });
 
       setConfirmOpen(false);
       onClose();
@@ -330,18 +342,23 @@ export function SavingsWithdrawModal({
   }
 
   return (
-    <div className="fixed inset-0 z-[95] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+    <div
+      className="fixed inset-0 z-[95] grid place-items-end bg-forest/60 backdrop-blur-sm md:place-items-center md:p-6"
+      onClick={onClose}
+    >
       <div
-        className="relative w-full max-w-lg max-h-[92vh] overflow-y-auto rounded-[2rem] bg-white p-5 sm:p-7 shadow-[0_24px_70px_rgba(0,0,0,0.22)] ring-1 ring-black/5"
+        className="lb-sheet relative max-h-[92dvh] w-full max-w-lg overflow-y-auto rounded-t-[2rem] bg-white p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] shadow-2xl sm:p-7 md:rounded-[2rem]"
         role="dialog"
         aria-modal="true"
+        onClick={(e) => e.stopPropagation()}
       >
+        <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-line md:hidden" />
         <div className="flex items-start justify-between gap-4 border-b border-line/60 pb-4">
           <div className="flex items-center gap-3">
             <PlanIcon icon={plan.icon || plan.emoji} size="lg" />
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-brand">Withdraw from pot</p>
-              <h2 className="text-xl font-black text-ink sm:text-2xl">Return to wallet</h2>
+              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-brand">Withdraw from {plan.name}</p>
+              <h2 className="text-xl font-black text-ink sm:text-2xl">Move to your wallet</h2>
             </div>
           </div>
           <button
@@ -465,19 +482,19 @@ export function SavingsWithdrawModal({
           ) : null}
 
           <Button type="submit" disabled={!isValid} className="h-12 w-full text-base font-bold shadow-lg">
-            <ArrowUpFromLine className="h-4 w-4 mr-1.5" /> Review Withdrawal
+            <ArrowUpFromLine className="h-4 w-4 mr-1.5" /> Review withdrawal
           </Button>
         </form>
 
         <ConfirmSheet
           open={confirmOpen}
-          title="Confirm Withdrawal"
+          title="Withdraw from pot"
           subtitle={plan.name}
           amount={netReturned}
           details={[
-            { label: "Pot Debit", value: formatXAF(value) },
-            { label: "Early Penalty", value: earlyPenalty > 0 ? `−${formatXAF(earlyPenalty)}` : "None (0%)" },
-            { label: "Wallet Credit", value: formatXAF(netReturned) },
+            { label: "From pot", value: formatXAF(value) },
+            { label: "Early withdrawal fee", value: earlyPenalty > 0 ? `−${formatXAF(earlyPenalty)}` : "Free" },
+            { label: "To your wallet", value: formatXAF(netReturned) },
           ]}
           loading={act.isPending}
           error={pinError}

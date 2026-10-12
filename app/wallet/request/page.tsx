@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Card } from "@/components/ui/card";
+import { ArrowLeft, Check, Send } from "lucide-react";
+import { AmountField } from "@/components/amount-field";
+import { ShareRow } from "@/components/share-row";
+import { copyText } from "@/lib/clipboard";
 import { Field, Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useNotify } from "@/lib/notify";
@@ -45,79 +47,135 @@ export default function RequestPage() {
     onError: (err: Error) => notify.error("Failed", err.message),
   });
 
+  const links = (data.data?.links || []) as Array<{ id: string; title: string; amount: number | null; slug: string }>;
+  const value = Number(amount) || 0;
+
   return (
-    <div className="mx-auto grid max-w-4xl gap-6 lg:grid-cols-2">
-      <div>
-        <h1 className="text-2xl font-black">Request money</h1>
-        <p className="mt-1 text-sm text-muted">
-          Share a link. They pay with Mobile Money or wallet (cards coming soon).
-        </p>
-        <Card className="mt-6 p-6">
-          <form
-            className="flex flex-col gap-4"
-            onSubmit={(e) => {
-              e.preventDefault();
-              create.mutate();
-            }}
+    <div className="mx-auto grid max-w-4xl gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-10">
+      <div className="space-y-5">
+        <div className="flex items-center gap-3">
+          <Link
+            href="/wallet/qr"
+            className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white ring-1 ring-line/80 transition hover:ring-brand/40"
+            aria-label="Back"
           >
-            <Field label="What is this for">
-              <Input
-                placeholder="Name, @handle, or reason"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                required
-              />
-            </Field>
-            <Field label="Amount (XAF)">
-              <Input
-                type="number"
-                className="font-mono"
+            <ArrowLeft className="h-4 w-4" />
+          </Link>
+          <div>
+            <h1 className="text-[1.75rem] font-black leading-tight tracking-tight text-ink">Request money</h1>
+            <p className="text-[14px] text-muted">A link with the amount filled in. They pay in two taps.</p>
+          </div>
+        </div>
+
+        {link ? (
+          <section className="lb-rise overflow-hidden rounded-[1.75rem] bg-white ring-1 ring-line/80">
+            <div className="relative bg-forest px-6 py-7 text-center text-white">
+              <div className="lb-glow pointer-events-none absolute inset-0" />
+              <span className="lb-check relative mx-auto grid h-14 w-14 place-items-center rounded-full bg-brand text-white">
+                <Check className="h-7 w-7" strokeWidth={3} />
+              </span>
+              <h2 className="relative mt-4 text-2xl font-black">Your request is ready</h2>
+              <p className="relative mt-1 text-[14px] text-hero-muted">Send it to the person who owes you.</p>
+            </div>
+            <div className="space-y-4 p-5">
+              <p className="break-all rounded-2xl bg-paper px-4 py-3 font-mono text-[12px] text-ink">{link}</p>
+              <ShareRow url={link} text={`Please pay me on LBPay:\n${link}`} copyLabel="Copy request link" />
+              <button
+                type="button"
+                onClick={() => setLink(null)}
+                className="w-full text-center text-[14px] font-semibold text-muted hover:text-ink"
+              >
+                Make another request
+              </button>
+            </div>
+          </section>
+        ) : (
+          <section className="rounded-[1.75rem] bg-white p-5 ring-1 ring-line/80 sm:p-6">
+            <form
+              className="flex flex-col gap-6"
+              onSubmit={(e) => {
+                e.preventDefault();
+                create.mutate();
+              }}
+            >
+              <Field label="What is it for?">
+                <Input
+                  placeholder="e.g. Share of the dinner"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  maxLength={60}
+                  className="h-12 text-[16px] font-semibold"
+                  required
+                />
+              </Field>
+              <AmountField
                 value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                required
+                onChange={setAmount}
+                kind="wallet"
+                label="How much?"
+                receive={value}
+                fee={0}
+                receiveLabel="You receive"
+                feeLabel="Fee for you"
               />
-            </Field>
-            <Button type="submit" disabled={create.isPending}>
-              Create request
-            </Button>
-          </form>
-          {link ? (
-            <p className="mt-4 break-all rounded-xl bg-brand-soft p-3 font-mono text-xs text-brand-dark">
-              {link}
-            </p>
-          ) : null}
-        </Card>
+              <Button type="submit" disabled={create.isPending || !value || !title.trim()} className="h-14 rounded-2xl text-[16px] font-bold">
+                {create.isPending ? "Creating…" : value ? `Request ${formatXAF(value)}` : "Create request"}
+              </Button>
+            </form>
+          </section>
+        )}
+        <p className="px-1 text-center text-[12px] text-muted">
+          They can pay with MTN MoMo, Orange Money or an LBPay wallet.
+        </p>
       </div>
+
       <div>
-        <Image
-          src="/illustrations/request-money.webp"
-          alt=""
-          width={900}
-          height={600}
-          className="mb-4 h-48 w-full rounded-3xl object-cover"
-        />
-        <Card className="divide-y divide-line">
-          {(data.data?.links || []).length === 0 ? (
-            <p className="p-6 text-sm text-muted">No requests yet.</p>
-          ) : (
-            (data.data?.links || []).map(
-              (item: { id: string; title: string; amount: number | null; slug: string }) => (
-                <div key={item.id} className="flex items-center justify-between p-4">
-                  <div>
-                    <p className="font-semibold">{item.title}</p>
-                    <p className="font-mono text-xs text-muted">{payLinkUrl(item.slug, origin)}</p>
-                    <Link href={payLinkPath(item.slug)} className="text-sm font-bold text-brand">
-                      Open checkout
-                    </Link>
-                  </div>
-                  <p className="font-mono text-sm font-bold">
-                    {item.amount ? formatXAF(item.amount) : "Open"}
-                  </p>
+        <h2 className="mb-3 px-1 text-[13px] font-bold uppercase tracking-[0.14em] text-muted">Your requests</h2>
+        {links.length === 0 ? (
+          <div className="rounded-[1.75rem] border-2 border-dashed border-line bg-white px-6 py-12 text-center">
+            <span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-brand-soft text-brand-deep">
+              <Send className="h-5 w-5" />
+            </span>
+            <p className="mt-3 text-[15px] font-bold text-ink">No requests yet</p>
+            <p className="mt-1 text-[13px] text-muted">Requests you create show up here.</p>
+          </div>
+        ) : (
+          <ul className="overflow-hidden rounded-[1.75rem] bg-white ring-1 ring-line/80">
+            {links.map((item, i) => (
+              <li key={item.id} className={i ? "border-t border-line" : ""}>
+                <div className="flex items-center gap-3 p-4">
+                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-paper text-[13px] font-black text-ink ring-1 ring-line">
+                    {item.title.slice(0, 1).toUpperCase()}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[14px] font-bold text-ink">{item.title}</span>
+                    <span className="block truncate font-mono text-[11px] text-muted">{payLinkUrl(item.slug, origin)}</span>
+                  </span>
+                  <span className="tabular shrink-0 text-[14px] font-black text-ink">
+                    {item.amount ? formatXAF(item.amount) : "Any"}
+                  </span>
                 </div>
-              ),
-            )
-          )}
-        </Card>
+                <div className="flex gap-2 px-4 pb-4">
+                  <Link
+                    href={payLinkPath(item.slug)}
+                    className="flex-1 rounded-xl bg-paper py-2 text-center text-[12px] font-semibold text-ink ring-1 ring-line hover:ring-brand/40"
+                  >
+                    View
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      void copyText(payLinkUrl(item.slug, origin)).then(() => notify.success("Copied", "Send it on WhatsApp."))
+                    }
+                    className="flex-1 rounded-xl bg-ink py-2 text-center text-[12px] font-semibold text-white hover:bg-ink/90"
+                  >
+                    Copy link
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </div>
   );

@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import {
   ArrowLeft,
   ArrowDownToLine,
   ArrowUpFromLine,
   CalendarClock,
+  Coffee,
   Flame,
   Lock,
   Shield,
@@ -15,23 +16,21 @@ import {
   Trophy,
   Zap,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { ConfirmSheet } from "@/components/confirm-sheet";
 import { StatusBadge } from "@/components/ui/badge";
 import { DueChip, ProgressRing, SavingsDepositModal, SavingsWithdrawModal, Streak } from "@/components/savings";
+import { PotControls } from "@/components/savings-controls";
 import { PlanIcon } from "@/components/plan-icon";
 import { MoneyRow } from "@/components/money-hub";
 import { formatDate, formatXAF, isMoneyOut } from "@/lib/format";
 import { useMe, useSavingsAction, useSavingsPlan } from "@/lib/hooks/wallet";
 import { useNotify } from "@/lib/notify";
-import { isPinError, readPinFail } from "@/lib/pin-fail";
 import {
-  SAVINGS,
+  PAUSE,
   cyclesToTarget,
+  isLivePlan,
   estimatedFinishAt,
   frequencyEvery,
   isObjectiveMet,
-  penaltyFor,
   planProgress,
   timeUntil,
 } from "@/lib/savings";
@@ -42,7 +41,6 @@ import type { Transaction } from "@/lib/types";
 export default function SavingsPlanPage() {
   const params = useParams<{ id: string }>();
   const id = String(params?.id || "");
-  const router = useRouter();
   const notify = useNotify();
   const me = useMe();
   const planQuery = useSavingsPlan(id);
@@ -52,9 +50,6 @@ export default function SavingsPlanPage() {
 
   const [depositOpen, setDepositOpen] = useState(false);
   const [withdrawOpen, setWithdrawOpen] = useState(false);
-  const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
-  const [pinError, setPinError] = useState("");
-  const [lockedUntil, setLockedUntil] = useState(0);
 
   const history = ((me.data?.transactions as Transaction[] | undefined) || [])
     .filter((tx) => tx.meta?.planId === id)
@@ -81,24 +76,10 @@ export default function SavingsPlanPage() {
   const progress = planProgress(plan);
   const left = cyclesToTarget(plan);
   const finish = estimatedFinishAt(plan);
-  const active = plan.status === "active";
+  const active = isLivePlan(plan);
+  const paused = plan.status === "paused";
   const met = isObjectiveMet(plan);
   const hasPrepay = (plan.prepaidCycles ?? 0) > 0;
-
-  async function handleClosePlan(pin: string) {
-    setPinError("");
-    setLockedUntil(0);
-    try {
-      await act.mutateAsync({ action: "close", pin });
-      notify.moneyIn(plan!.balance, `${plan!.name} closed · funds returned to wallet`);
-      router.push("/wallet/savings");
-    } catch (err) {
-      const fail = readPinFail(err);
-      setPinError(fail.error);
-      setLockedUntil(fail.lockedUntil);
-      if (!isPinError(fail.error)) notify.error("Could not close plan", fail.error);
-    }
-  }
 
   async function toggleAutoSave() {
     try {
@@ -149,7 +130,7 @@ export default function SavingsPlanPage() {
               </div>
             </span>
             <div className="min-w-0">
-              <p className="text-[12px] font-semibold text-hero-muted">Current Balance</p>
+              <p className="text-[12px] font-semibold text-hero-muted">In the pot</p>
               <p className="font-mono text-[2rem] font-black leading-none tracking-tight">
                 {formatXAF(plan.balance, { withCurrency: false })} <span className="text-sm font-bold text-hero-muted">XAF</span>
               </p>
@@ -161,13 +142,21 @@ export default function SavingsPlanPage() {
                 <Streak count={plan.streak} className="text-amber-300" />
                 {hasPrepay ? (
                   <span className="inline-flex items-center gap-1 rounded-full bg-teal-400/20 px-2 py-0.5 text-[11px] font-bold text-teal-200">
-                    <Shield className="h-3 w-3" /> Shield Active
+                    <Shield className="h-3 w-3" /> Paid ahead
                   </span>
                 ) : null}
               </div>
             </div>
           </div>
 
+          {paused ? (
+            <div className="mt-5 flex items-center gap-3 rounded-xl bg-gold/20 p-3.5 ring-1 ring-gold/40">
+              <Coffee className="h-5 w-5 shrink-0 text-gold" />
+              <p className="text-[13px] font-semibold text-white">
+                On a break until {plan.pausedUntil ? formatDate(plan.pausedUntil) : "soon"}. No saves due, no fees.
+              </p>
+            </div>
+          ) : null}
           {active ? (
             <div className="mt-5 grid grid-cols-2 gap-2.5">
               <button
@@ -175,7 +164,7 @@ export default function SavingsPlanPage() {
                 onClick={() => setDepositOpen(true)}
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-brand text-sm font-bold text-white shadow-[0_8px_20px_rgba(0,179,105,0.3)] hover:bg-brand-dark transition cursor-pointer"
               >
-                <ArrowDownToLine className="h-4 w-4" /> Save / Prepay
+                <ArrowDownToLine className="h-4 w-4" /> Save now
               </button>
               <button
                 type="button"
@@ -190,7 +179,7 @@ export default function SavingsPlanPage() {
             <div className="mt-5 flex items-center justify-between rounded-xl bg-white/10 p-3.5">
               <div className="flex items-center gap-2">
                 <Trophy className="h-5 w-5 text-amber-300" />
-                <span className="text-xs font-bold">Goal reached! Claim with 0% fees.</span>
+                <span className="text-xs font-bold">Goal reached! Collect it all, free.</span>
               </div>
               <button
                 type="button"
@@ -234,27 +223,27 @@ export default function SavingsPlanPage() {
         <section className="grid grid-cols-2 gap-2.5">
           <StatTile
             icon={CalendarClock}
-            label="Next Save"
-            value={active ? timeUntil(plan.nextDueAt) : "—"}
+            label="Next save"
+            value={paused ? "On a break" : active ? timeUntil(plan.nextDueAt) : "—"}
             hint={active ? formatDate(plan.nextDueAt) : plan.status}
           />
           <StatTile
             icon={Target}
-            label="Goal Distance"
+            label="To your goal"
             value={left != null ? `${left} saves` : "Open"}
             hint={finish ? `≈ ${formatDate(finish)}` : "No deadline"}
           />
           <StatTile
             icon={Flame}
-            label="Best Streak"
+            label="Best streak"
             value={`${plan.bestStreak} cycles`}
             hint={plan.missed ? `${plan.missed} missed` : "0 missed"}
           />
           <StatTile
             icon={Lock}
-            label="Commitment Fee"
+            label="Your fee"
             value={`${Math.round(plan.penaltyRate * 100)}%`}
-            hint={met ? "0% fee (Goal met!)" : "Early exit fee"}
+            hint={met ? "Free now: goal met" : "If you miss or stop early"}
           />
         </section>
 
@@ -301,8 +290,8 @@ export default function SavingsPlanPage() {
           <div className="flex items-center gap-2.5">
             <PlanIcon icon={plan.icon || plan.emoji} size="sm" />
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-brand">Pot Contract</p>
-              <h2 className="text-base font-black text-ink">Rules & Commitment</h2>
+              <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-brand">Your promise</p>
+              <h2 className="text-base font-black text-ink">How this pot works</h2>
             </div>
           </div>
           <ul className="mt-3.5 space-y-2 text-xs text-muted leading-relaxed">
@@ -316,42 +305,32 @@ export default function SavingsPlanPage() {
             <li className="flex items-start gap-2">
               <span className="text-brand font-bold">•</span>
               <span>
-                <strong>Prepay & Protect:</strong> You can deposit for multiple days/weeks in advance. Your due date pushes
-                forward, shielding you from missed-save penalties!
+                <strong>Pay ahead:</strong> Save several cycles at once and your next due date moves forward, so you
+                can&apos;t miss a save.
               </span>
             </li>
             {plan.target ? (
               <li className="flex items-start gap-2">
                 <span className="text-amber-600 font-bold">•</span>
                 <span>
-                  <strong>Locked Objective:</strong> Your goal of{" "}
-                  <strong className="text-ink">{formatXAF(plan.target)}</strong> is locked and cannot be lowered. If you
-                  withdraw early before meeting this goal, a {Math.round(plan.penaltyRate * 100)}% commitment penalty is
-                  forfeited. Once met, withdrawal is 100% free!
+                  <strong>Locked goal:</strong> Your goal of <strong className="text-ink">{formatXAF(plan.target)}</strong>{" "}
+                  can be raised but never lowered. Withdrawing or stopping before you reach it costs{" "}
+                  {Math.round(plan.penaltyRate * 100)}% of what you take out. Once you reach it, everything is free.
                 </span>
               </li>
             ) : null}
             <li className="flex items-start gap-2">
               <span className="text-brand font-bold">•</span>
               <span>
-                <strong>Saver XP:</strong> Every on-time save earns +50 XP. Prepaying advance cycles earns bonus XP!
+                <strong>Breaks:</strong> Up to {PAUSE.maxPauses} free breaks per pot. No saves are due and no fees apply
+                while you&apos;re on one.
               </span>
             </li>
           </ul>
 
-          {active ? (
-            <div className="mt-4 border-t border-line/60 pt-3 flex justify-between items-center">
-              <span className="text-[11px] text-muted">Need to cancel this pot?</span>
-              <button
-                type="button"
-                onClick={() => setCloseConfirmOpen(true)}
-                className="text-xs font-bold text-danger hover:underline"
-              >
-                Close pot
-              </button>
-            </div>
-          ) : null}
         </section>
+
+        {active ? <PotControls plan={plan} /> : null}
 
         {/* Activity Feed */}
         <section>
@@ -414,24 +393,6 @@ export default function SavingsPlanPage() {
         onSuccess={() => setWithdrawOpen(false)}
       />
 
-      {/* Close Plan Confirmation */}
-      <ConfirmSheet
-        open={closeConfirmOpen}
-        title="Close Savings Pot"
-        subtitle={plan.name}
-        amount={plan.balance}
-        details={[
-          { label: "Pot Balance", value: formatXAF(plan.balance) },
-          { label: "Destination", value: "Your wallet" },
-        ]}
-        warning="This will close the pot and move any remaining balance back to your wallet."
-        loading={act.isPending}
-        error={pinError}
-        lockedUntil={lockedUntil}
-        confirmLabel="Enter PIN to close"
-        onClose={() => setCloseConfirmOpen(false)}
-        onConfirm={handleClosePlan}
-      />
     </div>
   );
 }

@@ -11,11 +11,11 @@ import { useApp } from "@/lib/store";
 import { formatXAF } from "@/lib/format";
 import { useDisburse, useMe } from "@/lib/hooks/wallet";
 import { useNotify } from "@/lib/notify";
-import { NetworkMark } from "@/components/network-mark";
+import { BalancePill, MethodPicker, WaitingOnPhone } from "@/components/money-ui";
 import { cameroonMsisdn, isCameroonMsisdn } from "@/lib/phone";
-import { FEE_RATES, feePercentLabel, momoOutFee } from "@/lib/fees";
+import { FEE_RATES, feePercent, feePercentLabel, momoOutFee } from "@/lib/fees";
 import { AmountField } from "@/components/amount-field";
-import { LIMITS, amountIssue, cameroonDay, dailyOutboundCap, outboundKinds } from "@/lib/limits";
+import { amountIssue, cameroonDay, dailyOutboundCap, outboundKinds } from "@/lib/limits";
 import { readPinFail, isPinError } from "@/lib/pin-fail";
 
 async function pollWithdrawStatus(tx: string, onTick: () => void) {
@@ -189,29 +189,22 @@ export default function WithdrawPage() {
   }
 
   return (
-    <MoneyPage title="Withdraw" copy="Cash out to MTN or Orange whenever you need it.">
+    <MoneyPage title="Withdraw" copy="Cash out to any MTN or Orange number." trust="refund">
       {waiting ? (
-        <MoneyCard className="text-center">
-          <p className="text-sm font-bold uppercase tracking-wide text-brand">Sending</p>
-          <h2 className="mt-2 text-2xl font-black">Paying Mobile Money</h2>
-          <p className="mt-4 rounded-2xl bg-paper px-4 py-3 text-sm leading-6 text-ink">
-            We are sending {formatXAF(value)} to {network === "orange" ? "Orange" : "MTN"} {clean}. This usually
-            takes less than two minutes.
-          </p>
-          <p className="mt-6 font-mono text-4xl font-black">{waiting.seconds}s</p>
-          <div className="mt-6 grid gap-2">
-            <Button onClick={() => void verifyNow()} disabled={checking}>
-              {checking ? "Checking…" : "Check status"}
-            </Button>
-            <Button variant="ghost" onClick={() => router.push("/wallet")}>
-              Back to wallet
-            </Button>
-          </div>
-        </MoneyCard>
+        <WaitingOnPhone
+          network={network}
+          stage="sending"
+          amountLabel={`${formatXAF(value)} to ${clean}`}
+          seconds={waiting.seconds}
+          checking={checking}
+          onCheck={() => void verifyNow()}
+          onCancel={() => router.push("/wallet")}
+        />
       ) : (
         <MoneyCard>
+          <BalancePill amount={formatXAF(balance)} label="In your wallet" />
           <form
-            className="flex flex-col gap-4"
+            className="mt-5 flex flex-col gap-6"
             onSubmit={(e) => {
               e.preventDefault();
               if (!ready) return;
@@ -220,27 +213,23 @@ export default function WithdrawPage() {
               setOpen(true);
             }}
           >
-            <div className="grid grid-cols-2 gap-2">
-              {(["mtn", "orange"] as const).map((item) => (
-                <button
-                  key={item}
-                  type="button"
-                  onClick={() => setNetwork(item)}
-                  className={`flex items-center justify-center gap-2 rounded-xl border py-3 font-semibold ${
-                    network === item ? "border-brand bg-brand-soft text-brand-dark" : "border-line"
-                  }`}
-                >
-                  <NetworkMark network={item} className="h-9 w-9 rounded-xl text-[9px]" />
-                  {item === "mtn" ? "MTN" : "Orange"}
-                </button>
-              ))}
-            </div>
-            <Field label="Number">
+            <MethodPicker
+              label="Send to"
+              value={network}
+              onChange={setNetwork}
+              options={[
+                { id: "mtn" as const, network: "mtn", title: "MTN MoMo", hint: `${feePercent(FEE_RATES.withdraw)}% fee` },
+                { id: "orange" as const, network: "orange", title: "Orange Money", hint: `${feePercent(FEE_RATES.withdraw)}% fee` },
+              ]}
+            />
+            <Field label={`${network === "orange" ? "Orange" : "MTN"} number`}>
               <Input
                 inputMode="numeric"
+                autoComplete="tel"
                 placeholder="677000000"
                 value={phone}
                 onChange={(e) => setPhone(cameroonMsisdn(e.target.value))}
+                className="tabular h-12 text-[16px] font-semibold"
                 required
               />
             </Field>
@@ -248,21 +237,27 @@ export default function WithdrawPage() {
               value={amount}
               onChange={setAmount}
               kind="withdraw"
+              label="How much?"
               receive={value}
               fee={fee}
-              feeLabel={feePercentLabel(FEE_RATES.withdraw)}
+              receiveLabel={`Lands on ${network === "orange" ? "Orange" : "MTN"}`}
+              feeLabel={feePercentLabel(FEE_RATES.withdraw, "Fee")}
               pay={debit}
-              payLabel="Wallet pays"
+              payLabel="Taken from your wallet"
             />
-            <p className="text-xs text-muted">Minimum withdrawal is {formatXAF(LIMITS.withdrawMin)}.</p>
             {overDaily ? (
-              <p className="text-sm font-semibold text-danger">Daily limit remaining is {formatXAF(Math.max(0, (cap || 0) - usedToday))}.</p>
+              <p className="rounded-2xl bg-[#fdf3f2] px-4 py-3 text-[13px] font-semibold text-danger">
+                You can send {formatXAF(Math.max(0, (cap || 0) - usedToday))} more today. Verify your ID to raise the
+                limit.
+              </p>
             ) : null}
             {value > 0 && debit > balance ? (
-              <p className="text-sm font-semibold text-danger">Insufficient wallet balance. Deposit funds or enter a lower amount.</p>
+              <p className="rounded-2xl bg-[#fdf3f2] px-4 py-3 text-[13px] font-semibold text-danger">
+                Not enough in your wallet. Add money or lower the amount.
+              </p>
             ) : null}
-            <Button type="submit" disabled={!ready}>
-              Review withdrawal
+            <Button type="submit" disabled={!ready} className="h-14 rounded-2xl text-[16px] font-bold">
+              {value ? `Withdraw ${formatXAF(value)}` : "Withdraw"}
             </Button>
           </form>
         </MoneyCard>

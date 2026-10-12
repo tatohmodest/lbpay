@@ -11,18 +11,15 @@ import { useApp } from "@/lib/store";
 import { formatXAF } from "@/lib/format";
 import { useCollect, useMe } from "@/lib/hooks/wallet";
 import { useNotify } from "@/lib/notify";
-import { NetworkMark } from "@/components/network-mark";
+import { BalancePill, MethodPicker, WaitingOnPhone } from "@/components/money-ui";
 import { cameroonMsisdn, isCameroonMsisdn } from "@/lib/phone";
-import { depositFee } from "@/lib/fees";
+import { FEE_RATES, depositFee, feePercent, feePercentLabel } from "@/lib/fees";
 import { AmountField } from "@/components/amount-field";
 import { amountIssue } from "@/lib/limits";
 import { readPinFail, isPinError } from "@/lib/pin-fail";
 import type { PaymentMethod } from "@/lib/types";
 
-const methods: { id: PaymentMethod; label: string }[] = [
-  { id: "mtn", label: "MTN" },
-  { id: "orange", label: "Orange" },
-];
+const feeHint = `${feePercent(FEE_RATES.deposit)}% fee`;
 
 export default function DepositPage() {
   const { state } = useApp();
@@ -52,7 +49,7 @@ export default function DepositPage() {
     { label: "From", value: method === "mtn" ? "MTN" : "Orange" },
     { label: "Number", value: clean },
     { label: "Wallet receives", value: formatXAF(value) },
-    ...(fee ? [{ label: "Charge (2%)", value: formatXAF(fee) }] : []),
+    ...(fee ? [{ label: feePercentLabel(FEE_RATES.deposit, "Fee"), value: formatXAF(fee) }] : []),
     { label: "You pay", value: formatXAF(payAmount) },
   ];
 
@@ -158,34 +155,22 @@ export default function DepositPage() {
   };
 
   return (
-    <MoneyPage title="Add money" copy="Add money from MTN or Orange. (Card coming soon)">
+    <MoneyPage title="Add money" copy="Top up from MTN MoMo or Orange Money.">
       {waiting ? (
-        <MoneyCard className="text-center">
-          <p className="text-sm font-bold uppercase tracking-wide text-brand">Waiting for payment</p>
-          <h2 className="mt-2 text-2xl font-black">Approve on your phone</h2>
-          <p className="mt-2 text-sm leading-6 text-muted">
-            Enter your {method === "orange" ? "Orange Money" : "MTN"} PIN on the popup. This page checks the
-            payment automatically.
-          </p>
-          <p className="mt-4 rounded-2xl bg-paper px-4 py-3 text-sm leading-6 text-ink">
-            If you have not seen a popup, dial <span className="font-mono font-semibold">{ussdCode}</span> and
-            confirm pay. Then tap I&apos;ve paid.
-          </p>
-          <p className="mt-6 font-mono text-4xl font-black">{waiting.seconds}s</p>
-          <div className="mt-6 grid gap-2">
-            <Button onClick={() => void verifyNow()} disabled={checking}>
-              {checking ? "Checking…" : "I've paid"}
-            </Button>
-            <Button variant="ghost" onClick={() => setWaiting(null)}>
-              Cancel wait
-            </Button>
-          </div>
-        </MoneyCard>
+        <WaitingOnPhone
+          network={method === "orange" ? "orange" : "mtn"}
+          amountLabel={formatXAF(payAmount)}
+          seconds={waiting.seconds}
+          ussd={ussdCode}
+          checking={checking}
+          onCheck={() => void verifyNow()}
+          onCancel={() => setWaiting(null)}
+        />
       ) : (
         <MoneyCard>
-          <p className="mb-4 text-sm text-muted">Available {formatXAF(balance)}</p>
+          <BalancePill amount={formatXAF(balance)} label="In your wallet" />
           <form
-            className="flex flex-col gap-4"
+            className="mt-5 flex flex-col gap-6"
             onSubmit={(e) => {
               e.preventDefault();
               if (!ready) return;
@@ -194,44 +179,40 @@ export default function DepositPage() {
               setOpen(true);
             }}
           >
-            <div className="grid gap-2">
-              {methods.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => setMethod(item.id)}
-                  className={`flex items-center gap-3 rounded-2xl border p-3 text-left ${
-                    method === item.id ? "border-brand bg-brand-soft" : "border-line"
-                  }`}
-                >
-                  <NetworkMark network={item.id} />
-                  <span className="font-semibold">{item.label}</span>
-                </button>
-              ))}
-            </div>
-            {method !== "card" ? (
-              <Field label="Number">
-                <Input
-                  inputMode="numeric"
-                  placeholder="677000000"
-                  value={phone}
-                  onChange={(e) => setPhone(cameroonMsisdn(e.target.value))}
-                  required
-                />
-              </Field>
-            ) : null}
+            <MethodPicker
+              label="Add from"
+              value={method}
+              onChange={setMethod}
+              options={[
+                { id: "mtn" as PaymentMethod, network: "mtn", title: "MTN MoMo", hint: feeHint },
+                { id: "orange" as PaymentMethod, network: "orange", title: "Orange Money", hint: feeHint },
+              ]}
+            />
+            <Field label={`Your ${method === "orange" ? "Orange" : "MTN"} number`}>
+              <Input
+                inputMode="numeric"
+                autoComplete="tel"
+                placeholder="677000000"
+                value={phone}
+                onChange={(e) => setPhone(cameroonMsisdn(e.target.value))}
+                className="tabular h-12 text-[16px] font-semibold"
+                required
+              />
+            </Field>
             <AmountField
               value={amount}
               onChange={setAmount}
               kind="deposit"
+              label="How much?"
               receive={value}
               fee={fee}
               pay={payAmount}
-              receiveLabel="Wallet receives"
-              feeLabel="Charge (2%)"
+              receiveLabel="Added to your wallet"
+              feeLabel={feePercentLabel(FEE_RATES.deposit, "Fee")}
+              payLabel={`You pay from ${method === "orange" ? "Orange" : "MTN"}`}
             />
-            <Button type="submit" disabled={!ready}>
-              Review deposit
+            <Button type="submit" disabled={!ready} className="h-14 rounded-2xl text-[16px] font-bold">
+              {value ? `Add ${formatXAF(value)}` : "Add money"}
             </Button>
           </form>
         </MoneyCard>
