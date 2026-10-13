@@ -1,4 +1,4 @@
-import { depositFee } from "@/lib/fees";
+import { checkoutFee } from "@/lib/fees";
 import { payunitReference } from "@/lib/server/crypto";
 import {
   findLinkBySlug,
@@ -127,7 +127,7 @@ export async function startCheckoutPayment(input: {
     return { error: "Enter the Mobile Money number that will pay.", status: 400 as const };
   }
 
-  const fee = depositFee(amount);
+  const fee = checkoutFee(amount);
   const payAmount = amount + fee;
   const reference = payunitReference(method === "orange" ? "OM" : "MT");
   let returnUrl = input.returnUrl;

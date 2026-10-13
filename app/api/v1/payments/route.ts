@@ -3,6 +3,7 @@ import { authenticateApiKey, logApi, railForEnv } from "@/lib/server/apikey";
 import { recordLedgerMove } from "@/lib/server/db";
 import { payunitReference } from "@/lib/server/crypto";
 import { assertAmount } from "@/lib/server/limits";
+import { apiCollectionFee } from "@/lib/fees";
 
 export async function POST(request: Request) {
   const auth = await authenticateApiKey(request);
@@ -51,9 +52,12 @@ export async function POST(request: Request) {
           reference,
         });
 
+  // Developers pay 2% on Mobile Money and card collections; wallet-to-wallet is free.
+  const fee = method === "wallet" ? 0 : apiCollectionFee(amount);
   const moved = await recordLedgerMove({
     userId: user.id,
-    amount,
+    amount: amount - fee,
+    fee,
     direction: "credit",
     kind: "collection",
     method,
@@ -69,6 +73,8 @@ export async function POST(request: Request) {
     id: moved.tx.id,
     object: "payment",
     amount,
+    fee,
+    net: amount - fee,
     currency: "XAF",
     status: moved.tx.status,
     rail: result.provider,

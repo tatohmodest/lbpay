@@ -66,7 +66,8 @@ const revenue = [
   { label: "Adding money (MoMo → wallet)", rate: `${feePercent(FEE_RATES.deposit)}%`, example: 20_000, r: FEE_RATES.deposit },
   { label: "Cash-out and payouts (wallet → MoMo)", rate: `${feePercent(FEE_RATES.withdraw)}%`, example: 50_000, r: FEE_RATES.withdraw },
   { label: "Direct MTN ↔ Orange transfers", rate: `${feePercent(FEE_RATES.crossNetwork)}%`, example: 30_000, r: FEE_RATES.crossNetwork },
-  { label: "Customer paying a merchant by MoMo", rate: `${feePercent(FEE_RATES.deposit)}%`, example: 15_000, r: FEE_RATES.deposit },
+  { label: "Customer paying a merchant by MoMo", rate: `${feePercent(FEE_RATES.checkout)}%`, example: 15_000, r: FEE_RATES.checkout },
+  { label: "Developer API collections", rate: `${feePercent(FEE_RATES.apiCollection)}%`, example: 40_000, r: FEE_RATES.apiCollection },
 ];
 
 const moats = [
@@ -258,7 +259,8 @@ export default function InvestorsPage() {
                 {fmt(SHOP_LIMITS.packPrice)} XAF per {SHOP_LIMITS.packSize} extra products
               </li>
               <li className="flex gap-3">
-                <BadgeCheck className="mt-0.5 h-5 w-5 shrink-0 text-brand" /> API payouts at the standard{" "}
+                <BadgeCheck className="mt-0.5 h-5 w-5 shrink-0 text-brand" /> API collections at{" "}
+                {feePercent(FEE_RATES.apiCollection)}%, payouts at the standard{" "}
                 {feePercent(FEE_RATES.withdraw)}% rate
               </li>
               <li className="flex gap-3">

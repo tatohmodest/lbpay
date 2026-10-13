@@ -13,10 +13,12 @@ import { parsePaymentLinkPatch } from "./server/payment-links";
 import { payunitGatewayUrl } from "./site";
 import { mapRailError } from "./public-error";
 
-test("deposit is 1.5 percent and withdrawal is 2.5 percent", () => {
-  assert.equal(FEE_RATES.deposit, 0.015);
+test("deposit covers the gateway's 1.5% of the gross; withdrawal is 2.5 percent", () => {
+  assert.equal(FEE_RATES.deposit, 0.0153);
   assert.equal(FEE_RATES.withdraw, 0.025);
-  assert.equal(depositFee(10_000), 150);
+  assert.equal(depositFee(10_000), 153);
+  // Gateway takes 1.5% of amount + fee: 10,153 × 1.5% ≈ 152.3, covered by 153
+  assert.ok(depositFee(10_000) >= (10_000 + depositFee(10_000)) * 0.015);
   assert.equal(momoOutFee(10_000), 250);
   assert.equal(directTransferFee(10_000, "mtn", "mtn"), 250);
 });
@@ -28,7 +30,9 @@ test("quick transfer across networks is 3.5 percent of the amount they receive",
 });
 
 test("fee labels preserve one decimal when needed", () => {
-  assert.equal(feePercent(FEE_RATES.deposit), "1.5");
+  assert.equal(feePercent(FEE_RATES.deposit), "1.53");
+  assert.equal(feePercent(FEE_RATES.checkout), "1.5");
+  assert.equal(feePercent(FEE_RATES.apiCollection), "2");
   assert.equal(feePercent(FEE_RATES.withdraw), "2.5");
   assert.equal(feePercent(FEE_RATES.crossNetwork), "3.5");
   assert.equal(feePercentLabel(FEE_RATES.withdraw), "Charge (2.5%)");

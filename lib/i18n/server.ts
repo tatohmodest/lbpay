@@ -13,3 +13,9 @@ export async function getRequestLocale(): Promise<Locale> {
 export async function tServer(path: string, vars?: Record<string, string | number>) {
   return translate(await getRequestLocale(), path, vars);
 }
+
+/** Server-side inline bilingual text: `const L = await getL(); L("Send", "Envoyer")`. */
+export async function getL() {
+  const locale = await getRequestLocale();
+  return (en: string, fr: string) => (locale === "fr" ? fr : en);
+}

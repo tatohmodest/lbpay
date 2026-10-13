@@ -16,6 +16,7 @@ import type { Transaction } from "@/lib/types";
 import { formatXAF } from "@/lib/format";
 import { useDisburse, useHandleLookup, useMe, useTransfer } from "@/lib/hooks/wallet";
 import { useNotify } from "@/lib/notify";
+import { useL } from "@/lib/i18n/use-i18n";
 import { cameroonMsisdn, isCameroonMsisdn } from "@/lib/phone";
 import { feePercent, FEE_RATES, feePercentLabel, momoOutFee } from "@/lib/fees";
 import { AmountField } from "@/components/amount-field";
@@ -31,6 +32,7 @@ function SendInner() {
   const params = useSearchParams();
   const viaParam = params.get("via");
   const notify = useNotify();
+  const L = useL();
   const transfer = useTransfer();
   const disburse = useDisburse();
   const [to, setTo] = useState(() => {
@@ -77,16 +79,16 @@ function SendInner() {
   const details =
     network === "wallet"
       ? [
-          { label: "To", value: `@${lookup.data?.user?.lbpayId || to.replace(/^@/, "")}` },
-          { label: "They receive", value: formatXAF(value) },
-          { label: "Charge", value: "No fee" },
+          { label: L("To", "Vers"), value: `@${lookup.data?.user?.lbpayId || to.replace(/^@/, "")}` },
+          { label: L("They receive", "Ils reçoivent"), value: formatXAF(value) },
+          { label: L("Charge", "Frais"), value: L("No fee", "Sans frais") },
         ]
       : [
-          { label: "Network", value: network === "orange" ? "Orange" : "MTN" },
-          { label: "Phone", value: phone },
-          { label: "They receive", value: formatXAF(value) },
+          { label: L("Network", "Réseau"), value: network === "orange" ? "Orange" : "MTN" },
+          { label: L("Phone", "Téléphone"), value: phone },
+          { label: L("They receive", "Ils reçoivent"), value: formatXAF(value) },
           ...(fee ? [{ label: feePercentLabel(FEE_RATES.withdraw), value: formatXAF(fee) }] : []),
-          { label: "You pay", value: formatXAF(debit) },
+          { label: L("You pay", "Vous payez"), value: formatXAF(debit) },
         ];
 
   async function confirm(pin: string) {
@@ -96,33 +98,33 @@ function SendInner() {
       if (network === "wallet") {
         await transfer.mutateAsync({ to, amount: value, pin, note });
         const handle = lookup.data?.user?.lbpayId || to.replace(/^@/, "");
-        notify.moneyOut(value, `Transferred to @${handle}`);
+        notify.moneyOut(value, L(`Transferred to @${handle}`, `Transféré à @${handle}`));
         celebrate({
-          title: "Sent!",
+          title: L("Sent!", "Envoyé !"),
           amount: value,
-          line: `to ${lookup.data?.user?.name || `@${handle}`}`,
+          line: L(`to ${lookup.data?.user?.name || `@${handle}`}`, `à ${lookup.data?.user?.name || `@${handle}`}`),
           details: [
-            { label: "To", value: `@${handle}` },
-            { label: "Fee", value: "Free" },
+            { label: L("To", "Vers"), value: `@${handle}` },
+            { label: L("Fee", "Frais"), value: L("Free", "Gratuit") },
           ],
         });
       } else {
         const result = (await disburse.mutateAsync({ amount: value, phone, network, pin, note })) as {
           status?: string;
         };
-        notify.moneyOut(debit, `Sent ${formatXAF(value)} to ${phone} on ${network.toUpperCase()}`);
+        notify.moneyOut(debit, L(`Sent ${formatXAF(value)} to ${phone} on ${network.toUpperCase()}`, `${formatXAF(value)} envoyés à ${phone} sur ${network.toUpperCase()}`));
         const pending = result?.status !== "success";
         celebrate({
-          title: pending ? "On its way" : "Sent!",
+          title: pending ? L("On its way", "En route") : L("Sent!", "Envoyé !"),
           amount: value,
-          line: `to ${phone} on ${network === "orange" ? "Orange Money" : "MTN MoMo"}`,
+          line: L(`to ${phone} on ${network === "orange" ? "Orange Money" : "MTN MoMo"}`, `à ${phone} sur ${network === "orange" ? "Orange Money" : "MTN MoMo"}`),
           details: [
-            ...(fee ? [{ label: "Fee", value: formatXAF(fee) }] : []),
-            { label: "Total from wallet", value: formatXAF(debit) },
+            ...(fee ? [{ label: L("Fee", "Frais"), value: formatXAF(fee) }] : []),
+            { label: L("Total from wallet", "Total débité"), value: formatXAF(debit) },
           ],
           pending,
           note: pending
-            ? "We'll let you know when it lands. If the network rejects it, the amount and fee come straight back."
+            ? L("We'll let you know when it lands. If the network rejects it, the amount and fee come straight back.", "Nous vous préviendrons à l'arrivée. Si le réseau refuse, le montant et les frais vous reviennent aussitôt.")
             : undefined,
         });
       }
@@ -133,13 +135,16 @@ function SendInner() {
       setPinError(fail.error);
       setPinLockedUntil(fail.lockedUntil);
       if (!isPinError(fail.error)) {
-        notify.error("Send failed", fail.error);
+        notify.error(L("Send failed", "Échec de l'envoi"), fail.error);
       }
     }
   }
 
   return (
-    <MoneyPage title="Send money" copy="A friend, a shop, or any Mobile Money number.">
+    <MoneyPage
+      title={L("Send money", "Envoyer de l'argent")}
+      copy={L("A friend, a shop, or any Mobile Money number.", "Un ami, une boutique ou tout numéro Mobile Money.")}
+    >
       <MoneyCard>
         <p className="mb-4 text-sm font-semibold text-muted">Available {formatXAF(balance)}</p>
         <form
@@ -152,13 +157,13 @@ function SendInner() {
             setOpen(true);
           }}
         >
-          <Field label="Send to">
+          <Field label={L("Send to", "Envoyer à")}>
             <div className="grid grid-cols-3 gap-2">
               {(
                 [
-                  { id: "wallet" as const, label: "LBPay", hint: "No fee" },
-                  { id: "mtn" as const, label: "MTN", hint: `Charge ${feePercent(FEE_RATES.withdraw)}%` },
-                  { id: "orange" as const, label: "Orange", hint: `Charge ${feePercent(FEE_RATES.withdraw)}%` },
+                  { id: "wallet" as const, label: "LBPay", hint: L("No fee", "Sans frais") },
+                  { id: "mtn" as const, label: "MTN", hint: L(`Charge ${feePercent(FEE_RATES.withdraw)}%`, `Frais ${feePercent(FEE_RATES.withdraw)} %`) },
+                  { id: "orange" as const, label: "Orange", hint: L(`Charge ${feePercent(FEE_RATES.withdraw)}%`, `Frais ${feePercent(FEE_RATES.withdraw)} %`) },
                 ]
               ).map((item) => (
                 <RailTile
@@ -182,7 +187,7 @@ function SendInner() {
               ))}
             </div>
           </Field>
-          <Field label={network === "wallet" ? "LBPay ID" : "Number"}>
+          <Field label={network === "wallet" ? L("LBPay ID", "Identifiant LBPay") : L("Number", "Numéro")}>
             <Input
               inputMode={network === "wallet" ? "text" : "numeric"}
               placeholder={network === "wallet" ? "@handle" : "677000000"}
@@ -197,7 +202,7 @@ function SendInner() {
             </p>
           ) : null}
           {network === "wallet" && to.replace(/^@/, "").length >= 2 && lookup.data && !lookup.data.found ? (
-            <p className="text-sm font-semibold text-danger">No wallet with that ID.</p>
+            <p className="text-sm font-semibold text-danger">{L("No wallet with that ID.", "Aucun portefeuille avec cet identifiant.")}</p>
           ) : null}
           <AmountField
             value={amount}
@@ -208,8 +213,8 @@ function SendInner() {
             feeLabel={feePercentLabel(FEE_RATES.withdraw)}
             pay={network === "wallet" ? undefined : debit}
           />
-          <Field label="Note">
-            <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Optional" />
+          <Field label={L("Note", L("Note", "Note"))}>
+            <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder={L("Optional", "Facultatif")} />
           </Field>
           {overDaily ? (
             <p className="text-sm font-semibold text-danger">
@@ -217,18 +222,18 @@ function SendInner() {
             </p>
           ) : null}
           {value > 0 && debit > balance ? (
-            <p className="text-sm font-semibold text-danger">Insufficient wallet balance. Deposit funds or enter a lower amount.</p>
+            <p className="text-sm font-semibold text-danger">{L("Insufficient wallet balance. Deposit funds or enter a lower amount.", "Solde insuffisant. Rechargez ou saisissez un montant plus bas.")}</p>
           ) : null}
           <Button type="submit" disabled={!ready}>
-            Review and confirm
+            {L("Review and confirm", "Vérifier et confirmer")}
           </Button>
         </form>
       </MoneyCard>
       <MoneyCard>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand">People</p>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand">{L("People", "Personnes")}</p>
         <h2 className="mt-1 text-lg font-black">Contacts</h2>
         {contacts.length === 0 ? (
-          <p className="mt-4 rounded-2xl bg-paper px-4 py-8 text-center text-sm text-muted">None</p>
+          <p className="mt-4 rounded-2xl bg-paper px-4 py-8 text-center text-sm text-muted">{L("None yet", "Personne pour l'instant")}</p>
         ) : (
           <div className="mt-3 divide-y divide-line/70">
             {contacts.map((contact) => (
@@ -247,10 +252,10 @@ function SendInner() {
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-bold text-ink">{contact.label}</span>
                   <span className="block text-xs text-muted">
-                    {contact.via === "wallet" ? "LBPay wallet" : contact.via === "orange" ? "Orange Money" : "MTN MoMo"}
+                    {contact.via === "wallet" ? L("LBPay wallet", "Portefeuille LBPay") : contact.via === "orange" ? "Orange Money" : "MTN MoMo"}
                   </span>
                 </span>
-                <span className="text-sm font-bold text-brand">Send</span>
+                <span className="text-sm font-bold text-brand">{L("Send", "Envoyer")}</span>
               </button>
             ))}
           </div>
@@ -258,14 +263,14 @@ function SendInner() {
       </MoneyCard>
       <ConfirmSheet
         open={open}
-        title="Confirm send"
+        title={L("Confirm send", "Confirmer l'envoi")}
         subtitle={network === "wallet" ? `@${lookup.data?.user?.lbpayId || to.replace(/^@/, "")}` : phone}
         amount={network === "wallet" ? value : debit}
         details={details}
         loading={transfer.isPending || disburse.isPending}
         error={pinError}
         lockedUntil={pinLockedUntil}
-        confirmLabel="Enter PIN to send"
+        confirmLabel={L("Enter PIN to send", "Saisissez votre PIN pour envoyer")}
         onClose={() => setOpen(false)}
         onConfirm={confirm}
       />

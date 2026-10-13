@@ -4,12 +4,15 @@ import { Accent, ButtonLink, CheckList, Eyebrow, Lead, SectionTitle } from "@/co
 import { COUNTRIES, INTERNATIONAL, quote } from "@/lib/countries";
 import { FEATURES } from "@/lib/flags";
 import { SAVINGS } from "@/lib/savings";
+import { getL } from "@/lib/i18n/server";
 
 /* ---------------- Savings ---------------- */
 
-const POT = { name: "Rent, January", emoji: "🏠", amount: 2_500, saved: 47_500, target: 75_000, streak: 19, penaltyRate: 0.05 };
+const POT = { name: "Rent, January", nameFr: "Loyer de janvier", emoji: "🏠", amount: 2_500, saved: 47_500, target: 75_000, streak: 19, penaltyRate: 0.05 };
 
-export function PotPreview() {
+type Lx = (en: string, fr: string) => string;
+
+export function PotPreview({ L }: { L: Lx }) {
   const pct = Math.round((POT.saved / POT.target) * 100);
   const penalty = Math.round(POT.amount * POT.penaltyRate);
   const r = 46;
@@ -17,23 +20,23 @@ export function PotPreview() {
     <div className="relative mx-auto w-full max-w-[400px]">
       <div className="lb-float absolute -left-6 -top-6 z-10 hidden -rotate-6 rounded-2xl bg-white px-3.5 py-2.5 text-xs font-bold text-ink shadow-[0_18px_40px_rgba(6,38,28,0.18)] ring-1 ring-line sm:block">
         <span className="flex items-center gap-1.5 text-[#b4530a]">
-          <Flame className="h-3.5 w-3.5" /> {POT.streak}-day streak
+          <Flame className="h-3.5 w-3.5" /> {L(`${POT.streak}-day streak`, `${POT.streak} jours d'affilée`)}
         </span>
       </div>
       <div className="lb-float-delayed absolute -bottom-5 -right-5 z-10 hidden rotate-3 rounded-2xl bg-white px-3.5 py-2.5 text-xs font-bold text-ink shadow-[0_18px_40px_rgba(6,38,28,0.18)] ring-1 ring-line sm:block">
-        <span className="block text-[10px] font-black uppercase tracking-[0.14em] text-danger">If you skip a day</span>
-        <span className="tabular">−{penalty.toLocaleString("fr-FR")} XAF</span>, the price you chose
+        <span className="block text-[10px] font-black uppercase tracking-[0.14em] text-danger">{L("If you skip a day", "Si vous sautez un jour")}</span>
+        <span className="tabular">−{penalty.toLocaleString("fr-FR")} XAF</span>, {L("the price you chose", "le prix que vous avez choisi")}
       </div>
       <div className="rounded-[1.75rem] bg-white p-6 text-ink shadow-[0_40px_80px_-30px_rgba(0,0,0,0.5)]">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className="grid h-11 w-11 place-items-center rounded-2xl bg-gold-soft text-2xl">{POT.emoji}</span>
             <div>
-              <p className="text-base font-bold leading-tight">{POT.name}</p>
-              <p className="tabular text-xs text-muted">{POT.amount.toLocaleString("fr-FR")} XAF every day</p>
+              <p className="text-base font-bold leading-tight">{L(POT.name, POT.nameFr)}</p>
+              <p className="tabular text-xs text-muted">{POT.amount.toLocaleString("fr-FR")} XAF {L("every day", "par jour")}</p>
             </div>
           </div>
-          <span className="rounded-full bg-gold-soft px-2.5 py-1 text-[11px] font-bold text-[#7a5a1c]">Due today</span>
+          <span className="rounded-full bg-gold-soft px-2.5 py-1 text-[11px] font-bold text-[#7a5a1c]">{L("Due today", "À verser aujourd'hui")}</span>
         </div>
         <div className="mt-6 flex items-center gap-5">
           <svg viewBox="0 0 110 110" className="h-28 w-28 shrink-0 -rotate-90" aria-hidden>
@@ -51,15 +54,15 @@ export function PotPreview() {
             />
           </svg>
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">In the pot</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">{L("In the pot", "Dans la cagnotte")}</p>
             <p className="tabular mt-1 text-3xl font-bold tracking-tight">{POT.saved.toLocaleString("fr-FR")}</p>
-            <p className="tabular text-sm text-muted">of {POT.target.toLocaleString("fr-FR")} XAF · {pct}%</p>
+            <p className="tabular text-sm text-muted">{L("of", "sur")} {POT.target.toLocaleString("fr-FR")} XAF · {pct}%</p>
           </div>
         </div>
         <div className="mt-6 grid grid-cols-2 gap-2">
-          <span className="grid h-11 place-items-center rounded-xl bg-brand text-sm font-bold text-white">Save 2 500 now</span>
+          <span className="grid h-11 place-items-center rounded-xl bg-brand text-sm font-bold text-white">{L("Save 2 500 now", "Épargner 2 500")}</span>
           <span className="grid h-11 place-items-center rounded-xl bg-paper text-sm font-bold text-ink ring-1 ring-line">
-            Auto-save on
+            {L("Auto-save on", "Épargne auto activée")}
           </span>
         </div>
       </div>
@@ -67,35 +70,40 @@ export function PotPreview() {
   );
 }
 
-export function SavingsShowcase() {
+export async function SavingsShowcase() {
+  const L = await getL();
   return (
     <section id="savings" className="bg-paper py-20 lg:py-28">
       <Container className="grid items-center gap-16 lg:grid-cols-2 lg:gap-20">
         <div>
-          <Eyebrow>Savings pots</Eyebrow>
+          <Eyebrow>{L("Savings pots", "Cagnottes d'épargne")}</Eyebrow>
           <SectionTitle className="mt-4">
-            Save like you mean it. <Accent>Literally.</Accent>
+            {L("Save like you mean it.", "Épargnez pour de vrai.")} <Accent>{L("Literally.", "Vraiment.")}</Accent>
           </SectionTitle>
           <Lead className="mt-5">
-            Pick a goal, a rhythm (daily, weekly or monthly) and an amount. Skip a cycle and LBPay takes a small
-            penalty you chose yourself, from {Math.round(SAVINGS.minPenaltyRate * 100)}% to{" "}
-            {Math.round(SAVINGS.maxPenaltyRate * 100)}%. It works like a njangi that never forgets.
+            {L(
+              `Pick a goal, a rhythm (daily, weekly or monthly) and an amount. Skip a cycle and LBPay takes a small penalty you chose yourself, from ${Math.round(SAVINGS.minPenaltyRate * 100)}% to ${Math.round(SAVINGS.maxPenaltyRate * 100)}%. It works like a njangi that never forgets.`,
+              `Choisissez un objectif, un rythme (quotidien, hebdomadaire ou mensuel) et un montant. Si vous sautez une échéance, LBPay prélève une petite pénalité que vous avez choisie vous-même, de ${Math.round(SAVINGS.minPenaltyRate * 100)} % à ${Math.round(SAVINGS.maxPenaltyRate * 100)} %. C'est comme une tontine qui n'oublie jamais.`,
+            )}
           </Lead>
           <CheckList
             className="mt-8"
             items={[
-              "Streaks and a progress ring keep your goal in front of you",
-              "Auto-save takes the amount the moment it's due, so you never miss",
-              "Collect everything free at your goal. Quit early and it costs more the earlier you quit",
-              "Penalties are capped, transparent, and listed in your history",
+              L("Streaks and a progress ring keep your goal in front of you", "Séries et anneau de progression gardent votre objectif sous les yeux"),
+              L("Auto-save takes the amount the moment it's due, so you never miss", "L'épargne auto prélève le montant à l'échéance : vous ne ratez jamais"),
+              L(
+                "Collect everything free at your goal. Quit early and it costs more the earlier you quit",
+                "Récupérez tout gratuitement à l'objectif. Arrêter tôt coûte d'autant plus que vous arrêtez tôt",
+              ),
+              L("Penalties are capped, transparent, and listed in your history", "Les pénalités sont plafonnées, transparentes et visibles dans votre historique"),
             ]}
           />
           <div className="mt-9 flex flex-wrap gap-3">
             <ButtonLink href="/signup" arrow>
-              Start a pot
+              {L("Start a pot", "Créer une cagnotte")}
             </ButtonLink>
             <ButtonLink href="/wallet/savings" variant="secondary">
-              I already have a wallet
+              {L("I already have a wallet", "J'ai déjà un portefeuille")}
             </ButtonLink>
           </div>
         </div>
@@ -103,7 +111,7 @@ export function SavingsShowcase() {
           <div className="absolute inset-0 -rotate-2 rounded-[2.5rem] bg-forest" />
           <div className="lb-glow absolute inset-0 -rotate-2 rounded-[2.5rem]" />
           <div className="relative px-6 py-14 sm:px-14 sm:py-20">
-            <PotPreview />
+            <PotPreview L={L} />
           </div>
         </div>
       </Container>
@@ -113,7 +121,8 @@ export function SavingsShowcase() {
 
 /* ---------------- Cross-border ---------------- */
 
-export function AfricaCorridors({ cities }: { cities: string[] }) {
+export async function AfricaCorridors({ cities }: { cities: string[] }) {
+  const L = await getL();
   const abroad = COUNTRIES.filter((c) => c.code !== "CM");
   const live = FEATURES.international;
   return (
@@ -122,34 +131,39 @@ export function AfricaCorridors({ cities }: { cities: string[] }) {
         <div className="grid gap-14 lg:grid-cols-[0.9fr_1.1fr] lg:gap-20">
           <div>
             <div className="flex flex-wrap items-center gap-3">
-              <Eyebrow>Across Africa</Eyebrow>
+              <Eyebrow>{L("Across Africa", "À travers l'Afrique")}</Eyebrow>
               {live ? null : (
                 <span className="rounded-full bg-gold-soft px-2.5 py-1 text-[11px] font-bold text-[#7a5a1c]">
-                  Opening soon
+                  {L("Opening soon", "Bientôt disponible")}
                 </span>
               )}
             </div>
             <SectionTitle className="mt-4">
-              Send from Douala. <Accent>They get naira in Lagos.</Accent>
+              {L("Send from Douala.", "Envoyez depuis Douala.")} <Accent>{L("They get naira in Lagos.", "Ils reçoivent des nairas à Lagos.")}</Accent>
             </SectionTitle>
             <Lead className="mt-5">
-              One flat {Math.round(INTERNATIONAL.feeRate * 1000) / 10}% fee, the rate locked the moment you confirm,
-              and delivery to Mobile Money or a bank account in local currency.{" "}
+              {L(
+                `One flat ${Math.round(INTERNATIONAL.feeRate * 1000) / 10}% fee, the rate locked the moment you confirm, and delivery to Mobile Money or a bank account in local currency.`,
+                `Des frais fixes de ${Math.round(INTERNATIONAL.feeRate * 1000) / 10} %, un taux bloqué dès que vous confirmez, et une livraison sur Mobile Money ou un compte bancaire en monnaie locale.`,
+              )}{" "}
               {live
-                ? "Share your @handle and money from these countries lands in XAF."
-                : "It isn't open yet. Open an account today and it will be ready for you the day it is."}
+                ? L("Share your @handle and money from these countries lands in XAF.", "Partagez votre @identifiant : l'argent de ces pays arrive en XAF.")
+                : L(
+                    "It isn't open yet. Open an account today and it will be ready for you the day it is.",
+                    "Ce n'est pas encore ouvert. Ouvrez un compte aujourd'hui : il sera prêt le jour de l'ouverture.",
+                  )}
             </Lead>
             <div className="mt-8 flex flex-wrap gap-x-6 gap-y-3 text-[14px] text-muted">
               <span className="inline-flex items-center gap-2">
-                <ShieldCheck className="h-4 w-4 text-brand" /> Rate locked at confirm
+                <ShieldCheck className="h-4 w-4 text-brand" /> {L("Rate locked at confirm", "Taux bloqué à la confirmation")}
               </span>
               <span className="inline-flex items-center gap-2">
-                <Timer className="h-4 w-4 text-brand" /> Minutes to Mobile Money
+                <Timer className="h-4 w-4 text-brand" /> {L("Minutes to Mobile Money", "Quelques minutes vers Mobile Money")}
               </span>
             </div>
             <div className="mt-9">
               <ButtonLink href="/signup" arrow>
-                {live ? "Send abroad" : "Open an account"}
+                {live ? L("Send abroad", "Envoyer à l'étranger") : L("Open an account", "Ouvrir un compte")}
               </ButtonLink>
             </div>
           </div>
@@ -163,23 +177,23 @@ export function AfricaCorridors({ cities }: { cities: string[] }) {
                     <span className="truncate text-sm font-semibold text-ink">{c.short ?? c.name.split(" (")[0]}</span>
                   </div>
                   <p className="tabular mt-2 text-[12px] font-medium text-muted">
-                    {c.currency === "XAF" ? "Same currency · XAF" : `1 XAF ≈ ${quote(c, 1).rate} ${c.currency}`}
+                    {c.currency === "XAF" ? L("Same currency · XAF", "Même monnaie · XAF") : `1 XAF ≈ ${quote(c, 1).rate} ${c.currency}`}
                   </p>
                 </div>
               ))}
             </div>
             <div className="mt-3 rounded-2xl bg-forest p-6 text-white">
-              <p className="text-[15px] font-semibold">At home, everywhere in Cameroon</p>
+              <p className="text-[15px] font-semibold">{L("At home, everywhere in Cameroon", "Chez nous, partout au Cameroun")}</p>
               <ul className="mt-4 flex flex-wrap gap-2">
                 {cities.map((city) => (
                   <li key={city} className="rounded-full bg-white/[0.07] px-3 py-1.5 text-[13px] font-medium text-white/85 ring-1 ring-white/10">
                     {city}
                   </li>
                 ))}
-                <li className="rounded-full px-3 py-1.5 text-[13px] text-white/50">and every town with a network</li>
+                <li className="rounded-full px-3 py-1.5 text-[13px] text-white/50">{L("and every town with a network", "et chaque ville avec du réseau")}</li>
               </ul>
             </div>
-            <p className="mt-3 text-[12px] text-muted">Rates shown are indicative. Your exact rate is locked when you confirm.</p>
+            <p className="mt-3 text-[12px] text-muted">{L("Rates shown are indicative. Your exact rate is locked when you confirm.", "Taux indicatifs. Votre taux exact est bloqué à la confirmation.")}</p>
           </div>
         </div>
       </Container>

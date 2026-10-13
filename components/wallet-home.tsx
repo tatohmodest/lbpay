@@ -8,6 +8,7 @@ import { dueState, penaltyFor, timeUntil } from "@/lib/savings";
 import type { SavingsPlan, Transaction } from "@/lib/types";
 import { HABIT_ART } from "@/lib/assets";
 import { cn } from "@/lib/cn";
+import { useL } from "@/lib/i18n/use-i18n";
 
 
 export type ActionTile = { href: string; label: string; art: string; badge?: string };
@@ -29,13 +30,20 @@ export function buildNudges({
   transactions,
   contactsCount,
   kyc,
+  L = (en) => en,
 }: {
   balance: number;
   plans: SavingsPlan[];
   transactions: Transaction[];
   contactsCount: number;
   kyc: string;
+  /** Inline bilingual text; English when omitted. */
+  L?: (en: string, fr: string) => string;
 }): Nudge[] {
+  const when = (iso: string) => {
+    const t = timeUntil(iso);
+    return L(t, t.replace("now", "maintenant").replace(" days", " jours"));
+  };
   const out: Nudge[] = [];
   const active = plans.filter((p) => p.status === "active");
   const overdue = active.filter((p) => dueState(p) === "overdue").sort((a, b) => +new Date(a.nextDueAt) - +new Date(b.nextDueAt));
@@ -46,11 +54,14 @@ export function buildNudges({
     out.push({
       id: `overdue-${p.id}`,
       tone: "danger",
-      kicker: "Missed save",
-      title: `${p.emoji} ${p.name} is overdue`,
-      copy: `Save ${formatXAF(p.amount)} now to keep the pot on track. A ${Math.round(p.penaltyRate * 100)}% penalty (${formatXAF(penaltyFor(p))}) applies per missed cycle.`,
+      kicker: L("Missed save", "Épargne manquée"),
+      title: L(`${p.emoji} ${p.name} is overdue`, `${p.emoji} ${p.name} est en retard`),
+      copy: L(
+        `Save ${formatXAF(p.amount)} now to keep the pot on track. A ${Math.round(p.penaltyRate * 100)}% penalty (${formatXAF(penaltyFor(p))}) applies per missed cycle.`,
+        `Épargnez ${formatXAF(p.amount)} maintenant pour rester dans les temps. Une pénalité de ${Math.round(p.penaltyRate * 100)} % (${formatXAF(penaltyFor(p))}) s'applique par échéance manquée.`,
+      ),
       href: `/wallet/savings/${p.id}`,
-      cta: "Save now",
+      cta: L("Save now", "Épargner"),
     });
   }
   if (dueToday[0]) {
@@ -58,22 +69,34 @@ export function buildNudges({
     out.push({
       id: `due-${p.id}`,
       tone: "gold",
-      kicker: `Due in ${timeUntil(p.nextDueAt)}`,
-      title: `${p.emoji} ${p.name} needs ${formatXAF(p.amount)}`,
-      copy: p.streak > 0 ? `You are on a ${p.streak}-cycle streak. Keep it alive before midnight.` : "Save before midnight to start your streak. Missing it costs " + formatXAF(penaltyFor(p)) + ".",
+      kicker: L(`Due in ${when(p.nextDueAt)}`, `À verser dans ${when(p.nextDueAt)}`),
+      title: L(`${p.emoji} ${p.name} needs ${formatXAF(p.amount)}`, `${p.emoji} ${p.name} attend ${formatXAF(p.amount)}`),
+      copy:
+        p.streak > 0
+          ? L(
+              `You are on a ${p.streak}-cycle streak. Keep it alive before midnight.`,
+              `Vous êtes sur une série de ${p.streak}. Gardez-la avant minuit.`,
+            )
+          : L(
+              `Save before midnight to start your streak. Missing it costs ${formatXAF(penaltyFor(p))}.`,
+              `Épargnez avant minuit pour lancer votre série. La manquer coûte ${formatXAF(penaltyFor(p))}.`,
+            ),
       href: `/wallet/savings/${p.id}`,
-      cta: "Save now",
+      cta: L("Save now", "Épargner"),
     });
   }
   if (!active.length) {
     out.push({
       id: "start-saving",
       tone: "brand",
-      kicker: "Build a habit",
-      title: "Put 500 XAF aside every day",
-      copy: "That is 15,000 XAF a month, locked in a pot with a streak. Miss a day and a small penalty you choose keeps you honest.",
+      kicker: L("Build a habit", "Prenez l'habitude"),
+      title: L("Put 500 XAF aside every day", "Mettez 500 XAF de côté chaque jour"),
+      copy: L(
+        "That is 15,000 XAF a month, locked in a pot with a streak. Miss a day and a small penalty you choose keeps you honest.",
+        "Cela fait 15 000 XAF par mois, dans une cagnotte avec une série. Un jour manqué, et une petite pénalité que vous choisissez vous garde motivé.",
+      ),
       href: "/wallet/savings?new=1",
-      cta: "Start a pot",
+      cta: L("Start a pot", "Créer une cagnotte"),
       art: HABIT_ART,
     });
   }
@@ -81,11 +104,11 @@ export function buildNudges({
     out.push({
       id: "fund",
       tone: "ink",
-      kicker: "Empty wallet",
-      title: "Add money to get going",
-      copy: "Top up from MTN MoMo, Orange Money or a card in under a minute.",
+      kicker: L("Empty wallet", "Portefeuille vide"),
+      title: L("Add money to get going", "Ajoutez de l'argent pour commencer"),
+      copy: L("Top up from MTN MoMo or Orange Money in under a minute.", "Rechargez depuis MTN MoMo ou Orange Money en moins d'une minute."),
       href: "/wallet/deposit",
-      cta: "Add money",
+      cta: L("Add money", "Ajouter"),
     });
   }
   const pendingIn = transactions.filter((tx) => tx.status === "pending" && !isMoneyOut(tx.kind)).reduce((s, tx) => s + tx.amount, 0);
@@ -93,44 +116,47 @@ export function buildNudges({
     out.push({
       id: "incoming",
       tone: "brand",
-      kicker: "On the way",
-      title: `${formatXAF(pendingIn)} incoming`,
-      copy: "Money is being confirmed. It lands in your wallet as soon as the network settles.",
+      kicker: L("On the way", "En route"),
+      title: L(`${formatXAF(pendingIn)} incoming`, `${formatXAF(pendingIn)} en approche`),
+      copy: L("Money is being confirmed. It lands in your wallet as soon as the network settles.", "L'argent est en cours de confirmation. Il arrive dès que le réseau valide."),
       href: "/wallet/history",
-      cta: "Track",
+      cta: L("Track", "Suivre"),
     });
   }
   if (kyc === "unverified" && balance > 0) {
     out.push({
       id: "kyc",
       tone: "ink",
-      kicker: "Lift your limits",
-      title: "Verify your identity",
-      copy: "Takes two minutes and unlocks higher daily limits.",
+      kicker: L("Lift your limits", "Augmentez vos plafonds"),
+      title: L("Verify your identity", "Vérifiez votre identité"),
+      copy: L("Takes two minutes and unlocks higher daily limits.", "Deux minutes suffisent pour débloquer des plafonds plus élevés."),
       href: "/wallet/kyc",
-      cta: "Verify",
+      cta: L("Verify", "Vérifier"),
     });
   }
   if (contactsCount > 0 && balance > 0) {
     out.push({
       id: "send-again",
       tone: "brand",
-      kicker: "People",
-      title: "Send to someone you paid before",
-      copy: `${contactsCount} ${contactsCount === 1 ? "person" : "people"} in your recent activity. Repeat a transfer in two taps.`,
+      kicker: L("People", "Contacts"),
+      title: L("Send to someone you paid before", "Envoyez à quelqu'un que vous avez déjà payé"),
+      copy: L(
+        `${contactsCount} ${contactsCount === 1 ? "person" : "people"} in your recent activity. Repeat a transfer in two taps.`,
+        `${contactsCount} ${contactsCount === 1 ? "personne" : "personnes"} dans votre activité récente. Refaites un envoi en deux gestes.`,
+      ),
       href: "/wallet/contacts",
-      cta: "Pick a contact",
+      cta: L("Pick a contact", "Choisir un contact"),
     });
   }
   if (FEATURES.international) {
     out.push({
       id: "abroad",
       tone: "ink",
-      kicker: "New",
-      title: "Send to Nigeria, Ghana, Senegal and more",
-      copy: "Flat 2.5% fee, delivered to Mobile Money or bank in local currency.",
+      kicker: L("New", "Nouveau"),
+      title: L("Send to Nigeria, Ghana, Senegal and more", "Envoyez au Nigeria, au Ghana, au Sénégal et plus"),
+      copy: L("Flat 2.5% fee, delivered to Mobile Money or bank in local currency.", "Frais fixes de 2,5 %, livré sur Mobile Money ou en banque, en monnaie locale."),
       href: "/wallet/international",
-      cta: "Send abroad",
+      cta: L("Send abroad", "Envoyer"),
     });
   }
   return out;
@@ -144,6 +170,7 @@ const NUDGE_TONE: Record<Nudge["tone"], { card: string; kicker: string; cta: str
 };
 
 export function NextMove({ nudges }: { nudges: Nudge[] }) {
+  const L = useL();
   const [primary, ...rest] = nudges;
   if (!primary) return null;
   const tone = NUDGE_TONE[primary.tone];
@@ -151,7 +178,7 @@ export function NextMove({ nudges }: { nudges: Nudge[] }) {
     <section className="space-y-2.5">
       <div className="flex items-center gap-2 px-1">
         <Sparkles className="h-4 w-4 text-brand" />
-        <h2 className="text-[13px] font-black uppercase tracking-[0.14em] text-muted">Your next move</h2>
+        <h2 className="text-[13px] font-black uppercase tracking-[0.14em] text-muted">{L("Your next move", "Votre prochaine étape")}</h2>
       </div>
       <Link
         href={primary.href}

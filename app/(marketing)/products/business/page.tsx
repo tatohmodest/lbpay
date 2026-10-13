@@ -56,7 +56,7 @@ const faqs = [
   },
   {
     question: "What does it cost me to get paid?",
-    answer: `Nothing is taken from your sale. If a customer pays with MTN or Orange, they pay a ${feePercent(FEE_RATES.deposit)}% fee shown at checkout. If they pay with an LBPay wallet, nobody pays a fee. Sending your earnings to Mobile Money costs ${feePercent(FEE_RATES.withdraw)}%.`,
+    answer: `Nothing is taken from your sale. If a customer pays with MTN or Orange, they pay a ${feePercent(FEE_RATES.checkout)}% fee shown at checkout. If they pay with an LBPay wallet, nobody pays a fee. Sending your earnings to Mobile Money costs ${feePercent(FEE_RATES.withdraw)}%.`,
   },
   {
     question: "Do my customers need LBPay?",

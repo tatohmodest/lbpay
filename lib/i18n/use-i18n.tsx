@@ -58,3 +58,12 @@ export function detectBrowserLocale() {
   if (typeof navigator === "undefined") return DEFAULT_LOCALE;
   return localeFromNavigator(navigator.languages?.length ? navigator.languages : navigator.language);
 }
+
+/**
+ * Inline bilingual text: `const L = useL(); L("Send", "Envoyer")`.
+ * English is the default; French shows when the visitor's language is French.
+ */
+export function useL() {
+  const { locale } = useI18n();
+  return useCallback((en: string, fr: string) => (locale === "fr" ? fr : en), [locale]);
+}

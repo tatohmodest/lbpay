@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { Check, Lock, RotateCcw, ShieldCheck, Smartphone } from "lucide-react";
 import { NetworkMark } from "@/components/network-mark";
 import { cn } from "@/lib/cn";
+import { useL } from "@/lib/i18n/use-i18n";
 
 type Network = "mtn" | "orange" | "card" | "wallet";
 
@@ -100,6 +101,7 @@ export function WaitingOnPhone({
   onCheck?: () => void;
   onCancel: () => void;
 }) {
+  const L = useL();
   const pct = Math.max(0, Math.min(1, seconds / total));
   const r = 54;
   const c = 2 * Math.PI * r;
@@ -132,14 +134,20 @@ export function WaitingOnPhone({
             />
           </span>
         </div>
-        <p className="tabular relative mt-3 font-mono text-sm font-bold text-hero-muted">{seconds}s left</p>
+        <p className="tabular relative mt-3 font-mono text-sm font-bold text-hero-muted">{L(`${seconds}s left`, `${seconds} s restantes`)}</p>
         <h2 className="relative mt-3 text-2xl font-black tracking-tight">
-          {sending ? "Sending the money…" : "Approve on your phone"}
+          {sending ? L("Sending the money…", "Envoi de l'argent…") : L("Approve on your phone", "Validez sur votre téléphone")}
         </h2>
         <p className="relative mx-auto mt-2 max-w-xs text-[14px] leading-6 text-hero-muted">
           {sending
-            ? `We're paying ${amountLabel} out on ${NETWORK_NAME[network]}. This usually takes a few seconds.`
-            : `A ${NETWORK_NAME[network]} popup is asking you to confirm ${amountLabel}. Enter your ${NETWORK_NAME[network]} PIN there.`}
+            ? L(
+                `We're paying ${amountLabel} out on ${NETWORK_NAME[network]}. This usually takes a few seconds.`,
+                `Nous envoyons ${amountLabel} sur ${NETWORK_NAME[network]}. Cela prend généralement quelques secondes.`,
+              )
+            : L(
+                `A ${NETWORK_NAME[network]} popup is asking you to confirm ${amountLabel}. Enter your ${NETWORK_NAME[network]} PIN there.`,
+                `Une fenêtre ${NETWORK_NAME[network]} vous demande de confirmer ${amountLabel}. Saisissez-y votre code ${NETWORK_NAME[network]}.`,
+              )}
         </p>
       </div>
 
@@ -148,18 +156,19 @@ export function WaitingOnPhone({
           <ol className="space-y-2.5 text-[14px] text-ink">
             <li className="flex gap-3">
               <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-paper text-[12px] font-bold">1</span>
-              Look for the popup on your phone and enter your PIN.
+              {L("Look for the popup on your phone and enter your PIN.", "Repérez la fenêtre sur votre téléphone et saisissez votre code.")}
             </li>
             <li className="flex gap-3">
               <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-paper text-[12px] font-bold">2</span>
               <span>
-                No popup? Dial <span className="rounded-md bg-paper px-1.5 py-0.5 font-mono font-bold">{ussd}</span> and
-                approve the pending payment.
+                {L("No popup? Dial", "Pas de fenêtre ? Composez")}{" "}
+                <span className="rounded-md bg-paper px-1.5 py-0.5 font-mono font-bold">{ussd}</span>{" "}
+                {L("and approve the pending payment.", "et validez le paiement en attente.")}
               </span>
             </li>
             <li className="flex gap-3">
               <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-paper text-[12px] font-bold">3</span>
-              This page updates on its own the moment it&apos;s done.
+              {L("This page updates on its own the moment it's done.", "Cette page se met à jour toute seule dès que c'est fait.")}
             </li>
           </ol>
         ) : null}
@@ -171,7 +180,7 @@ export function WaitingOnPhone({
               disabled={checking}
               className="flex h-12 items-center justify-center rounded-2xl bg-ink text-[15px] font-bold text-white transition hover:bg-ink/90 disabled:opacity-60"
             >
-              {checking ? "Checking…" : "I've approved it"}
+              {checking ? L("Checking…", "Vérification…") : L("I've approved it", "J'ai validé")}
             </button>
           ) : null}
           <button
@@ -179,7 +188,7 @@ export function WaitingOnPhone({
             onClick={onCancel}
             className="flex h-11 items-center justify-center rounded-2xl text-[14px] font-semibold text-muted transition hover:bg-paper hover:text-ink"
           >
-            Stop waiting
+            {L("Stop waiting", "Arrêter d'attendre")}
           </button>
         </div>
       </div>
@@ -192,10 +201,11 @@ export function WaitingOnPhone({
 /* ------------------------------------------------------------------ */
 
 export function TrustStrip({ refund = false, className }: { refund?: boolean; className?: string }) {
+  const L = useL();
   const items: Array<{ icon: typeof Lock; text: string }> = [
-    { icon: Lock, text: "Your PIN approves it" },
-    { icon: ShieldCheck, text: "Fee shown first" },
-    ...(refund ? [{ icon: RotateCcw, text: "Refunded if it fails" }] : []),
+    { icon: Lock, text: L("Your PIN approves it", "Validé par votre PIN") },
+    { icon: ShieldCheck, text: L("Fee shown first", "Frais affichés d'abord") },
+    ...(refund ? [{ icon: RotateCcw, text: L("Refunded if it fails", "Remboursé en cas d'échec") }] : []),
   ];
   return (
     <ul className={cn("flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[12px] text-muted", className)}>
@@ -209,11 +219,12 @@ export function TrustStrip({ refund = false, className }: { refund?: boolean; cl
 }
 
 /** Small "available balance" pill used at the top of money forms. */
-export function BalancePill({ label = "Available", amount }: { label?: string; amount: ReactNode }) {
+export function BalancePill({ label, amount }: { label?: string; amount: ReactNode }) {
+  const L = useL();
   return (
     <p className="inline-flex items-center gap-2 rounded-full bg-paper px-3 py-1.5 text-[13px] text-muted ring-1 ring-line">
       <span className="h-1.5 w-1.5 rounded-full bg-brand" />
-      {label} <span className="tabular font-bold text-ink">{amount}</span>
+      {label ?? L("Available", "Disponible")} <span className="tabular font-bold text-ink">{amount}</span>
     </p>
   );
 }

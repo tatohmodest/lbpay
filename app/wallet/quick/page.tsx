@@ -13,6 +13,7 @@ import { useApp } from "@/lib/store";
 import { formatXAF } from "@/lib/format";
 import { useQuickTransfer } from "@/lib/hooks/wallet";
 import { useNotify } from "@/lib/notify";
+import { useL } from "@/lib/i18n/use-i18n";
 import { cameroonMsisdn, isCameroonMsisdn } from "@/lib/phone";
 import { directTransferFee, directTransferRate, feePercentLabel } from "@/lib/fees";
 import { AmountField } from "@/components/amount-field";
@@ -47,6 +48,7 @@ export default function QuickTransferPage() {
   const { state } = useApp();
   const router = useRouter();
   const notify = useNotify();
+  const L = useL();
   const quick = useQuickTransfer();
   const [fromNetwork, setFromNetwork] = useState<"mtn" | "orange">("mtn");
   const [toNetwork, setToNetwork] = useState<"mtn" | "orange">("orange");
@@ -75,11 +77,11 @@ export default function QuickTransferPage() {
     fromPhone !== toPhone;
 
   const details = [
-    { label: "From", value: `${fromNetwork === "orange" ? "Orange" : "MTN"} ${fromPhone}` },
-    { label: "To", value: `${toNetwork === "orange" ? "Orange" : "MTN"} ${toPhone}` },
-    { label: "They receive", value: formatXAF(value) },
-    ...(fee ? [{ label: "Deducted", value: formatXAF(fee) }] : []),
-    { label: "You pay", value: formatXAF(payAmount) },
+    { label: L("From", "Depuis"), value: `${fromNetwork === "orange" ? "Orange" : "MTN"} ${fromPhone}` },
+    { label: L("To", "Vers"), value: `${toNetwork === "orange" ? "Orange" : "MTN"} ${toPhone}` },
+    { label: L("They receive", "Ils reçoivent"), value: formatXAF(value) },
+    ...(fee ? [{ label: L("Deducted", "Frais"), value: formatXAF(fee) }] : []),
+    { label: L("You pay", "Vous payez"), value: formatXAF(payAmount) },
   ];
 
   async function pollPayment(tx: string) {
@@ -92,22 +94,22 @@ export default function QuickTransferPage() {
     });
     if (data.status === "success") {
       setWaiting(null);
-      notify.moneyOut(payAmount, `Sent ${formatXAF(value)} to ${toPhone}`);
+      notify.moneyOut(payAmount, L(`Sent ${formatXAF(value)} to ${toPhone}`, `${formatXAF(value)} envoyés à ${toPhone}`));
       router.push("/wallet");
       return;
     }
     if (data.status === "failed") {
       setWaiting(null);
       notify.error(
-        "Transfer failed",
+        L("Transfer failed", "Échec du transfert"),
         data.error ||
           data.message ||
-          "Your transaction could not be completed. No money has been deducted. Please try again.",
+          L("Your transaction could not be completed. No money has been deducted. Please try again.", "L'opération n'a pas abouti. Aucun montant n'a été débité. Réessayez."),
       );
       return;
     }
     setWaiting(null);
-    notify.info("Still waiting", "If the popup never came, dial the USSD code, confirm, then check history.");
+    notify.info(L("Still waiting", "Toujours en attente"), L("If the popup never came, dial the USSD code, confirm, then check history.", "Si la fenêtre n'est jamais apparue, composez le code USSD, confirmez, puis vérifiez l'historique."));
   }
 
   async function verifyNow() {
@@ -123,17 +125,17 @@ export default function QuickTransferPage() {
       };
       if (data.status === "success") {
         setWaiting(null);
-        notify.moneyOut(payAmount, `Sent ${formatXAF(value)} to ${toPhone}`);
+        notify.moneyOut(payAmount, L(`Sent ${formatXAF(value)} to ${toPhone}`, `${formatXAF(value)} envoyés à ${toPhone}`));
         router.push("/wallet");
         return;
       }
       if (data.status === "failed") {
         setWaiting(null);
         notify.error(
-          "Transfer failed",
+          L("Transfer failed", "Échec du transfert"),
           data.error ||
             data.message ||
-            "Your transaction could not be completed. No money has been deducted. Please try again.",
+            L("Your transaction could not be completed. No money has been deducted. Please try again.", "L'opération n'a pas abouti. Aucun montant n'a été débité. Réessayez."),
         );
         return;
       }
@@ -141,10 +143,10 @@ export default function QuickTransferPage() {
         setWaiting((current) => (current ? { ...current, stage: "paying" } : current));
       }
       notify.info(
-        "Not confirmed yet",
+        L("Not confirmed yet", "Pas encore confirmé"),
         waiting.stage === "paying"
-          ? "We are sending the money now. This usually takes less than two minutes."
-          : `If you have not seen a popup, dial ${ussdCode} and confirm pay.`,
+          ? L("We are sending the money now. This usually takes less than two minutes.", "Nous envoyons l'argent. Cela prend généralement moins de deux minutes.")
+          : L(`If you have not seen a popup, dial ${ussdCode} and confirm pay.`, `Si aucune fenêtre n'est apparue, composez ${ussdCode} et confirmez.`),
       );
     } finally {
       setChecking(false);
@@ -164,7 +166,7 @@ export default function QuickTransferPage() {
         pin,
       })) as { status?: string; stage?: string; transactionId?: string; message?: string };
       if (result.status === "success") {
-        notify.moneyOut(payAmount, `Sent ${formatXAF(value)} to ${toPhone}`);
+        notify.moneyOut(payAmount, L(`Sent ${formatXAF(value)} to ${toPhone}`, `${formatXAF(value)} envoyés à ${toPhone}`));
         setOpen(false);
         router.push("/wallet");
         return;
@@ -172,12 +174,12 @@ export default function QuickTransferPage() {
       if (result.status === "failed") {
         setPinError(
           result.message ||
-            "Your transaction could not be completed. No money has been deducted. Please try again.",
+            L("Your transaction could not be completed. No money has been deducted. Please try again.", "L'opération n'a pas abouti. Aucun montant n'a été débité. Réessayez."),
         );
         return;
       }
       if (result.transactionId) {
-        notify.pending("Approve on your phone", `Confirm ${formatXAF(payAmount)}`);
+        notify.pending(L("Approve on your phone", "Validez sur votre téléphone"), L(`Confirm ${formatXAF(payAmount)}`, `Confirmez ${formatXAF(payAmount)}`));
         setOpen(false);
         setWaiting({
           tx: result.transactionId,
@@ -191,13 +193,17 @@ export default function QuickTransferPage() {
       setPinError(fail.error);
       setPinLockedUntil(fail.lockedUntil);
       if (!isPinError(fail.error)) {
-        notify.error("Transfer failed", fail.error);
+        notify.error(L("Transfer failed", "Échec du transfert"), fail.error);
       }
     }
   }
 
   return (
-    <MoneyPage title="Quick transfer" copy="MoMo to MoMo, across networks. No wallet balance needed." trust="refund">
+    <MoneyPage
+      title={L("Quick transfer", "Transfert rapide")}
+      copy={L("MoMo to MoMo, across networks. No wallet balance needed.", "De MoMo à MoMo, entre réseaux. Sans solde de portefeuille.")}
+      trust="refund"
+    >
       {waiting ? (
         <WaitingOnPhone
           network={waiting.stage === "paying" ? toNetwork : fromNetwork}
@@ -223,7 +229,7 @@ export default function QuickTransferPage() {
           >
             <div className="relative space-y-2">
               <Endpoint
-                label="From"
+                label={L("From", "Depuis")}
                 network={fromNetwork}
                 onNetwork={setFromNetwork}
                 phone={from}
@@ -239,12 +245,12 @@ export default function QuickTransferPage() {
                   setTo(from);
                 }}
                 className="absolute left-1/2 top-1/2 z-10 grid h-10 w-10 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-ink text-white shadow-lg ring-4 ring-white transition hover:rotate-180"
-                aria-label="Swap from and to"
+                aria-label={L("Swap from and to", "Inverser")}
               >
                 <ArrowUpDown className="h-4 w-4" />
               </button>
               <Endpoint
-                label="To"
+                label={L("To", "Vers")}
                 network={toNetwork}
                 onNetwork={setToNetwork}
                 phone={to}
@@ -254,38 +260,38 @@ export default function QuickTransferPage() {
             </div>
             {fromPhone && toPhone && fromPhone === toPhone ? (
               <p className="rounded-2xl bg-[#fdf3f2] px-4 py-3 text-[13px] font-semibold text-danger">
-                Use two different numbers.
+                {L("Use two different numbers.", "Utilisez deux numéros différents.")}
               </p>
             ) : null}
             <AmountField
               value={amount}
               onChange={setAmount}
               kind="momo"
-              label="How much should they get?"
+              label={L("How much should they get?", "Combien doivent-ils recevoir ?")}
               receive={value}
               fee={fee}
-              receiveLabel={`They receive on ${toNetwork === "orange" ? "Orange" : "MTN"}`}
-              feeLabel={feePercentLabel(directTransferRate(fromNetwork, toNetwork), "Fee")}
+              receiveLabel={L(`They receive on ${toNetwork === "orange" ? "Orange" : "MTN"}`, `Ils reçoivent sur ${toNetwork === "orange" ? "Orange" : "MTN"}`)}
+              feeLabel={feePercentLabel(directTransferRate(fromNetwork, toNetwork), L("Fee", "Frais"))}
               pay={payAmount}
-              payLabel={`You pay from ${fromNetwork === "orange" ? "Orange" : "MTN"}`}
+              payLabel={L(`You pay from ${fromNetwork === "orange" ? "Orange" : "MTN"}`, `Vous payez depuis ${fromNetwork === "orange" ? "Orange" : "MTN"}`)}
             />
             <Button type="submit" disabled={!ready} className="h-14 rounded-2xl text-[16px] font-bold">
-              {value ? `Send ${formatXAF(value)}` : "Send"}
+              {value ? L(`Send ${formatXAF(value)}`, `Envoyer ${formatXAF(value)}`) : L("Send", "Envoyer")}
             </Button>
           </form>
         </MoneyCard>
       )}
       <ConfirmSheet
         open={open}
-        title="Confirm transfer"
-        subtitle={`${fromNetwork === "orange" ? "Orange" : "MTN"} to ${toNetwork === "orange" ? "Orange" : "MTN"}`}
+        title={L("Confirm transfer", "Confirmer le transfert")}
+        subtitle={`${fromNetwork === "orange" ? "Orange" : "MTN"} → ${toNetwork === "orange" ? "Orange" : "MTN"}`}
         amount={payAmount}
         details={details}
-        warning={`If the popup does not appear, dial ${ussdCode} and confirm pay.`}
+        warning={L(`If the popup does not appear, dial ${ussdCode} and confirm pay.`, `Si la fenêtre n'apparaît pas, composez ${ussdCode} et confirmez.`)}
         loading={quick.isPending}
         error={pinError}
         lockedUntil={pinLockedUntil}
-        confirmLabel="Enter PIN to send"
+        confirmLabel={L("Enter PIN to send", "Saisissez votre PIN pour envoyer")}
         onClose={() => setOpen(false)}
         onConfirm={confirm}
       />

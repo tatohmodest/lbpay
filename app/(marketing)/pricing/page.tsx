@@ -12,7 +12,7 @@ import { FEATURES } from "@/lib/flags";
 
 export const metadata = productMetadata(
   "Pricing and fees",
-  "Every LBPay fee in plain numbers. Free wallet transfers, 1.5% to add money, 2.5% to Mobile Money. No monthly fee, no hidden exchange margin.",
+  "Every LBPay fee in plain numbers. Free wallet transfers, 1.53% to add money, 2.5% to Mobile Money. No monthly fee, no hidden exchange margin.",
   "/pricing",
 );
 
@@ -46,11 +46,12 @@ const business = [
   { what: "Customer pays with LBPay wallet", fee: "Free", note: "For you and for them." },
   {
     what: "Customer pays with MTN or Orange",
-    fee: `${pct(FEE_RATES.deposit)} to customer`,
+    fee: `${pct(FEE_RATES.checkout)} to customer`,
     note: "Shown to the customer at checkout. You receive the full price.",
   },
   { what: "Pay out to Mobile Money", fee: pct(FEE_RATES.withdraw), note: "Same rate as personal." },
-  { what: "API payouts", fee: pct(FEE_RATES.withdraw), note: "Sandbox is always free." },
+  { what: "API collections", fee: pct(FEE_RATES.apiCollection), note: "Taken from what you receive. Wallet payments are free." },
+  { what: "API payouts", fee: pct(FEE_RATES.withdraw), note: "Sandbox never moves real money." },
 ];
 
 const limits = [

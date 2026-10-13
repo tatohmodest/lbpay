@@ -7,6 +7,7 @@ import { PinPad } from "@/components/auth/pin-pad";
 import { Button } from "@/components/ui/button";
 import { formatXAF } from "@/lib/format";
 import { secondsLeft, useNow } from "@/lib/use-now";
+import { useL } from "@/lib/i18n/use-i18n";
 
 function ConfirmSheetInner({
   title,
@@ -28,7 +29,7 @@ function ConfirmSheetInner({
   warning?: string;
   loading?: boolean;
   error?: string;
-  confirmLabel: string;
+  confirmLabel?: string;
   onClose: () => void;
   onConfirm: (pin: string) => void;
   lockedUntil?: number;
@@ -38,6 +39,7 @@ function ConfirmSheetInner({
   const sent = useRef("");
   const now = useNow(lockedUntil > 0);
   const wait = secondsLeft(lockedUntil, now);
+  const L = useL();
 
   return (
     <div className="fixed inset-0 z-[100] grid place-items-end bg-forest/60 p-0 backdrop-blur-sm md:place-items-center md:p-6">
@@ -46,7 +48,7 @@ function ConfirmSheetInner({
         {step === "review" ? (
           <>
             <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.14em] text-brand-deep">
-              <ShieldCheck className="h-3.5 w-3.5" /> Check before you confirm
+              <ShieldCheck className="h-3.5 w-3.5" /> {L("Check before you confirm", "Vérifiez avant de confirmer")}
             </p>
             <h2 className="mt-2 text-2xl font-black tracking-tight">{title}</h2>
             <p className="mt-1 text-sm text-muted">{subtitle}</p>
@@ -69,10 +71,10 @@ function ConfirmSheetInner({
             {warning ? <p className="mt-3 text-xs text-muted">{warning}</p> : null}
             <div className="mt-6 grid grid-cols-2 gap-3">
               <Button variant="secondary" type="button" onClick={onClose}>
-                Cancel
+                {L("Cancel", "Annuler")}
               </Button>
               <Button type="button" onClick={() => setStep("pin")}>
-                Continue
+                {L("Continue", "Continuer")}
               </Button>
             </div>
           </>
@@ -81,9 +83,10 @@ function ConfirmSheetInner({
             <span className="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-full bg-brand-soft text-brand-deep">
               <Lock className="h-5 w-5" />
             </span>
-            <h2 className="text-center text-xl font-black">{confirmLabel}</h2>
+            <h2 className="text-center text-xl font-black">{confirmLabel ?? L("Enter PIN to send", "Saisissez votre PIN pour envoyer")}</h2>
             <p className="mb-3 mt-1 text-center text-[13px] text-muted">
-              <span className="tabular font-semibold text-ink">{formatXAF(amount)}</span> · LBPay will never ask for your PIN
+              <span className="tabular font-semibold text-ink">{formatXAF(amount)}</span> ·{" "}
+              {L("LBPay will never ask for your PIN", "LBPay ne vous demandera jamais votre PIN")}
             </p>
             <PinPad
               value={pin}
@@ -99,17 +102,17 @@ function ConfirmSheetInner({
               error={error}
               hint={
                 wait > 0
-                  ? `Too many incorrect PINs. Wait ${wait}s.`
+                  ? L(`Too many incorrect PINs. Wait ${wait}s.`, `Trop d'erreurs de PIN. Patientez ${wait} s.`)
                   : loading
-                    ? "Authorizing…"
-                    : "Confirm with your 4-digit PIN"
+                    ? L("Authorizing…", "Autorisation…")
+                    : L("Confirm with your 4-digit PIN", "Confirmez avec votre PIN à 4 chiffres")
               }
             />
             <Link href="/pin/forgot" className="mt-4 block text-center text-sm font-semibold text-brand">
-              Forgot PIN?
+              {L("Forgot PIN?", "PIN oublié ?")}
             </Link>
             <Button className="mt-4 w-full" variant="secondary" type="button" onClick={() => setStep("review")}>
-              Back
+              {L("Back", "Retour")}
             </Button>
           </>
         )}
@@ -127,7 +130,7 @@ export function ConfirmSheet({
   warning,
   loading,
   error,
-  confirmLabel = "Enter PIN to send",
+  confirmLabel,
   onClose,
   onConfirm,
   lockedUntil = 0,

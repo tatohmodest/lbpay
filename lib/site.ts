@@ -112,7 +112,7 @@ export const SITE_FAQS = [
   {
     question: "How much does LBPay cost?",
     answer:
-      "Opening an account is free and LBPay to LBPay transfers are always free. Adding money costs 1.5%, sending to an MTN or Orange number costs 2.5%, and a direct MTN to Orange transfer costs 3.5%. The fee is added on top, so the person you pay receives the full amount, and you see the total before you enter your PIN.",
+      "Opening an account is free and LBPay to LBPay transfers are always free. Adding money costs 1.53%, sending to an MTN or Orange number costs 2.5%, and a direct MTN to Orange transfer costs 3.5%. The fee is added on top, so the person you pay receives the full amount, and you see the total before you enter your PIN.",
   },
   {
     question: "Is my money safe with LBPay?",
@@ -148,6 +148,54 @@ export const SITE_FAQS = [
     question: "How do I reach a real person?",
     answer:
       "Open Support in the app to chat with the team, or email loopingbinary@gmail.com. Messages go straight to the LBPay team.",
+  },
+] as const;
+
+export const SITE_FAQS_FR = [
+  {
+    question: "Qu'est-ce que LBPay ?",
+    answer:
+      "LBPay est une application de paiement conçue au Cameroun. Vous obtenez un portefeuille XAF avec votre propre @identifiant pour envoyer, recevoir et épargner. Les commerçants encaissent avec des liens boutique et des QR codes, et les développeurs utilisent l'API de paiement. MTN Mobile Money et Orange Money fonctionnent en arrière-plan : vous pouvez payer et être payé par tout le monde.",
+  },
+  {
+    question: "Combien coûte LBPay ?",
+    answer:
+      "L'ouverture de compte est gratuite et les transferts LBPay vers LBPay sont toujours gratuits. Ajouter de l'argent coûte 1,53 %, envoyer vers un numéro MTN ou Orange coûte 2,5 %, et un transfert direct MTN vers Orange coûte 3,5 %. Les frais s'ajoutent au montant : la personne que vous payez reçoit tout, et vous voyez le total avant de saisir votre PIN.",
+  },
+  {
+    question: "Mon argent est-il en sécurité avec LBPay ?",
+    answer:
+      "Chaque paiement exige votre PIN à 4 chiffres, et quatre erreurs le bloquent. Les mots de passe et PIN sont stockés sous forme de hachages scrypt salés, jamais en clair. Chaque mouvement est enregistré avec sa propre référence, les sessions web se verrouillent après 15 minutes d'inactivité, et les envois sont plafonnés à 500 000 XAF par jour jusqu'à la vérification de votre identité.",
+  },
+  {
+    question: "Que se passe-t-il si un transfert vers Mobile Money échoue ?",
+    answer:
+      "Si MTN ou Orange refuse le paiement, LBPay vous rembourse automatiquement le montant et les frais dans votre portefeuille. Cela se fait une seule fois par transfert, et les deux opérations apparaissent dans votre historique.",
+  },
+  {
+    question: "Puis-je envoyer de l'argent de MTN vers Orange avec LBPay ?",
+    answer:
+      "Oui. Envoyez à un numéro de téléphone ou à un @identifiant. Si la personne est sur LBPay, l'argent arrive instantanément et gratuitement. S'il doit aller vers MTN ou Orange, LBPay effectue le paiement sur ce réseau pour vous.",
+  },
+  {
+    question: "Comment les commerçants sont-ils payés avec LBPay ?",
+    answer:
+      "Les commerçants partagent une page boutique, un lien produit ou un QR code au comptoir. Les clients paient par MTN Mobile Money, Orange Money ou leur portefeuille LBPay, et chaque paiement arrive sur un seul solde avec sa propre trace.",
+  },
+  {
+    question: "LBPay propose-t-il une API de paiement et une sandbox ?",
+    answer:
+      "Oui. Demandez l'accès développeur depuis votre profil et recevez immédiatement des clés sandbox. Les clés de production se débloquent après vérification. L'API couvre les paiements, les décaissements, les liens de paiement et le solde.",
+  },
+  {
+    question: "LBPay est-il une banque ?",
+    answer:
+      "Non. LBPay est un produit de paiement créé par Looping Binary au Cameroun. Les paiements Mobile Money passent par les réseaux MTN Mobile Money et Orange Money via notre partenaire de traitement des paiements.",
+  },
+  {
+    question: "Comment joindre une vraie personne ?",
+    answer:
+      "Ouvrez Support dans l'app pour discuter avec l'équipe, ou écrivez à loopingbinary@gmail.com. Les messages arrivent directement à l'équipe LBPay.",
   },
 ] as const;
 

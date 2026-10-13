@@ -10,7 +10,7 @@ import { RightDrawer } from "@/components/ui/right-drawer";
 import { Container } from "@/components/marketing/container";
 import { cn } from "@/lib/cn";
 import { openInstallPrompt, useStandaloneDisplay } from "@/lib/pwa";
-import { useI18n } from "@/lib/i18n/use-i18n";
+import { useI18n, useL } from "@/lib/i18n/use-i18n";
 import { LanguageToggle } from "@/components/language-toggle";
 
 export function SiteHeader() {
@@ -22,6 +22,7 @@ export function SiteHeader() {
   const showInstall = !standalone;
   const menuOpen = open && openedPath === pathname;
   const { t } = useI18n();
+  const L = useL();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -31,16 +32,16 @@ export function SiteHeader() {
   }, []);
 
   const links = [
-    { href: "/products/wallet", label: t("nav.personal"), icon: Wallet, copy: "Your XAF wallet and @handle" },
-    { href: "/products/business", label: t("nav.business"), icon: Store, copy: "Shop links, QR and checkout" },
-    { href: "/products/developers", label: t("nav.developers"), icon: Code2, copy: "Payments API, sandbox, webhooks" },
-    { href: "/pricing", label: t("nav.pricing"), icon: Receipt, copy: "Every fee, in plain numbers" },
-    { href: "/security", label: t("nav.security"), icon: ShieldCheck, copy: "How your money is protected" },
+    { href: "/products/wallet", label: t("nav.personal"), icon: Wallet, copy: L("Your XAF wallet and @handle", "Votre portefeuille XAF et @identifiant") },
+    { href: "/products/business", label: t("nav.business"), icon: Store, copy: L("Shop links, QR and checkout", "Liens boutique, QR et paiement") },
+    { href: "/products/developers", label: t("nav.developers"), icon: Code2, copy: L("Payments API, sandbox, webhooks", "API de paiement, sandbox, webhooks") },
+    { href: "/pricing", label: t("nav.pricing"), icon: Receipt, copy: L("Every fee, in plain numbers", "Tous les frais, en clair") },
+    { href: "/security", label: t("nav.security"), icon: ShieldCheck, copy: L("How your money is protected", "Comment votre argent est protégé") },
   ];
   const secondary = [
-    { href: "/about", label: t("nav.about"), icon: Heart, copy: "Who builds LBPay, and why" },
-    { href: "/investors", label: "Investors", icon: TrendingUp, copy: "Back what we're building" },
-    { href: "/docs", label: t("nav.docs"), icon: BookOpen, copy: "API reference and guides" },
+    { href: "/about", label: t("nav.about"), icon: Heart, copy: L("Who builds LBPay, and why", "Qui construit LBPay, et pourquoi") },
+    { href: "/investors", label: L("Investors", "Investisseurs"), icon: TrendingUp, copy: L("Back what we're building", "Soutenez ce que nous construisons") },
+    { href: "/docs", label: t("nav.docs"), icon: BookOpen, copy: L("API reference and guides", "Référence API et guides") },
   ];
   if (pathname === "/welcome") return null;
 
@@ -104,7 +105,7 @@ export function SiteHeader() {
               <button
                 type="button"
                 className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/15 text-white"
-                aria-label="Get the LBPay app"
+                aria-label={L("Get the LBPay app", "Installer l'app LBPay")}
                 onClick={() => openInstallPrompt()}
               >
                 <Download className="h-4 w-4" />
@@ -114,7 +115,7 @@ export function SiteHeader() {
               type="button"
               className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/15 text-white"
               aria-expanded={menuOpen}
-              aria-label="Open menu"
+              aria-label={L("Open menu", "Ouvrir le menu")}
               onClick={() => {
                 setOpenedPath(pathname);
                 setOpen(true);
@@ -130,7 +131,7 @@ export function SiteHeader() {
         open={menuOpen}
         onClose={() => setOpen(false)}
         title="LBPay"
-        subtitle="Money that feels at home."
+        subtitle={L("Money that feels at home.", "Votre argent, enfin chez vous.")}
         footer={
           <div className="grid gap-2">
             {showInstall ? (
@@ -142,7 +143,7 @@ export function SiteHeader() {
                   openInstallPrompt();
                 }}
               >
-                <Download className="h-4 w-4" /> Get the app
+                <Download className="h-4 w-4" /> {L("Get the app", "Installer l'app")}
               </Button>
             ) : null}
             <div className="grid grid-cols-2 gap-2">

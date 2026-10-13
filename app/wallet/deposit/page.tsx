@@ -11,6 +11,7 @@ import { useApp } from "@/lib/store";
 import { formatXAF } from "@/lib/format";
 import { useCollect, useMe } from "@/lib/hooks/wallet";
 import { useNotify } from "@/lib/notify";
+import { useL } from "@/lib/i18n/use-i18n";
 import { BalancePill, MethodPicker, WaitingOnPhone } from "@/components/money-ui";
 import { cameroonMsisdn, isCameroonMsisdn } from "@/lib/phone";
 import { FEE_RATES, depositFee, feePercent, feePercentLabel } from "@/lib/fees";
@@ -19,13 +20,14 @@ import { amountIssue } from "@/lib/limits";
 import { readPinFail, isPinError } from "@/lib/pin-fail";
 import type { PaymentMethod } from "@/lib/types";
 
-const feeHint = `${feePercent(FEE_RATES.deposit)}% fee`;
 
 export default function DepositPage() {
   const { state } = useApp();
   const me = useMe();
   const router = useRouter();
   const notify = useNotify();
+  const L = useL();
+  const feeHint = L(`${feePercent(FEE_RATES.deposit)}% fee`, `${feePercent(FEE_RATES.deposit)} % de frais`);
   const collect = useCollect();
   const [method, setMethod] = useState<PaymentMethod>("mtn");
   const [phone, setPhone] = useState(cameroonMsisdn(state.user.phone));
@@ -46,11 +48,11 @@ export default function DepositPage() {
   const ussdCode = method === "orange" ? "#150#" : "*126#";
 
   const details = [
-    { label: "From", value: method === "mtn" ? "MTN" : "Orange" },
-    { label: "Number", value: clean },
-    { label: "Wallet receives", value: formatXAF(value) },
-    ...(fee ? [{ label: feePercentLabel(FEE_RATES.deposit, "Fee"), value: formatXAF(fee) }] : []),
-    { label: "You pay", value: formatXAF(payAmount) },
+    { label: L("From", "Depuis"), value: method === "mtn" ? "MTN" : "Orange" },
+    { label: L("Number", "Numéro"), value: clean },
+    { label: L("Wallet receives", "Le portefeuille reçoit"), value: formatXAF(value) },
+    ...(fee ? [{ label: feePercentLabel(FEE_RATES.deposit, L("Fee", "Frais")), value: formatXAF(fee) }] : []),
+    { label: L("You pay", "Vous payez"), value: formatXAF(payAmount) },
   ];
 
   const pollPayment = useCallback(
@@ -63,16 +65,25 @@ export default function DepositPage() {
           const data = (await res.json()) as { status?: string; error?: string; message?: string };
           if (data.status === "success") {
             setWaiting(null);
-            notify.moneyIn(value, "Wallet deposit received");
-            celebrate({ title: "Money added!", amount: value, line: "Your wallet is topped up and ready to use." });
+            notify.moneyIn(value, L("Wallet deposit received", "Recharge reçue"));
+            celebrate({
+              title: L("Money added!", "Argent ajouté !"),
+              amount: value,
+              line: L("Your wallet is topped up and ready to use.", "Votre portefeuille est rechargé et prêt."),
+            });
             router.push("/wallet");
             return;
           }
           if (data.status === "failed") {
             setWaiting(null);
             notify.error(
-              "Deposit failed",
-              data.error || data.message || "Your transaction could not be completed. No money has been deducted. Please try again.",
+              L("Deposit failed", "Échec de la recharge"),
+              data.error ||
+                data.message ||
+                L(
+                  "Your transaction could not be completed. No money has been deducted. Please try again.",
+                  "L'opération n'a pas abouti. Aucun montant n'a été débité. Réessayez.",
+                ),
             );
             return;
           }
@@ -82,9 +93,12 @@ export default function DepositPage() {
         await new Promise((resolve) => setTimeout(resolve, 4000));
       }
       setWaiting(null);
-      notify.info("Still waiting", "If the popup never came, dial the USSD code, confirm, then check history.");
+      notify.info(
+        L("Still waiting", "Toujours en attente"),
+        L("If the popup never came, dial the USSD code, confirm, then check history.", "Si la fenêtre n'est jamais apparue, composez le code USSD, confirmez, puis vérifiez l'historique."),
+      );
     },
-    [notify, router, value],
+    [notify, router, value, L],
   );
 
   const verifyNow = useCallback(async () => {
@@ -96,27 +110,39 @@ export default function DepositPage() {
       const data = (await res.json()) as { status?: string; error?: string; message?: string };
       if (data.status === "success") {
         setWaiting(null);
-        notify.moneyIn(value, "Wallet deposit received");
-        celebrate({ title: "Money added!", amount: value, line: "Your wallet is topped up and ready to use." });
+        notify.moneyIn(value, L("Wallet deposit received", "Recharge reçue"));
+        celebrate({
+              title: L("Money added!", "Argent ajouté !"),
+              amount: value,
+              line: L("Your wallet is topped up and ready to use.", "Votre portefeuille est rechargé et prêt."),
+            });
         router.push("/wallet");
         return;
       }
       if (data.status === "failed") {
         setWaiting(null);
         notify.error(
-          "Deposit failed",
-          data.error || data.message || "Your transaction could not be completed. No money has been deducted. Please try again.",
+          L("Deposit failed", "Échec de la recharge"),
+          data.error ||
+                data.message ||
+                L(
+                  "Your transaction could not be completed. No money has been deducted. Please try again.",
+                  "L'opération n'a pas abouti. Aucun montant n'a été débité. Réessayez.",
+                ),
         );
         return;
       }
-      notify.info("Not confirmed yet", `If you have not seen a popup, dial ${ussdCode} and confirm pay.`);
+      notify.info(
+        L("Not confirmed yet", "Pas encore confirmé"),
+        L(`If you have not seen a popup, dial ${ussdCode} and confirm pay.`, `Si aucune fenêtre n'est apparue, composez ${ussdCode} et confirmez.`),
+      );
       verifyLock.current = false;
     } catch {
       verifyLock.current = false;
     } finally {
       setChecking(false);
     }
-  }, [waiting, notify, router, value, ussdCode]);
+  }, [waiting, notify, router, value, ussdCode, L]);
 
   const confirm = async (pin: string) => {
     setPinError("");
@@ -129,33 +155,43 @@ export default function DepositPage() {
         pin,
       })) as { hostedUrl?: string; status?: string; transactionId?: string };
       if (result.hostedUrl) {
-        notify.pending("Continue on checkout", "Complete the payment to credit your wallet.");
+        notify.pending(L("Continue on checkout", "Continuez le paiement"), L("Complete the payment to credit your wallet.", "Terminez le paiement pour créditer votre portefeuille."));
         window.location.assign(result.hostedUrl);
         return;
       }
       if (result.status === "pending" && result.transactionId) {
-        notify.pending("Approve on your phone", `Confirm ${formatXAF(payAmount)} on ${method.toUpperCase()}.`);
+        notify.pending(
+          L("Approve on your phone", "Validez sur votre téléphone"),
+          L(`Confirm ${formatXAF(payAmount)} on ${method.toUpperCase()}.`, `Confirmez ${formatXAF(payAmount)} sur ${method.toUpperCase()}.`),
+        );
         setOpen(false);
         setWaiting({ tx: result.transactionId, seconds: 120 });
         void pollPayment(result.transactionId);
         return;
       }
-      notify.moneyIn(value, "Wallet deposit received");
+      notify.moneyIn(value, L("Wallet deposit received", "Recharge reçue"));
       setOpen(false);
-      celebrate({ title: "Money added!", amount: value, line: "Your wallet is topped up and ready to use." });
+      celebrate({
+              title: L("Money added!", "Argent ajouté !"),
+              amount: value,
+              line: L("Your wallet is topped up and ready to use.", "Votre portefeuille est rechargé et prêt."),
+            });
       router.push("/wallet");
     } catch (err) {
       const fail = readPinFail(err);
       setPinError(fail.error);
       setPinLockedUntil(fail.lockedUntil);
       if (!isPinError(fail.error)) {
-        notify.error("Deposit failed", fail.error);
+        notify.error(L("Deposit failed", "Échec de la recharge"), fail.error);
       }
     }
   };
 
   return (
-    <MoneyPage title="Add money" copy="Top up from MTN MoMo or Orange Money.">
+    <MoneyPage
+      title={L("Add money", "Ajouter de l'argent")}
+      copy={L("Top up from MTN MoMo or Orange Money.", "Rechargez depuis MTN MoMo ou Orange Money.")}
+    >
       {waiting ? (
         <WaitingOnPhone
           network={method === "orange" ? "orange" : "mtn"}
@@ -168,7 +204,7 @@ export default function DepositPage() {
         />
       ) : (
         <MoneyCard>
-          <BalancePill amount={formatXAF(balance)} label="In your wallet" />
+          <BalancePill amount={formatXAF(balance)} label={L("In your wallet", "Dans votre portefeuille")} />
           <form
             className="mt-5 flex flex-col gap-6"
             onSubmit={(e) => {
@@ -180,7 +216,7 @@ export default function DepositPage() {
             }}
           >
             <MethodPicker
-              label="Add from"
+              label={L("Add from", "Recharger depuis")}
               value={method}
               onChange={setMethod}
               options={[
@@ -188,7 +224,7 @@ export default function DepositPage() {
                 { id: "orange" as PaymentMethod, network: "orange", title: "Orange Money", hint: feeHint },
               ]}
             />
-            <Field label={`Your ${method === "orange" ? "Orange" : "MTN"} number`}>
+            <Field label={L(`Your ${method === "orange" ? "Orange" : "MTN"} number`, `Votre numéro ${method === "orange" ? "Orange" : "MTN"}`)}>
               <Input
                 inputMode="numeric"
                 autoComplete="tel"
@@ -203,35 +239,35 @@ export default function DepositPage() {
               value={amount}
               onChange={setAmount}
               kind="deposit"
-              label="How much?"
+              label={L("How much?", "Combien ?")}
               receive={value}
               fee={fee}
               pay={payAmount}
-              receiveLabel="Added to your wallet"
-              feeLabel={feePercentLabel(FEE_RATES.deposit, "Fee")}
-              payLabel={`You pay from ${method === "orange" ? "Orange" : "MTN"}`}
+              receiveLabel={L("Added to your wallet", "Ajouté à votre portefeuille")}
+              feeLabel={feePercentLabel(FEE_RATES.deposit, L("Fee", "Frais"))}
+              payLabel={L(`You pay from ${method === "orange" ? "Orange" : "MTN"}`, `Vous payez depuis ${method === "orange" ? "Orange" : "MTN"}`)}
             />
             <Button type="submit" disabled={!ready} className="h-14 rounded-2xl text-[16px] font-bold">
-              {value ? `Add ${formatXAF(value)}` : "Add money"}
+              {value ? L(`Add ${formatXAF(value)}`, `Ajouter ${formatXAF(value)}`) : L("Add money", "Ajouter de l'argent")}
             </Button>
           </form>
         </MoneyCard>
       )}
       <ConfirmSheet
         open={open}
-        title="Confirm deposit"
-        subtitle={method === "card" ? "Card" : `${method === "orange" ? "Orange" : "MTN"} ${clean}`}
+        title={L("Confirm deposit", "Confirmer la recharge")}
+        subtitle={method === "card" ? L("Card", "Carte") : `${method === "orange" ? "Orange" : "MTN"} ${clean}`}
         amount={payAmount}
         details={details}
         warning={
           method === "card"
             ? undefined
-            : `If the popup does not appear, dial ${ussdCode} and confirm pay.`
+            : L(`If the popup does not appear, dial ${ussdCode} and confirm pay.`, `Si la fenêtre n'apparaît pas, composez ${ussdCode} et confirmez.`)
         }
         loading={collect.isPending}
         error={pinError}
         lockedUntil={pinLockedUntil}
-        confirmLabel="Enter PIN to deposit"
+        confirmLabel={L("Enter PIN to deposit", "Saisissez votre PIN pour recharger")}
         onClose={() => setOpen(false)}
         onConfirm={confirm}
       />

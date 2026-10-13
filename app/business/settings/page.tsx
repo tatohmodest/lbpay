@@ -134,8 +134,8 @@ export default function BusinessSettingsPage() {
             <div className="mt-3 grid grid-cols-3 gap-2">
               {(
                 [
-                  { n: "mtn", t: "MTN MoMo", h: `${feePercent(FEE_RATES.deposit)}% to customer` },
-                  { n: "orange", t: "Orange Money", h: `${feePercent(FEE_RATES.deposit)}% to customer` },
+                  { n: "mtn", t: "MTN MoMo", h: `${feePercent(FEE_RATES.checkout)}% to customer` },
+                  { n: "orange", t: "Orange Money", h: `${feePercent(FEE_RATES.checkout)}% to customer` },
                   { n: "wallet", t: "LBPay wallet", h: "Free for both" },
                 ] as const
               ).map((m) => (

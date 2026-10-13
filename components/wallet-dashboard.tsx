@@ -18,15 +18,16 @@ import { ACTION_ART } from "@/lib/assets";
 import { isMoneyOut } from "@/lib/format";
 import { kindTitle, txHref } from "@/lib/tx";
 import { cn } from "@/lib/cn";
+import { useL } from "@/lib/i18n/use-i18n";
 import type { Transaction } from "@/lib/types";
 
 const fmt = (n: number) => n.toLocaleString("fr-FR");
 
-function greeting(now = new Date()) {
+function greeting(L: (en: string, fr: string) => string, now = new Date()) {
   const h = Number(new Intl.DateTimeFormat("en-GB", { hour: "numeric", hour12: false, timeZone: "Africa/Douala" }).format(now));
-  if (h < 12) return "Good morning";
-  if (h < 18) return "Good afternoon";
-  return "Good evening";
+  if (h < 12) return L("Good morning", "Bonjour");
+  if (h < 18) return L("Good afternoon", "Bon après-midi");
+  return L("Good evening", "Bonsoir");
 }
 
 /* ------------------------------------------------------------------ */
@@ -45,6 +46,7 @@ export function BalanceHero({
   today: number;
 }) {
   const { hidden, toggle } = useHiddenAmount();
+  const L = useL();
   const first = name.trim().split(/\s+/)[0] || "there";
   return (
     <section className="relative overflow-hidden rounded-[2rem] bg-forest p-6 text-white shadow-[0_30px_60px_-30px_rgba(6,38,28,0.6)] sm:p-7">
@@ -52,19 +54,19 @@ export function BalanceHero({
       <div className="lb-grid-bg pointer-events-none absolute inset-0" />
       <div className="relative">
         <p className="text-[15px] text-hero-muted" suppressHydrationWarning>
-          {greeting()}, <span className="font-display text-[18px] italic text-white">{first}</span>
+          {greeting(L)}, <span className="font-display text-[18px] italic text-white">{first}</span>
         </p>
 
         <div className="mt-6 flex items-center justify-between gap-3">
-          <p className="text-[13px] font-medium text-hero-muted">Wallet balance</p>
+          <p className="text-[13px] font-medium text-hero-muted">{L("Wallet balance", "Solde du portefeuille")}</p>
           <button
             type="button"
             onClick={toggle}
             className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-[12px] font-semibold text-white/80 ring-1 ring-white/15 transition hover:bg-white/15"
-            aria-label={hidden ? "Show balance" : "Hide balance"}
+            aria-label={hidden ? L("Show balance", "Afficher le solde") : L("Hide balance", "Masquer le solde")}
           >
             {hidden ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
-            {hidden ? "Show" : "Hide"}
+            {hidden ? L("Show", "Afficher") : L("Hide", "Masquer")}
           </button>
         </div>
         <p className="tabular mt-1 font-mono text-[2.6rem] font-black leading-none tracking-tight sm:text-5xl">
@@ -80,14 +82,14 @@ export function BalanceHero({
               )}
             >
               {today > 0 ? "+" : "−"}
-              {hidden ? "•••" : fmt(Math.abs(today))} today
+              {hidden ? "•••" : fmt(Math.abs(today))} {L("today", "aujourd'hui")}
             </span>
           ) : null}
           <Link
             href="/wallet/savings"
             className="tabular inline-flex items-center gap-1 rounded-full bg-white/10 px-2.5 py-1 text-white/80 ring-1 ring-white/10 transition hover:bg-white/15"
           >
-            <PiggyBank className="h-3.5 w-3.5 text-gold" /> {hidden ? "•••" : fmt(saved)} in pots
+            <PiggyBank className="h-3.5 w-3.5 text-gold" /> {hidden ? "•••" : fmt(saved)} {L("in pots", "en cagnottes")}
           </Link>
         </div>
 
@@ -96,13 +98,13 @@ export function BalanceHero({
             href="/wallet/deposit"
             className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-white text-[15px] font-bold text-forest transition hover:bg-white/90"
           >
-            <Plus className="h-4 w-4" /> Add money
+            <Plus className="h-4 w-4" /> {L("Add money", "Ajouter")}
           </Link>
           <Link
             href="/wallet/send"
             className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-brand text-[15px] font-bold text-white shadow-[0_10px_24px_-10px_rgba(0,179,105,0.9)] transition hover:bg-brand-dark"
           >
-            <Send className="h-4 w-4" /> Send
+            <Send className="h-4 w-4" /> {L("Send", "Envoyer")}
           </Link>
         </div>
       </div>
@@ -126,9 +128,23 @@ const ACTIONS = [
   { href: "/wallet/qr", label: "QR", art: ACTION_ART.qr },
 ] as const;
 
+const ACTION_FR: Record<string, string> = {
+  Send: "Envoyer",
+  Save: "Épargner",
+  Abroad: "Étranger",
+  Receive: "Recevoir",
+  Deposit: "Recharger",
+  Withdraw: "Retirer",
+  Quick: "Rapide",
+  QR: "QR",
+  New: "Nouveau",
+  Soon: "Bientôt",
+};
+
 export function QuickActions() {
+  const L = useL();
   return (
-    <nav aria-label="Quick actions" className="grid grid-cols-4 gap-2.5">
+    <nav aria-label={L("Quick actions", "Actions rapides")} className="grid grid-cols-4 gap-2.5">
       {ACTIONS.map((a) => (
         <Link
           key={a.label}
@@ -144,7 +160,7 @@ export function QuickActions() {
             draggable={false}
             className="h-14 w-14 object-contain transition duration-200 group-hover:scale-105"
           />
-          <span className="text-[12px] font-semibold text-ink">{a.label}</span>
+          <span className="text-[12px] font-semibold text-ink">{L(a.label, ACTION_FR[a.label] ?? a.label)}</span>
           {"badge" in a && a.badge ? (
             <span
               className={cn(
@@ -152,7 +168,7 @@ export function QuickActions() {
                 a.badge === "Soon" ? "bg-paper text-muted ring-1 ring-line" : "bg-gold text-ink",
               )}
             >
-              {a.badge}
+              {L(a.badge, ACTION_FR[a.badge] ?? a.badge)}
             </span>
           ) : null}
         </Link>
@@ -165,13 +181,13 @@ export function QuickActions() {
 /* Activity                                                            */
 /* ------------------------------------------------------------------ */
 
-function dayLabel(iso: string, now = new Date()) {
+function dayLabel(iso: string, L: (en: string, fr: string) => string, now = new Date()) {
   const fmtDay = (d: Date) =>
     new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Douala" }).format(d);
   const d = new Date(iso);
-  if (fmtDay(d) === fmtDay(now)) return "Today";
-  if (fmtDay(d) === fmtDay(new Date(now.getTime() - 86_400_000))) return "Yesterday";
-  return new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", timeZone: "Africa/Douala" }).format(d);
+  if (fmtDay(d) === fmtDay(now)) return L("Today", "Aujourd'hui");
+  if (fmtDay(d) === fmtDay(new Date(now.getTime() - 86_400_000))) return L("Yesterday", "Hier");
+  return new Intl.DateTimeFormat(L("en-GB", "fr-FR"), { day: "numeric", month: "short", timeZone: "Africa/Douala" }).format(d);
 }
 
 function txIcon(tx: Transaction) {
@@ -191,11 +207,12 @@ export function ActivityList({
   limit?: number;
   empty?: React.ReactNode;
 }) {
+  const L = useL();
   const rows = transactions.slice(0, limit);
   if (!rows.length) return <>{empty}</>;
   const groups: Array<{ label: string; items: Transaction[] }> = [];
   for (const tx of rows) {
-    const label = dayLabel(tx.createdAt);
+    const label = dayLabel(tx.createdAt, L);
     const last = groups[groups.length - 1];
     if (last?.label === label) last.items.push(tx);
     else groups.push({ label, items: [tx] });
@@ -232,7 +249,7 @@ export function ActivityList({
                       <span className="block truncate text-[14px] font-semibold text-ink">{tx.counterparty || kindTitle(tx.kind)}</span>
                       <span className="block truncate text-[12px] text-muted">
                         {kindTitle(tx.kind)}
-                        {pending ? " · Pending" : failed ? " · Didn't go through" : ""}
+                        {pending ? L(" · Pending", " · En attente") : failed ? L(" · Didn't go through", " · N'a pas abouti") : ""}
                       </span>
                     </span>
                     <span
@@ -270,13 +287,14 @@ export function DashSection({
   action?: string;
   children: React.ReactNode;
 }) {
+  const L = useL();
   return (
     <section>
       <div className="mb-3 flex items-center justify-between px-1">
         <h2 className="text-[17px] font-bold tracking-tight text-ink">{title}</h2>
         {href ? (
           <Link href={href} className="text-[13px] font-semibold text-brand-deep hover:underline">
-            {action || "See all"}
+            {action || L("See all", "Tout voir")}
           </Link>
         ) : null}
       </div>

@@ -4,6 +4,7 @@ import { useEffect, useRef, useSyncExternalStore } from "react";
 import { Check, Clock3, ShieldCheck } from "lucide-react";
 import { formatXAF } from "@/lib/format";
 import { cn } from "@/lib/cn";
+import { useL } from "@/lib/i18n/use-i18n";
 
 /**
  * Full-screen "it worked" moment shown after money moves.
@@ -94,6 +95,7 @@ export function SuccessMomentHost() {
     () => null,
   );
   const doneRef = useRef<HTMLButtonElement>(null);
+  const L = useL();
 
   useEffect(() => {
     if (!moment) return;
@@ -166,8 +168,8 @@ export function SuccessMomentHost() {
           <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand" />
           {moment.note ||
             (pending
-              ? "We'll let you know the moment the network confirms."
-              : "Confirmed and recorded in your history.")}
+              ? L("We'll let you know the moment the network confirms.", "Nous vous préviendrons dès que le réseau confirme.")
+              : L("Confirmed and recorded in your history.", "Confirmé et enregistré dans votre historique."))}
         </p>
 
         <button
@@ -176,7 +178,7 @@ export function SuccessMomentHost() {
           onClick={dismiss}
           className="relative mt-6 h-12 w-full rounded-2xl bg-ink text-[15px] font-semibold text-white transition hover:bg-ink/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
         >
-          {moment.doneLabel || "Done"}
+          {moment.doneLabel || L("Done", "Terminé")}
         </button>
       </div>
     </div>

@@ -10,12 +10,14 @@ import { copyText } from "@/lib/clipboard";
 import { Field, Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useNotify } from "@/lib/notify";
+import { useL } from "@/lib/i18n/use-i18n";
 import { formatXAF } from "@/lib/format";
 import { payLinkPath, payLinkUrl } from "@/lib/origin";
 import { useBrowserOrigin } from "@/lib/use-origin";
 
 export default function RequestPage() {
   const notify = useNotify();
+  const L = useL();
   const client = useQueryClient();
   const [title, setTitle] = useState("");
   const [amount, setAmount] = useState("");
@@ -30,10 +32,10 @@ export default function RequestPage() {
       const res = await fetch("/api/wallet/links", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: title || "Money request", amount: amount ? Number(amount) : null }),
+        body: JSON.stringify({ title: title || L("Money request", "Demande d'argent"), amount: amount ? Number(amount) : null }),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Could not create request");
+      if (!res.ok) throw new Error(json.error || L("Could not create request", "Impossible de créer la demande"));
       return json as { link: { slug: string; title: string; amount: number | null; id: string } };
     },
     onSuccess: (json) => {
@@ -42,9 +44,9 @@ export default function RequestPage() {
       setTitle("");
       setAmount("");
       client.invalidateQueries({ queryKey: ["wallet-links"] });
-      notify.success("Request ready", "Share the checkout link.");
+      notify.success(L("Request ready", "Demande prête"), L("Share the checkout link.", "Partagez le lien de paiement."));
     },
-    onError: (err: Error) => notify.error("Failed", err.message),
+    onError: (err: Error) => notify.error(L("Failed", "Échec"), err.message),
   });
 
   const links = (data.data?.links || []) as Array<{ id: string; title: string; amount: number | null; slug: string }>;
@@ -57,13 +59,13 @@ export default function RequestPage() {
           <Link
             href="/wallet/qr"
             className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white ring-1 ring-line/80 transition hover:ring-brand/40"
-            aria-label="Back"
+            aria-label={L("Back", "Retour")}
           >
             <ArrowLeft className="h-4 w-4" />
           </Link>
           <div>
-            <h1 className="text-[1.75rem] font-black leading-tight tracking-tight text-ink">Request money</h1>
-            <p className="text-[14px] text-muted">A link with the amount filled in. They pay in two taps.</p>
+            <h1 className="text-[1.75rem] font-black leading-tight tracking-tight text-ink">{L("Request money", "Demander de l'argent")}</h1>
+            <p className="text-[14px] text-muted">{L("A link with the amount filled in. They pay in two taps.", "Un lien avec le montant déjà rempli. On vous paie en deux gestes.")}</p>
           </div>
         </div>
 
@@ -74,18 +76,18 @@ export default function RequestPage() {
               <span className="lb-check relative mx-auto grid h-14 w-14 place-items-center rounded-full bg-brand text-white">
                 <Check className="h-7 w-7" strokeWidth={3} />
               </span>
-              <h2 className="relative mt-4 text-2xl font-black">Your request is ready</h2>
-              <p className="relative mt-1 text-[14px] text-hero-muted">Send it to the person who owes you.</p>
+              <h2 className="relative mt-4 text-2xl font-black">{L("Your request is ready", "Votre demande est prête")}</h2>
+              <p className="relative mt-1 text-[14px] text-hero-muted">{L("Send it to the person who owes you.", "Envoyez-la à la personne qui vous doit.")}</p>
             </div>
             <div className="space-y-4 p-5">
               <p className="break-all rounded-2xl bg-paper px-4 py-3 font-mono text-[12px] text-ink">{link}</p>
-              <ShareRow url={link} text={`Please pay me on LBPay:\n${link}`} copyLabel="Copy request link" />
+              <ShareRow url={link} text={L(`Please pay me on LBPay:\n${link}`, `Merci de me payer sur LBPay :\n${link}`)} copyLabel={L("Copy request link", "Copier le lien de demande")} />
               <button
                 type="button"
                 onClick={() => setLink(null)}
                 className="w-full text-center text-[14px] font-semibold text-muted hover:text-ink"
               >
-                Make another request
+                {L("Make another request", "Faire une autre demande")}
               </button>
             </div>
           </section>
@@ -98,9 +100,9 @@ export default function RequestPage() {
                 create.mutate();
               }}
             >
-              <Field label="What is it for?">
+              <Field label={L("What is it for?", "C'est pour quoi ?")}>
                 <Input
-                  placeholder="e.g. Share of the dinner"
+                  placeholder={L("e.g. Share of the dinner", "ex. Ma part du dîner")}
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   maxLength={60}
@@ -112,32 +114,32 @@ export default function RequestPage() {
                 value={amount}
                 onChange={setAmount}
                 kind="wallet"
-                label="How much?"
+                label={L("How much?", "Combien ?")}
                 receive={value}
                 fee={0}
-                receiveLabel="You receive"
-                feeLabel="Fee for you"
+                receiveLabel={L("You receive", "Vous recevez")}
+                feeLabel={L("Fee for you", "Frais pour vous")}
               />
               <Button type="submit" disabled={create.isPending || !value || !title.trim()} className="h-14 rounded-2xl text-[16px] font-bold">
-                {create.isPending ? "Creating…" : value ? `Request ${formatXAF(value)}` : "Create request"}
+                {create.isPending ? L("Creating…", "Création…") : value ? L(`Request ${formatXAF(value)}`, `Demander ${formatXAF(value)}`) : L("Create request", "Créer la demande")}
               </Button>
             </form>
           </section>
         )}
         <p className="px-1 text-center text-[12px] text-muted">
-          They can pay with MTN MoMo, Orange Money or an LBPay wallet.
+          {L("They can pay with MTN MoMo, Orange Money or an LBPay wallet.", "On peut vous payer par MTN MoMo, Orange Money ou un portefeuille LBPay.")}
         </p>
       </div>
 
       <div>
-        <h2 className="mb-3 px-1 text-[13px] font-bold uppercase tracking-[0.14em] text-muted">Your requests</h2>
+        <h2 className="mb-3 px-1 text-[13px] font-bold uppercase tracking-[0.14em] text-muted">{L("Your requests", "Vos demandes")}</h2>
         {links.length === 0 ? (
           <div className="rounded-[1.75rem] border-2 border-dashed border-line bg-white px-6 py-12 text-center">
             <span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-brand-soft text-brand-deep">
               <Send className="h-5 w-5" />
             </span>
-            <p className="mt-3 text-[15px] font-bold text-ink">No requests yet</p>
-            <p className="mt-1 text-[13px] text-muted">Requests you create show up here.</p>
+            <p className="mt-3 text-[15px] font-bold text-ink">{L("No requests yet", "Aucune demande pour l'instant")}</p>
+            <p className="mt-1 text-[13px] text-muted">{L("Requests you create show up here.", "Vos demandes apparaîtront ici.")}</p>
           </div>
         ) : (
           <ul className="overflow-hidden rounded-[1.75rem] bg-white ring-1 ring-line/80">
@@ -152,7 +154,7 @@ export default function RequestPage() {
                     <span className="block truncate font-mono text-[11px] text-muted">{payLinkUrl(item.slug, origin)}</span>
                   </span>
                   <span className="tabular shrink-0 text-[14px] font-black text-ink">
-                    {item.amount ? formatXAF(item.amount) : "Any"}
+                    {item.amount ? formatXAF(item.amount) : L("Any", "Libre")}
                   </span>
                 </div>
                 <div className="flex gap-2 px-4 pb-4">
@@ -160,16 +162,16 @@ export default function RequestPage() {
                     href={payLinkPath(item.slug)}
                     className="flex-1 rounded-xl bg-paper py-2 text-center text-[12px] font-semibold text-ink ring-1 ring-line hover:ring-brand/40"
                   >
-                    View
+                    {L("View", "Voir")}
                   </Link>
                   <button
                     type="button"
                     onClick={() =>
-                      void copyText(payLinkUrl(item.slug, origin)).then(() => notify.success("Copied", "Send it on WhatsApp."))
+                      void copyText(payLinkUrl(item.slug, origin)).then(() => notify.success(L("Copied", "Copié"), L("Send it on WhatsApp.", "Envoyez-le sur WhatsApp.")))
                     }
                     className="flex-1 rounded-xl bg-ink py-2 text-center text-[12px] font-semibold text-white hover:bg-ink/90"
                   >
-                    Copy link
+                    {L("Copy link", "Copier le lien")}
                   </button>
                 </div>
               </li>

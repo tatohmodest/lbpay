@@ -11,6 +11,7 @@ import { useApp } from "@/lib/store";
 import { formatXAF } from "@/lib/format";
 import { useDisburse, useMe } from "@/lib/hooks/wallet";
 import { useNotify } from "@/lib/notify";
+import { useL } from "@/lib/i18n/use-i18n";
 import { BalancePill, MethodPicker, WaitingOnPhone } from "@/components/money-ui";
 import { cameroonMsisdn, isCameroonMsisdn } from "@/lib/phone";
 import { FEE_RATES, feePercent, feePercentLabel, momoOutFee } from "@/lib/fees";
@@ -38,6 +39,7 @@ export default function WithdrawPage() {
   const me = useMe();
   const router = useRouter();
   const notify = useNotify();
+  const L = useL();
   const disburse = useDisburse();
   const [network, setNetwork] = useState<"mtn" | "orange">("mtn");
   const [phone, setPhone] = useState(cameroonMsisdn(state.user.phone));
@@ -71,26 +73,26 @@ export default function WithdrawPage() {
     isCameroonMsisdn(clean);
 
   const details = [
-    { label: "To", value: `${network === "orange" ? "Orange" : "MTN"} ${clean}` },
-    { label: "They receive", value: formatXAF(value) },
+    { label: L("To", "Vers"), value: `${network === "orange" ? "Orange" : "MTN"} ${clean}` },
+    { label: L("They receive", "Ils reçoivent"), value: formatXAF(value) },
     ...(fee ? [{ label: feePercentLabel(FEE_RATES.withdraw), value: formatXAF(fee) }] : []),
-    { label: "You pay", value: formatXAF(debit) },
+    { label: L("You pay", "Vous payez"), value: formatXAF(debit) },
   ];
 
   const finishSuccess = useCallback(() => {
     setWaiting(null);
-    notify.moneyOut(debit, `Withdrew ${formatXAF(value)} to ${clean} on ${network.toUpperCase()}`);
+    notify.moneyOut(debit, L(`Withdrew ${formatXAF(value)} to ${clean} on ${network.toUpperCase()}`, `Retrait de ${formatXAF(value)} vers ${clean} sur ${network.toUpperCase()}`));
     celebrate({
-      title: "Withdrawn!",
+      title: L("Withdrawn!", "Retiré !"),
       amount: value,
-      line: `to ${clean} on ${network === "orange" ? "Orange Money" : "MTN MoMo"}`,
+      line: L(`to ${clean} on ${network === "orange" ? "Orange Money" : "MTN MoMo"}`, `vers ${clean} sur ${network === "orange" ? "Orange Money" : "MTN MoMo"}`),
       details: [
-        ...(fee ? [{ label: "Fee", value: formatXAF(fee) }] : []),
-        { label: "Total from wallet", value: formatXAF(debit) },
+        ...(fee ? [{ label: L("Fee", "Frais"), value: formatXAF(fee) }] : []),
+        { label: L("Total from wallet", "Total débité"), value: formatXAF(debit) },
       ],
     });
     router.push("/wallet");
-  }, [clean, debit, fee, network, notify, router, value]);
+  }, [clean, debit, fee, network, notify, router, value, L]);
 
   async function pollPayment(tx: string) {
     const data = await pollWithdrawStatus(tx, () => {
@@ -103,15 +105,15 @@ export default function WithdrawPage() {
     if (data.status === "failed") {
       setWaiting(null);
       notify.error(
-        "Withdrawal failed",
+        L("Withdrawal failed", "Échec du retrait"),
         data.error ||
           data.message ||
-          "Your transaction could not be completed. No money has been deducted. Please try again.",
+          L("Your transaction could not be completed. No money has been deducted. Please try again.", "L'opération n'a pas abouti. Aucun montant n'a été débité. Réessayez."),
       );
       return;
     }
     setWaiting(null);
-    notify.info("Still sending", "The withdrawal is still processing. Check history in a minute.");
+    notify.info(L("Still sending", "Envoi en cours"), L("The withdrawal is still processing. Check history in a minute.", "Le retrait est toujours en cours. Vérifiez l'historique dans une minute."));
     router.push("/wallet");
   }
 
@@ -128,14 +130,14 @@ export default function WithdrawPage() {
       if (data.status === "failed") {
         setWaiting(null);
         notify.error(
-          "Withdrawal failed",
+          L("Withdrawal failed", "Échec du retrait"),
           data.error ||
             data.message ||
-            "Your transaction could not be completed. No money has been deducted. Please try again.",
+            L("Your transaction could not be completed. No money has been deducted. Please try again.", "L'opération n'a pas abouti. Aucun montant n'a été débité. Réessayez."),
         );
         return;
       }
-      notify.info("Still sending", "The money is on its way. This usually takes less than two minutes.");
+      notify.info(L("Still sending", "Envoi en cours"), L("The money is on its way. This usually takes less than two minutes.", "L'argent est en route. Cela prend généralement moins de deux minutes."));
     } finally {
       setChecking(false);
     }
@@ -155,26 +157,26 @@ export default function WithdrawPage() {
       if (result.status === "failed") {
         setPinError(
           result.message ||
-            "Your transaction could not be completed. No money has been deducted. Please try again.",
+            L("Your transaction could not be completed. No money has been deducted. Please try again.", "L'opération n'a pas abouti. Aucun montant n'a été débité. Réessayez."),
         );
         return;
       }
       if (result.status === "pending" && result.transactionId) {
-        notify.pending("Sending to Mobile Money", `Paying ${formatXAF(value)} to ${clean}`);
+        notify.pending(L("Sending to Mobile Money", "Envoi vers Mobile Money"), L(`Paying ${formatXAF(value)} to ${clean}`, `Paiement de ${formatXAF(value)} vers ${clean}`));
         setOpen(false);
         setWaiting({ tx: result.transactionId, seconds: 120 });
         void pollPayment(result.transactionId);
         return;
       }
-      notify.moneyOut(debit, `Withdrew ${formatXAF(value)} to ${clean} on ${network.toUpperCase()}`);
+      notify.moneyOut(debit, L(`Withdrew ${formatXAF(value)} to ${clean} on ${network.toUpperCase()}`, `Retrait de ${formatXAF(value)} vers ${clean} sur ${network.toUpperCase()}`));
       setOpen(false);
       celebrate({
-        title: "Withdrawn!",
+        title: L("Withdrawn!", "Retiré !"),
         amount: value,
-        line: `to ${clean} on ${network === "orange" ? "Orange Money" : "MTN MoMo"}`,
+        line: L(`to ${clean} on ${network === "orange" ? "Orange Money" : "MTN MoMo"}`, `vers ${clean} sur ${network === "orange" ? "Orange Money" : "MTN MoMo"}`),
         details: [
-          ...(fee ? [{ label: "Fee", value: formatXAF(fee) }] : []),
-          { label: "Total from wallet", value: formatXAF(debit) },
+          ...(fee ? [{ label: L("Fee", "Frais"), value: formatXAF(fee) }] : []),
+          { label: L("Total from wallet", "Total débité"), value: formatXAF(debit) },
         ],
       });
       router.push("/wallet");
@@ -183,13 +185,17 @@ export default function WithdrawPage() {
       setPinError(fail.error);
       setPinLockedUntil(fail.lockedUntil);
       if (!isPinError(fail.error)) {
-        notify.error("Withdrawal failed", fail.error);
+        notify.error(L("Withdrawal failed", "Échec du retrait"), fail.error);
       }
     }
   }
 
   return (
-    <MoneyPage title="Withdraw" copy="Cash out to any MTN or Orange number." trust="refund">
+    <MoneyPage
+      title={L("Withdraw", "Retirer")}
+      copy={L("Cash out to any MTN or Orange number.", "Retirez vers n'importe quel numéro MTN ou Orange.")}
+      trust="refund"
+    >
       {waiting ? (
         <WaitingOnPhone
           network={network}
@@ -202,7 +208,7 @@ export default function WithdrawPage() {
         />
       ) : (
         <MoneyCard>
-          <BalancePill amount={formatXAF(balance)} label="In your wallet" />
+          <BalancePill amount={formatXAF(balance)} label={L("In your wallet", "Dans votre portefeuille")} />
           <form
             className="mt-5 flex flex-col gap-6"
             onSubmit={(e) => {
@@ -214,15 +220,15 @@ export default function WithdrawPage() {
             }}
           >
             <MethodPicker
-              label="Send to"
+              label={L("Send to", "Envoyer vers")}
               value={network}
               onChange={setNetwork}
               options={[
-                { id: "mtn" as const, network: "mtn", title: "MTN MoMo", hint: `${feePercent(FEE_RATES.withdraw)}% fee` },
-                { id: "orange" as const, network: "orange", title: "Orange Money", hint: `${feePercent(FEE_RATES.withdraw)}% fee` },
+                { id: "mtn" as const, network: "mtn", title: "MTN MoMo", hint: L(`${feePercent(FEE_RATES.withdraw)}% fee`, `${feePercent(FEE_RATES.withdraw)} % de frais`) },
+                { id: "orange" as const, network: "orange", title: "Orange Money", hint: L(`${feePercent(FEE_RATES.withdraw)}% fee`, `${feePercent(FEE_RATES.withdraw)} % de frais`) },
               ]}
             />
-            <Field label={`${network === "orange" ? "Orange" : "MTN"} number`}>
+            <Field label={L(`${network === "orange" ? "Orange" : "MTN"} number`, `Numéro ${network === "orange" ? "Orange" : "MTN"}`)}>
               <Input
                 inputMode="numeric"
                 autoComplete="tel"
@@ -237,41 +243,43 @@ export default function WithdrawPage() {
               value={amount}
               onChange={setAmount}
               kind="withdraw"
-              label="How much?"
+              label={L("How much?", "Combien ?")}
               receive={value}
               fee={fee}
-              receiveLabel={`Lands on ${network === "orange" ? "Orange" : "MTN"}`}
-              feeLabel={feePercentLabel(FEE_RATES.withdraw, "Fee")}
+              receiveLabel={L(`Lands on ${network === "orange" ? "Orange" : "MTN"}`, `Arrive sur ${network === "orange" ? "Orange" : "MTN"}`)}
+              feeLabel={feePercentLabel(FEE_RATES.withdraw, L("Fee", "Frais"))}
               pay={debit}
-              payLabel="Taken from your wallet"
+              payLabel={L("Taken from your wallet", "Débité de votre portefeuille")}
             />
             {overDaily ? (
               <p className="rounded-2xl bg-[#fdf3f2] px-4 py-3 text-[13px] font-semibold text-danger">
-                You can send {formatXAF(Math.max(0, (cap || 0) - usedToday))} more today. Verify your ID to raise the
-                limit.
+                {L(
+                  `You can send ${formatXAF(Math.max(0, (cap || 0) - usedToday))} more today. Verify your ID to raise the limit.`,
+                  `Vous pouvez encore envoyer ${formatXAF(Math.max(0, (cap || 0) - usedToday))} aujourd'hui. Vérifiez votre identité pour augmenter le plafond.`,
+                )}
               </p>
             ) : null}
             {value > 0 && debit > balance ? (
               <p className="rounded-2xl bg-[#fdf3f2] px-4 py-3 text-[13px] font-semibold text-danger">
-                Not enough in your wallet. Add money or lower the amount.
+                {L("Not enough in your wallet. Add money or lower the amount.", "Solde insuffisant. Ajoutez de l'argent ou baissez le montant.")}
               </p>
             ) : null}
             <Button type="submit" disabled={!ready} className="h-14 rounded-2xl text-[16px] font-bold">
-              {value ? `Withdraw ${formatXAF(value)}` : "Withdraw"}
+              {value ? L(`Withdraw ${formatXAF(value)}`, `Retirer ${formatXAF(value)}`) : L("Withdraw", "Retirer")}
             </Button>
           </form>
         </MoneyCard>
       )}
       <ConfirmSheet
         open={open}
-        title="Confirm withdrawal"
+        title={L("Confirm withdrawal", "Confirmer le retrait")}
         subtitle={`${network === "orange" ? "Orange" : "MTN"} ${clean}`}
         amount={debit}
         details={details}
         loading={disburse.isPending}
         error={pinError}
         lockedUntil={pinLockedUntil}
-        confirmLabel="Enter PIN to withdraw"
+        confirmLabel={L("Enter PIN to withdraw", "Saisissez votre PIN pour retirer")}
         onClose={() => setOpen(false)}
         onConfirm={confirm}
       />

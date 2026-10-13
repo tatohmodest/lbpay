@@ -1,4 +1,4 @@
-import { depositFee, feePercent, FEE_RATES, momoOutFee } from "@/lib/fees";
+import { checkoutFee, feePercent, FEE_RATES, momoOutFee } from "@/lib/fees";
 import type { PaymentMethod } from "@/lib/types";
 
 export const CHECKOUT_METHODS = [
@@ -17,12 +17,12 @@ export type CheckoutMethodId = (typeof CHECKOUT_METHODS)[number]["id"];
 export type PayoutDestinationId = (typeof PAYOUT_DESTINATIONS)[number]["id"];
 
 export function checkoutMethodFee(amount: number, method: PaymentMethod) {
-  return method === "wallet" || method === "card" ? 0 : depositFee(amount);
+  return method === "wallet" || method === "card" ? 0 : checkoutFee(amount);
 }
 
 export function checkoutFeeBadge(method: PaymentMethod) {
   if (method === "wallet") return "No fee";
-  return `Charge ${feePercent(FEE_RATES.deposit)}%`;
+  return `Charge ${feePercent(FEE_RATES.checkout)}%`;
 }
 
 export function payoutDestinationFee(amount: number, destination: PayoutDestinationId) {

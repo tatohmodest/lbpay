@@ -140,7 +140,7 @@ export function DocsContent({
             Withdrawals and “send to MTN / Orange” are disbursements. Cash leaves LBPay through
             PayUnit (<code>POST /api/gateway/deposit</code> then{" "}
             <code>/api/gateway/deposit/confirm</code> on <code>https://gateway.payunit.net</code>,
-            account number <code>237</code> + 9-digit MSISDN). Deposit is 1.5%. Withdrawal is 2.5%.
+            account number <code>237</code> + 9-digit MSISDN). Deposit is 1.53%. Withdrawal is 2.5%. API collections cost 2%, taken from the amount credited to you.
             Minimum withdrawal is 1,000 XAF. PayUnit must enable the deposit/disbursement product
             on the merchant account; a PayUnit wallet balance alone is not enough.
           </p>

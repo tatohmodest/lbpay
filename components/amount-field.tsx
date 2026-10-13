@@ -4,6 +4,7 @@ import { useId } from "react";
 import { formatXAF } from "@/lib/format";
 import { amountIssue, limitsFor, type LimitKind } from "@/lib/limits";
 import { cn } from "@/lib/cn";
+import { useL } from "@/lib/i18n/use-i18n";
 
 const QUICK: Record<LimitKind, number[]> = {
   wallet: [1000, 5000, 10000, 25000],
@@ -22,13 +23,13 @@ export function AmountField({
   value,
   onChange,
   kind,
-  label = "Amount",
+  label,
   receive,
   pay,
   fee,
-  receiveLabel = "They receive",
-  payLabel = "You pay",
-  feeLabel = "Fee",
+  receiveLabel,
+  payLabel,
+  feeLabel,
 }: {
   value: string;
   onChange: (value: string) => void;
@@ -42,17 +43,24 @@ export function AmountField({
   feeLabel?: string;
 }) {
   const id = useId();
+  const L = useL();
   const amount = Number(value) || 0;
   const { min, max } = limitsFor(kind);
   const issue = amountIssue(amount, kind);
   const valid = Boolean(value) && !issue && amount > 0;
   const touched = value !== "";
   const charge = fee && fee > 0 ? fee : 0;
+  const issueText =
+    issue && amount < min
+      ? L(`Minimum is ${fmt(min)} XAF.`, `Le minimum est de ${fmt(min)} XAF.`)
+      : issue && max
+        ? L(`Maximum per transaction is ${fmt(max)} XAF.`, `Le maximum par opération est de ${fmt(max)} XAF.`)
+        : issue;
 
   return (
     <div>
       <label htmlFor={id} className="text-[14px] font-bold text-ink">
-        {label}
+        {label ?? L("Amount", "Montant")}
       </label>
       <div
         className={cn(
@@ -93,10 +101,12 @@ export function AmountField({
       </div>
 
       {touched && issue ? (
-        <p className="mt-2 text-[13px] font-semibold text-danger">{issue}</p>
+        <p className="mt-2 text-[13px] font-semibold text-danger">{issueText}</p>
       ) : (
         <p className="tabular mt-2 text-[12px] text-muted">
-          {max ? `${fmt(min)} to ${fmt(max)} XAF` : `From ${fmt(min)} XAF`}
+          {max
+            ? L(`${fmt(min)} to ${fmt(max)} XAF`, `De ${fmt(min)} à ${fmt(max)} XAF`)
+            : L(`From ${fmt(min)} XAF`, `À partir de ${fmt(min)} XAF`)}
         </p>
       )}
 
@@ -109,18 +119,18 @@ export function AmountField({
           aria-live="polite"
         >
           <div className="flex justify-between gap-3">
-            <dt className="text-muted">{receiveLabel}</dt>
+            <dt className="text-muted">{receiveLabel ?? L("They receive", "Ils reçoivent")}</dt>
             <dd className="tabular font-semibold text-ink">{formatXAF(valid ? receive : 0)}</dd>
           </div>
           <div className="flex justify-between gap-3">
-            <dt className="text-muted">{feeLabel}</dt>
+            <dt className="text-muted">{feeLabel ?? L("Fee", "Frais")}</dt>
             <dd className={cn("tabular font-semibold", charge ? "text-ink" : "text-brand-deep")}>
-              {charge && valid ? formatXAF(charge) : charge ? formatXAF(0) : "Free"}
+              {charge && valid ? formatXAF(charge) : charge ? formatXAF(0) : L("Free", "Gratuit")}
             </dd>
           </div>
           {pay != null ? (
             <div className="flex justify-between gap-3 border-t border-line pt-2">
-              <dt className="font-bold text-ink">{payLabel}</dt>
+              <dt className="font-bold text-ink">{payLabel ?? L("You pay", "Vous payez")}</dt>
               <dd className="tabular text-[16px] font-black text-ink">{formatXAF(valid ? pay : 0)}</dd>
             </div>
           ) : null}

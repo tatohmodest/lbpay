@@ -1,5 +1,14 @@
+/**
+ * Our payment gateway takes 1.5% of every collection and 1.5% of every payout.
+ * - deposit is 1.53% so it covers the gateway's 1.5% of the *gross* amount
+ *   (amount + fee), which a flat 1.5% does not.
+ * - checkout (a customer paying a shop) is a flat 1.5%: kept round on purpose.
+ * - apiCollection is charged to the developer, taken from what they receive.
+ */
 export const FEE_RATES = {
-  deposit: 0.015,
+  deposit: 0.0153,
+  checkout: 0.015,
+  apiCollection: 0.02,
   withdraw: 0.025,
   crossNetwork: 0.035,
   airtime: 0,
@@ -15,6 +24,15 @@ export function feeOn(amount: number, rate: number) {
 
 export function depositFee(amount: number) {
   return feeOn(amount, FEE_RATES.deposit);
+}
+
+export function checkoutFee(amount: number) {
+  return feeOn(amount, FEE_RATES.checkout);
+}
+
+/** 2% of an API collection, deducted from what the developer is credited. */
+export function apiCollectionFee(amount: number) {
+  return feeOn(amount, FEE_RATES.apiCollection);
 }
 
 export function airtimeFee() {
