@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { ArrowLeftRight } from "lucide-react";
@@ -22,6 +22,18 @@ import { feePercent, FEE_RATES, feePercentLabel, momoOutFee } from "@/lib/fees";
 import { AmountField } from "@/components/amount-field";
 import { amountIssue, cameroonDay, dailyOutboundCap, outboundKinds } from "@/lib/limits";
 import { readPinFail, isPinError } from "@/lib/pin-fail";
+
+const RAILS = [
+  { id: "wallet" as const, label: "LBPay" },
+  { id: "mtn" as const, label: "MTN" },
+  { id: "orange" as const, label: "Orange" },
+];
+
+const RAIL_TONE = {
+  wallet: { box: "border-brand/30 bg-brand-soft" },
+  mtn: { box: "border-[#e6b800]/50 bg-[#fff8d6]" },
+  orange: { box: "border-[#ff7900]/40 bg-[#fff1e6]" },
+} as const;
 
 type Network = "wallet" | "mtn" | "orange";
 
@@ -45,6 +57,21 @@ function SendInner() {
     viaParam === "mtn" || viaParam === "orange" ? viaParam : "wallet",
   );
   const [note, setNote] = useState("");
+  const recipientRef = useRef<HTMLDivElement>(null);
+  const recipientInput = useRef<HTMLInputElement>(null);
+  const firstRail = useRef(true);
+  const railIndex = RAILS.findIndex((r) => r.id === network);
+  const railTone = RAIL_TONE[network];
+
+  // Picking a network takes you straight to its recipient box (never on first load).
+  useEffect(() => {
+    if (firstRail.current) {
+      firstRail.current = false;
+      return;
+    }
+    recipientInput.current?.focus({ preventScroll: true });
+    recipientRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, [network]);
   const [open, setOpen] = useState(false);
   const [pinError, setPinError] = useState("");
   const [pinLockedUntil, setPinLockedUntil] = useState(0);
@@ -146,7 +173,9 @@ function SendInner() {
       copy={L("A friend, a shop, or any Mobile Money number.", "Un ami, une boutique ou tout numéro Mobile Money.")}
     >
       <MoneyCard>
-        <p className="mb-4 text-sm font-semibold text-muted">Available {formatXAF(balance)}</p>
+        <p className="mb-4 text-sm font-semibold text-muted">
+          {L("Available", "Disponible")} {formatXAF(balance)}
+        </p>
         <form
           className="flex flex-col gap-4"
           onSubmit={(e) => {
@@ -157,15 +186,10 @@ function SendInner() {
             setOpen(true);
           }}
         >
-          <Field label={L("Send to", "Envoyer à")}>
-            <div className="grid grid-cols-3 gap-2">
-              {(
-                [
-                  { id: "wallet" as const, label: "LBPay", hint: L("No fee", "Sans frais") },
-                  { id: "mtn" as const, label: "MTN", hint: L(`Charge ${feePercent(FEE_RATES.withdraw)}%`, `Frais ${feePercent(FEE_RATES.withdraw)} %`) },
-                  { id: "orange" as const, label: "Orange", hint: L(`Charge ${feePercent(FEE_RATES.withdraw)}%`, `Frais ${feePercent(FEE_RATES.withdraw)} %`) },
-                ]
-              ).map((item) => (
+          <div>
+            <p className="mb-2.5 text-[14px] font-bold text-ink">{L("Send to", "Envoyer à")}</p>
+            <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label={L("Send to", "Envoyer à")}>
+              {RAILS.map((item) => (
                 <RailTile
                   key={item.id}
                   selected={network === item.id}
@@ -181,44 +205,92 @@ function SendInner() {
                   )}
                   <span className="text-sm font-bold">{item.label}</span>
                   <span className={`text-[10px] ${item.id === "wallet" ? "font-semibold text-brand" : "font-medium text-muted"}`}>
-                    {item.hint}
+                    {item.id === "wallet"
+                      ? L("No fee", "Sans frais")
+                      : L(`Charge ${feePercent(FEE_RATES.withdraw)}%`, `Frais ${feePercent(FEE_RATES.withdraw)} %`)}
                   </span>
                 </RailTile>
               ))}
             </div>
-          </Field>
-          <Field label={network === "wallet" ? L("LBPay ID", "Identifiant LBPay") : L("Number", "Numéro")}>
-            <Input
-              inputMode={network === "wallet" ? "text" : "numeric"}
-              placeholder={network === "wallet" ? "@handle" : "677000000"}
-              value={to}
-              onChange={(e) => setTo(network === "wallet" ? e.target.value : cameroonMsisdn(e.target.value))}
-              required
-            />
-          </Field>
-          {network === "wallet" && lookup.data?.found ? (
-            <p className="rounded-2xl bg-brand-soft px-3 py-2 text-sm font-semibold text-brand-dark">
-              {lookup.data.user?.name} · @{lookup.data.user?.lbpayId}
-            </p>
-          ) : null}
-          {network === "wallet" && to.replace(/^@/, "").length >= 2 && lookup.data && !lookup.data.found ? (
-            <p className="text-sm font-semibold text-danger">{L("No wallet with that ID.", "Aucun portefeuille avec cet identifiant.")}</p>
-          ) : null}
+
+            {/* Recipient box: opens right under the chosen network, pointer and all */}
+            <div ref={recipientRef} key={network} className="lb-rise relative mt-3 scroll-mt-24">
+              <span
+                aria-hidden
+                className={`absolute -top-2 h-4 w-4 -translate-x-1/2 rotate-45 rounded-[3px] border-l border-t ${railTone.box}`}
+                style={{ left: `${railIndex * 33.333 + 16.666}%` }}
+              />
+              <div className={`relative rounded-2xl border p-4 ${railTone.box}`}>
+                <label htmlFor="send-to" className="flex items-center gap-2 text-[13px] font-bold text-ink">
+                  {network === "wallet" ? (
+                    <ArrowLeftRight className="h-4 w-4 text-brand-deep" />
+                  ) : (
+                    <NetworkMark network={network} className="h-5 w-5 rounded-md text-[6px]" />
+                  )}
+                  {network === "wallet"
+                    ? L("Their @handle or LBPay ID", "Son @identifiant ou ID LBPay")
+                    : network === "orange"
+                      ? L("Orange number to send to", "Numéro Orange du destinataire")
+                      : L("MTN number to send to", "Numéro MTN du destinataire")}
+                </label>
+                <div className="mt-2 flex items-center gap-2 rounded-xl bg-white px-3 ring-1 ring-line focus-within:ring-2 focus-within:ring-brand">
+                  {network === "wallet" ? (
+                    <span className="font-mono text-lg font-bold text-muted">@</span>
+                  ) : (
+                    <span className="font-mono text-[15px] font-semibold text-muted">+237</span>
+                  )}
+                  <input
+                    ref={recipientInput}
+                    id="send-to"
+                    inputMode={network === "wallet" ? "text" : "numeric"}
+                    autoComplete={network === "wallet" ? "off" : "tel"}
+                    autoCapitalize="none"
+                    spellCheck={false}
+                    placeholder={network === "wallet" ? "handle" : "6XX XX XX XX"}
+                    value={network === "wallet" ? to.replace(/^@/, "") : to}
+                    onChange={(e) => setTo(network === "wallet" ? e.target.value : cameroonMsisdn(e.target.value))}
+                    required
+                    className="tabular h-12 min-w-0 flex-1 bg-transparent font-mono text-[18px] font-bold text-ink outline-none placeholder:font-normal placeholder:text-muted/60"
+                  />
+                </div>
+                {network === "wallet" && lookup.data?.found ? (
+                  <p className="mt-2 rounded-xl bg-white px-3 py-2 text-[13px] font-semibold text-brand-dark ring-1 ring-brand/20">
+                    {lookup.data.user?.name} · @{lookup.data.user?.lbpayId}
+                  </p>
+                ) : network === "wallet" && to.replace(/^@/, "").length >= 2 && lookup.data && !lookup.data.found ? (
+                  <p className="mt-2 text-[13px] font-semibold text-danger">
+                    {L("No wallet with that ID.", "Aucun portefeuille avec cet identifiant.")}
+                  </p>
+                ) : (
+                  <p className="mt-2 text-[12px] text-muted">
+                    {network === "wallet"
+                      ? L("Instant and free to any LBPay wallet.", "Instantané et gratuit vers tout portefeuille LBPay.")
+                      : network === "orange"
+                        ? L("They receive it on Orange Money.", "Il le reçoit sur Orange Money.")
+                        : L("They receive it on MTN Mobile Money.", "Il le reçoit sur MTN Mobile Money.")}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
           <AmountField
             value={amount}
             onChange={setAmount}
             kind={amountKind}
             receive={value}
             fee={network === "wallet" ? 0 : fee}
-            feeLabel={feePercentLabel(FEE_RATES.withdraw)}
+            feeLabel={feePercentLabel(FEE_RATES.withdraw, L("Fee", "Frais"))}
             pay={network === "wallet" ? undefined : debit}
           />
-          <Field label={L("Note", L("Note", "Note"))}>
+          <Field label={L("Note (optional)", "Note (facultatif)")}>
             <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder={L("Optional", "Facultatif")} />
           </Field>
           {overDaily ? (
             <p className="text-sm font-semibold text-danger">
-              Daily limit remaining is {formatXAF(Math.max(0, (cap || 0) - usedToday))}.
+              {L(
+                `Daily limit remaining is ${formatXAF(Math.max(0, (cap || 0) - usedToday))}.`,
+                `Plafond restant aujourd'hui : ${formatXAF(Math.max(0, (cap || 0) - usedToday))}.`,
+              )}
             </p>
           ) : null}
           {value > 0 && debit > balance ? (

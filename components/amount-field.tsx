@@ -125,7 +125,7 @@ export function AmountField({
           <div className="flex justify-between gap-3">
             <dt className="text-muted">{feeLabel ?? L("Fee", "Frais")}</dt>
             <dd className={cn("tabular font-semibold", charge ? "text-ink" : "text-brand-deep")}>
-              {charge && valid ? formatXAF(charge) : charge ? formatXAF(0) : L("Free", "Gratuit")}
+              {!valid ? "—" : charge ? formatXAF(charge) : L("Free", "Gratuit")}
             </dd>
           </div>
           {pay != null ? (
