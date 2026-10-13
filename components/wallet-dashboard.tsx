@@ -3,7 +3,6 @@
 import Link from "next/link";
 import {
   ArrowDownLeft,
-  ArrowLeftRight,
   ArrowUpRight,
   Eye,
   EyeOff,
@@ -15,6 +14,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { useHiddenAmount } from "@/components/house-card";
+import { ACTION_ART } from "@/lib/assets";
 import { isMoneyOut } from "@/lib/format";
 import { kindTitle, txHref } from "@/lib/tx";
 import { cn } from "@/lib/cn";
@@ -114,26 +114,47 @@ export function BalanceHero({
 /* Actions                                                             */
 /* ------------------------------------------------------------------ */
 
+/** LBPay's own 3D action art: the brand's icon language. Keep it; don't swap for library icons. */
 const ACTIONS = [
-  { href: "/wallet/qr", label: "Receive", icon: ArrowDownLeft },
-  { href: "/wallet/withdraw", label: "Withdraw", icon: ArrowUpRight },
-  { href: "/wallet/quick", label: "Transfer", icon: ArrowLeftRight },
-  { href: "/wallet/savings", label: "Save", icon: PiggyBank },
+  { href: "/wallet/send", label: "Send", art: ACTION_ART.send },
+  { href: "/wallet/savings", label: "Save", art: ACTION_ART.save, badge: "New" },
+  { href: "/wallet/international", label: "Abroad", art: ACTION_ART.abroad, badge: "Soon" },
+  { href: "/wallet/qr", label: "Receive", art: ACTION_ART.receive },
+  { href: "/wallet/deposit", label: "Deposit", art: ACTION_ART.deposit },
+  { href: "/wallet/withdraw", label: "Withdraw", art: ACTION_ART.withdraw },
+  { href: "/wallet/quick", label: "Quick", art: ACTION_ART.quick },
+  { href: "/wallet/qr", label: "QR", art: ACTION_ART.qr },
 ] as const;
 
 export function QuickActions() {
   return (
-    <nav aria-label="Quick actions" className="grid grid-cols-4 gap-2">
+    <nav aria-label="Quick actions" className="grid grid-cols-4 gap-2.5">
       {ACTIONS.map((a) => (
         <Link
-          key={a.href}
+          key={a.label}
           href={a.href}
-          className="group flex flex-col items-center gap-2 rounded-2xl bg-white px-1 py-3.5 ring-1 ring-line/80 transition hover:-translate-y-0.5 hover:ring-brand/40"
+          className="group relative flex flex-col items-center gap-1.5 rounded-[1.4rem] bg-white px-1 pb-3 pt-2.5 ring-1 ring-line/70 transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_14px_30px_-16px_rgba(6,38,28,0.35)] hover:ring-brand/30 active:scale-[0.97]"
         >
-          <span className="grid h-11 w-11 place-items-center rounded-2xl bg-brand-soft text-brand-deep transition group-hover:bg-brand group-hover:text-white">
-            <a.icon className="h-5 w-5" />
-          </span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={a.art}
+            alt=""
+            width={56}
+            height={56}
+            draggable={false}
+            className="h-14 w-14 object-contain transition duration-200 group-hover:scale-105"
+          />
           <span className="text-[12px] font-semibold text-ink">{a.label}</span>
+          {"badge" in a && a.badge ? (
+            <span
+              className={cn(
+                "absolute -top-1.5 right-1.5 rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide",
+                a.badge === "Soon" ? "bg-paper text-muted ring-1 ring-line" : "bg-gold text-ink",
+              )}
+            >
+              {a.badge}
+            </span>
+          ) : null}
         </Link>
       ))}
     </nav>
