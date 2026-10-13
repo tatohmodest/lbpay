@@ -34,7 +34,7 @@ html.native-app {
   --color-hero: #06261c;
   --color-hero-muted: #b7cfc4;
   --color-canvas: #f3f7f4;
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-app);
   --font-mono: var(--font-geist-mono);
 }
 
@@ -54,14 +54,12 @@ body {
 }
 
 body {
-  font-family: var(--font-sans), Geist, ui-sans-serif, system-ui, sans-serif;
-  font-feature-settings: "ss01" on, "cv11" on;
+  font-family: var(--font-app), ui-sans-serif, system-ui, sans-serif;
+  font-feature-settings: "kern" on, "liga" on;
 }
 
 .marketing-root {
-  --font-sans: var(--font-marketing);
-  font-family: var(--font-marketing), ui-sans-serif, system-ui, sans-serif;
-  font-feature-settings: "kern" on, "liga" on;
+  font-family: var(--font-app), ui-sans-serif, system-ui, sans-serif;
 }
 
 ::selection {

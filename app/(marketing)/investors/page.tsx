@@ -115,8 +115,8 @@ export default function InvestorsPage() {
         lead="LBPay is a live payments platform built in Cameroon: a wallet for people, checkout for businesses and an API for developers, running on MTN Mobile Money and Orange Money. We're looking for partners to help us scale it."
         actions={
           <>
-            <ButtonLink href={mail("LBPay investor deck request")} arrow>
-              Request the deck
+            <ButtonLink href={mail("LBPay investment proposal request")} arrow>
+              Request the proposal
             </ButtonLink>
             <ButtonLink href={mail("Intro call with LBPay")} variant="ghost-dark">
               Book an intro call
@@ -133,20 +133,50 @@ export default function InvestorsPage() {
         }
       />
 
-      {/* At a glance */}
+      {/* Early traction + press */}
       <section className="border-b border-line bg-white">
-        <Container className="grid grid-cols-2 gap-px py-0 md:grid-cols-4">
-          {[
-            { v: "Live", k: "Product in production" },
-            { v: "3", k: "Products on one ledger" },
-            { v: "2", k: "Mobile Money networks" },
-            { v: "EN · FR", k: "Fully bilingual" },
-          ].map((s) => (
-            <div key={s.k} className="px-2 py-8 text-center">
-              <p className="text-3xl font-bold tracking-tight text-ink md:text-4xl">{s.v}</p>
-              <p className="mt-1 text-[13px] text-muted">{s.k}</p>
-            </div>
-          ))}
+        <Container className="grid gap-px py-0 md:grid-cols-[1.4fr_1fr]">
+          <div className="grid grid-cols-3 gap-px">
+            {[
+              { v: "~30", k: "Users so far" },
+              { v: "~120k", k: "XAF processed" },
+              { v: "0 XAF", k: "Spent on marketing" },
+            ].map((s) => (
+              <div key={s.k} className="px-2 py-8 text-center">
+                <p className="tabular text-3xl font-bold tracking-tight text-ink md:text-4xl">{s.v}</p>
+                <p className="mt-1 text-[13px] text-muted">{s.k}</p>
+              </div>
+            ))}
+            <p className="col-span-3 -mt-4 pb-6 text-center text-[12px] text-muted">
+              Early, organic traction from people we introduced personally. Updated with every investor conversation.
+            </p>
+          </div>
+          <div className="flex flex-col justify-center gap-3 border-t border-line px-2 py-8 md:border-l md:border-t-0 md:pl-10">
+            <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-muted">Featured in</p>
+            {[
+              {
+                name: "TechAfrica News",
+                href: "https://techafricanews.com/2026/08/31/looping-binary-launches-lbpay-digital-payments-cameroon/",
+                line: "Looping Binary Launches LBPay Digital Payment Ecosystem in Cameroon",
+              },
+              {
+                name: "Startup Researcher",
+                href: "https://www.startupresearcher.com/news/looping-binary-launches-lbpay-to-simplify-digital-payments-in-africa",
+                line: "Looping Binary Launches LBPay to Simplify Digital Payments in Africa",
+              },
+            ].map((p) => (
+              <a
+                key={p.name}
+                href={p.href}
+                target="_blank"
+                rel="noreferrer"
+                className="group block rounded-2xl bg-paper px-4 py-3 ring-1 ring-line transition hover:ring-brand/40"
+              >
+                <span className="block text-[14px] font-bold text-ink">{p.name}</span>
+                <span className="block truncate text-[12px] text-muted group-hover:text-ink">{p.line}</span>
+              </a>
+            ))}
+          </div>
         </Container>
       </section>
 
@@ -261,7 +291,7 @@ export default function InvestorsPage() {
               <span className="w-24 text-right text-[13px] text-muted">growth engine</span>
             </div>
             <p className="border-t border-line px-5 py-3 text-[12px] leading-5 text-muted md:px-7">
-              Gross fees, before payment-processing costs. Examples in XAF. Unit economics and margins are in the deck.
+              Gross fees, before payment-processing costs. Examples in XAF. Margins and unit economics are in the proposal.
             </p>
           </div>
         </Container>
@@ -337,6 +367,42 @@ export default function InvestorsPage() {
         </Container>
       </section>
 
+      {/* Founder */}
+      <section className="py-20 lg:py-24">
+        <Container className="grid gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:items-center lg:gap-16">
+          <div>
+            <Eyebrow>Who&apos;s building it</Eyebrow>
+            <SectionTitle className="mt-4">
+              Built and run <Accent>from Douala.</Accent>
+            </SectionTitle>
+          </div>
+          <div className="rounded-[1.75rem] bg-white p-6 ring-1 ring-line md:p-8">
+            <div className="flex items-center gap-4">
+              <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-forest font-display text-2xl italic text-brand">
+                TM
+              </span>
+              <div>
+                <p className="text-lg font-bold text-ink">Tatoh Modest Wilton</p>
+                <p className="text-[14px] text-muted">Founder &amp; CEO, Looping Binary</p>
+              </div>
+            </div>
+            <p className="mt-5 text-[15px] leading-7 text-ink/80">
+              Looping Binary is a technology company in Douala that builds software platforms, helps businesses grow
+              online and trains the engineers who build them. LBPay is its payments platform, designed, built and run
+              in-house.
+            </p>
+            <a
+              href="https://www.loopingbinary.com/"
+              target="_blank"
+              rel="noreferrer"
+              className="mt-5 inline-flex items-center gap-1.5 text-[14px] font-semibold text-brand-deep hover:underline"
+            >
+              loopingbinary.com <ArrowRight className="h-4 w-4" />
+            </a>
+          </div>
+        </Container>
+      </section>
+
       {/* The ask */}
       <section className="bg-white py-20 lg:py-28">
         <Container className="grid gap-12 lg:grid-cols-2 lg:gap-16">
@@ -351,7 +417,7 @@ export default function InvestorsPage() {
             </Lead>
             <p className="mt-6 text-[15px] leading-7 text-muted">
               We share live numbers (sign-ups, payment volume, retention, savings balances) directly with serious
-              investors, together with the deck and our plan for each franc raised.
+              investors, together with our investment proposal and the plan for each franc raised.
             </p>
           </div>
           <div className="grid gap-3">
@@ -372,10 +438,10 @@ export default function InvestorsPage() {
             ))}
             <div className="mt-2 grid gap-2 sm:grid-cols-2">
               <a
-                href={mail("LBPay investor deck request")}
+                href={mail("LBPay investment proposal request")}
                 className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-ink px-5 text-[15px] font-semibold text-white transition hover:bg-ink/90"
               >
-                <FileText className="h-4 w-4" /> Request the deck
+                <FileText className="h-4 w-4" /> Request the proposal
               </a>
               <a
                 href={mail("Intro call with LBPay")}
@@ -401,8 +467,8 @@ export default function InvestorsPage() {
               Help us build <Accent className="text-brand">money that feels at home.</Accent>
             </>
           }
-          copy="One email gets you the deck, live numbers and a call with the people building LBPay."
-          primary={{ href: mail("LBPay investor deck request"), label: "Request the deck" }}
+          copy="One email gets you our investment proposal, live numbers and a call with the founder."
+          primary={{ href: mail("LBPay investment proposal request"), label: "Request the proposal" }}
           secondary={{ href: "/about", label: "Read our story" }}
         />
       </div>

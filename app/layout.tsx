@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
+import { Geist_Mono, Instrument_Serif, Plus_Jakarta_Sans } from "next/font/google";
 import { AppProviders } from "@/components/providers";
 import { SiteJsonLd } from "@/components/json-ld";
 import { getRequestLocale } from "@/lib/i18n/server";
@@ -14,9 +14,11 @@ import {
 } from "@/lib/site";
 import "./globals.css";
 
-const geist = Geist({
-  variable: "--font-geist-sans",
+/** One family everywhere: the same clean sans on the website, the dashboard and checkout. */
+const appSans = Plus_Jakarta_Sans({
+  variable: "--font-app",
   subsets: ["latin"],
+  display: "swap",
 });
 
 const geistMono = Geist_Mono({
@@ -105,7 +107,7 @@ export default async function RootLayout({
 }>) {
   const locale = await getRequestLocale();
   return (
-    <html lang={locale} data-scroll-behavior="smooth" className={`${geist.variable} ${geistMono.variable} ${displaySerif.variable} h-full`}>
+    <html lang={locale} data-scroll-behavior="smooth" className={`${appSans.variable} ${geistMono.variable} ${displaySerif.variable} h-full`}>
       <body className="min-h-full bg-paper font-sans text-ink antialiased">
         <SiteJsonLd />
         <AppProviders locale={locale}>{children}</AppProviders>
