@@ -37,10 +37,10 @@ export function SiteHeader() {
     { href: "/products/developers", label: t("nav.developers"), icon: Code2, copy: L("Payments API, sandbox, webhooks", "API de paiement, sandbox, webhooks") },
     { href: "/pricing", label: t("nav.pricing"), icon: Receipt, copy: L("Every fee, in plain numbers", "Tous les frais, en clair") },
     { href: "/security", label: t("nav.security"), icon: ShieldCheck, copy: L("How your money is protected", "Comment votre argent est protégé") },
+    { href: "/investors", label: L("Investors", "Investisseurs"), icon: TrendingUp, copy: L("Back what we're building", "Soutenez ce que nous construisons") },
   ];
   const secondary = [
     { href: "/about", label: t("nav.about"), icon: Heart, copy: L("Who builds LBPay, and why", "Qui construit LBPay, et pourquoi") },
-    { href: "/investors", label: L("Investors", "Investisseurs"), icon: TrendingUp, copy: L("Back what we're building", "Soutenez ce que nous construisons") },
     { href: "/docs", label: t("nav.docs"), icon: BookOpen, copy: L("API reference and guides", "Référence API et guides") },
   ];
   if (pathname === "/welcome") return null;
@@ -56,8 +56,8 @@ export function SiteHeader() {
         )}
       >
         <Container className="flex h-16 items-center justify-between gap-4 md:h-[4.25rem]">
-          <Logo tone="dark" />
-          <nav aria-label="Primary" className="hidden items-center gap-0.5 lg:flex">
+          <Logo tone="dark" className="shrink-0" />
+          <nav aria-label="Primary" className="hidden min-w-0 items-center gap-0 lg:flex xl:gap-0.5">
             {links.map((link) => {
               const active = pathname === link.href || pathname.startsWith(`${link.href}/`);
               return (
@@ -66,7 +66,7 @@ export function SiteHeader() {
                   href={link.href}
                   aria-current={active ? "page" : undefined}
                   className={cn(
-                    "rounded-full px-3.5 py-2 text-[14px] font-medium transition",
+                    "whitespace-nowrap rounded-full px-2.5 py-2 text-[13.5px] font-medium transition xl:px-3.5 xl:text-[14px]",
                     active ? "bg-white/10 text-white" : "text-white/65 hover:text-white",
                   )}
                 >
@@ -75,26 +75,26 @@ export function SiteHeader() {
               );
             })}
           </nav>
-          <div className="hidden items-center gap-1 lg:flex">
+          <div className="hidden shrink-0 items-center gap-1 lg:flex">
             <LanguageToggle tone="dark" />
             {showInstall ? (
               <button
                 type="button"
                 onClick={() => openInstallPrompt()}
-                className="rounded-full px-3 py-2 text-[14px] font-medium text-white/65 transition hover:text-white"
+                className="hidden whitespace-nowrap rounded-full px-3 py-2 text-[14px] font-medium text-white/65 transition hover:text-white xl:inline-flex"
               >
                 {t("nav.getApp")}
               </button>
             ) : null}
             <Link
               href="/login"
-              className="rounded-full px-3 py-2 text-[14px] font-medium text-white/80 transition hover:text-white"
+              className="whitespace-nowrap rounded-full px-2.5 py-2 text-[14px] font-medium text-white/80 transition hover:text-white xl:px-3"
             >
               {t("nav.login")}
             </Link>
             <Link
               href="/signup"
-              className="ml-1 inline-flex h-10 items-center rounded-full bg-brand px-5 text-[14px] font-semibold text-white shadow-[0_8px_24px_-8px_rgba(0,179,105,0.7)] transition hover:bg-brand-dark"
+              className="ml-1 inline-flex h-10 items-center whitespace-nowrap rounded-full bg-brand px-4 xl:px-5 text-[14px] font-semibold text-white shadow-[0_8px_24px_-8px_rgba(0,179,105,0.7)] transition hover:bg-brand-dark"
             >
               {t("nav.signup")}
             </Link>
