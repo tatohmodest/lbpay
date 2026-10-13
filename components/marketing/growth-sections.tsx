@@ -86,7 +86,7 @@ export function SavingsShowcase() {
             items={[
               "Streaks and a progress ring keep your goal in front of you",
               "Auto-save takes the amount the moment it's due, so you never miss",
-              "Collect everything free at your goal. Need it sooner? Withdraw any time for the same small fee",
+              "Collect everything free at your goal. Quit early and it costs more the earlier you quit",
               "Penalties are capped, transparent, and listed in your history",
             ]}
           />

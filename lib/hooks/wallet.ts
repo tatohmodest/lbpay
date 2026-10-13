@@ -238,7 +238,6 @@ export type SavingsAction =
   | { action: "deposit"; amount: number; pin: string }
   | { action: "withdraw"; amount: number | "all"; pin: string; breakPenaltyAgreed?: boolean }
   | { action: "close"; pin: string; breakPenaltyAgreed?: boolean }
-  | { action: "pause"; days: number }
   | { action: "resume" }
   | { action: "settings"; autoSave?: boolean; penaltyRate?: number; name?: string; icon?: string; emoji?: string; target?: number | null };
 

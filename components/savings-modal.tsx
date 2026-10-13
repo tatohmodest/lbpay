@@ -5,6 +5,7 @@ import { ArrowLeft, ArrowRight, CalendarDays, Check, Lock, Pencil, X, Zap } from
 import { ConfirmSheet } from "@/components/confirm-sheet";
 import { PlanIcon, PLAN_ICON_OPTIONS } from "@/components/plan-icon";
 import { celebrate } from "@/components/success-moment";
+import { QuitLadder } from "@/components/savings-controls";
 import { formatXAF } from "@/lib/format";
 import { cn } from "@/lib/cn";
 import { useNotify } from "@/lib/notify";
@@ -161,8 +162,6 @@ export function SavingsModal({
   }, [custom, customDate, activeCycles, frequency]);
 
   const missFee = penaltyFor({ amount: value, penaltyRate: penalty / 100 });
-  const exampleWithdraw = target ? Math.round(target / 2) : value * 10;
-  const earlyFee = Math.round(exampleWithdraw * (penalty / 100));
 
   const input = {
     name: name.trim(),
@@ -592,15 +591,18 @@ export function SavingsModal({
                     <span className="text-[14px] text-ink">You miss a save</span>
                     <span className="tabular shrink-0 text-[14px] font-bold text-ink">−{fmt(missFee)} XAF</span>
                   </li>
-                  {target || maturityDate ? (
-                    <li className="flex items-start justify-between gap-4 px-4 py-3">
-                      <span className="text-[14px] text-ink">
-                        You withdraw {fmt(exampleWithdraw)} XAF before then
-                      </span>
-                      <span className="tabular shrink-0 text-[14px] font-bold text-ink">−{fmt(earlyFee)} XAF</span>
-                    </li>
-                  ) : null}
                 </ul>
+                {target ? (
+                  <div className="border-t border-line px-4 py-4">
+                    <p className="text-[14px] font-bold text-ink">You stop before your goal</p>
+                    <p className="mt-0.5 text-[13px] leading-5 text-muted">
+                      The earlier you quit, the more it costs. Every save makes stopping cheaper.
+                    </p>
+                    <div className="mt-3">
+                      <QuitLadder penaltyRate={penalty / 100} progress={null} compact />
+                    </div>
+                  </div>
+                ) : null}
               </div>
 
               <label className="flex cursor-pointer items-center gap-3 rounded-2xl bg-paper p-4 ring-1 ring-line">
@@ -671,7 +673,9 @@ export function SavingsModal({
             { label: "Reached by", value: maturityDate ? day(maturityDate) : "When you decide" },
             {
               label: "Fee",
-              value: target || maturityDate ? `${penalty}% if you miss a save or withdraw early` : `${penalty}% if you miss a save`,
+              value: target
+                ? `${penalty}% per missed save · ${Math.min(30, penalty * 2)}% down to ${penalty / 2}% to stop early`
+                : `${penalty}% per missed save`,
             },
             { label: "Auto-save", value: autoSave ? "On" : "Off" },
           ]}

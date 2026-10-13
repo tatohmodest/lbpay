@@ -32,7 +32,7 @@ const personal = [
   {
     what: "Savings pots",
     fee: "Free",
-    note: `Free at your goal. The fee you pick (${Math.round(SAVINGS.minPenaltyRate * 100)}–${Math.round(SAVINGS.maxPenaltyRate * 100)}%) applies only if you miss a save or withdraw before the goal.`,
+    note: `Free at your goal. You pick a fee (${Math.round(SAVINGS.minPenaltyRate * 100)}–${Math.round(SAVINGS.maxPenaltyRate * 100)}%) for missed saves. Stopping early costs 2× it at the start down to ½× near the goal, never more than 30%.`,
   },
   {
     what: "Send abroad",

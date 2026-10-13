@@ -2,14 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, Check, Coffee, Pause, Play, Square, X } from "lucide-react";
+import { AlertTriangle, Check, Play, Square, TrendingDown, X } from "lucide-react";
 import { ConfirmSheet } from "@/components/confirm-sheet";
 import { celebrate } from "@/components/success-moment";
 import { formatXAF } from "@/lib/format";
 import { useSavingsAction } from "@/lib/hooks/wallet";
 import { useNotify } from "@/lib/notify";
 import { isPinError, readPinFail } from "@/lib/pin-fail";
-import { PAUSE, pauseAllowance, pauseOptions, stopQuote } from "@/lib/savings";
+import { EARLY_STOP, earlyStopLadder, stopQuote } from "@/lib/savings";
 import { cn } from "@/lib/cn";
 import type { SavingsPlan } from "@/lib/types";
 
@@ -62,19 +62,74 @@ function Sheet({
   );
 }
 
-/** "Manage pot" card: take a break, resume, or stop saving. */
+const pct = (r: number) => `${Math.round(r * 1000) / 10}%`;
+
+/**
+ * The fee ladder: quitting costs more the earlier you quit. The saver's
+ * current position is marked, so they can see exactly what keeping going buys.
+ */
+export function QuitLadder({
+  penaltyRate,
+  progress,
+  compact = false,
+}: {
+  penaltyRate: number;
+  progress: number | null;
+  compact?: boolean;
+}) {
+  const ladder = earlyStopLadder(penaltyRate);
+  const at = progress ?? 0;
+  return (
+    <div>
+      <div className="grid grid-cols-5 gap-1">
+        {ladder.map((step) => {
+          const here = progress != null && at >= step.from && at < step.to;
+          return (
+            <div
+              key={step.label}
+              className={cn(
+                "rounded-xl px-1.5 py-2 text-center ring-1 transition",
+                here ? "bg-ink text-white ring-ink" : "bg-paper text-ink ring-line",
+              )}
+            >
+              <p className={cn("tabular font-mono font-black", compact ? "text-[13px]" : "text-[15px]")}>{pct(step.rate)}</p>
+              <p className={cn("mt-0.5 text-[10px] leading-tight", here ? "text-white/70" : "text-muted")}>
+                {Math.round(step.from * 100)}–{Math.round(step.to * 100)}%
+              </p>
+            </div>
+          );
+        })}
+        <div
+          className={cn(
+            "rounded-xl px-1.5 py-2 text-center ring-1",
+            progress != null && at >= 1 ? "bg-brand text-white ring-brand" : "bg-brand-soft text-brand-deep ring-brand/30",
+          )}
+        >
+          <p className={cn("font-black", compact ? "text-[13px]" : "text-[15px]")}>Free</p>
+          <p className="mt-0.5 text-[10px] leading-tight opacity-80">at goal</p>
+        </div>
+      </div>
+      <div className="mt-1.5 flex justify-between text-[10px] font-semibold text-muted">
+        <span>Costs more early</span>
+        <span>Free at the finish</span>
+      </div>
+    </div>
+  );
+}
+
+/** "Manage pot" card: what quitting would cost right now, and the way out if needed. */
 export function PotControls({ plan }: { plan: SavingsPlan }) {
-  const [sheet, setSheet] = useState<"pause" | "stop" | null>(null);
+  const [stopOpen, setStopOpen] = useState(false);
   const act = useSavingsAction(plan.id);
   const notify = useNotify();
-  const allowance = pauseAllowance(plan);
   const paused = plan.status === "paused";
   const quote = stopQuote(plan);
+  const hasGoal = Boolean(plan.target && plan.target > 0);
 
   async function resume() {
     try {
       await act.mutateAsync({ action: "resume" });
-      notify.success("Welcome back", `${plan.name} is saving again. Your schedule moved forward by the break.`);
+      notify.success("Back on track", `${plan.name} is saving again.`);
     } catch (err) {
       notify.error("Could not resume", err instanceof Error ? err.message : "Try again.");
     }
@@ -82,149 +137,63 @@ export function PotControls({ plan }: { plan: SavingsPlan }) {
 
   return (
     <section className="rounded-[1.75rem] bg-white p-5 ring-1 ring-line/80">
-      <h2 className="text-base font-black text-ink">Manage this pot</h2>
-      <p className="mt-1 text-[13px] leading-5 text-muted">
-        Life happens. Take a short break, or stop for good. Stopping early costs the fee you promised.
-      </p>
+      <div className="flex items-start gap-3">
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-soft text-brand-deep">
+          <TrendingDown className="h-[18px] w-[18px]" />
+        </span>
+        <div>
+          <h2 className="text-base font-black text-ink">What quitting costs today</h2>
+          <p className="mt-0.5 text-[13px] leading-5 text-muted">
+            {hasGoal
+              ? "The closer you get to your goal, the less it costs to stop. Keep going and it drops to nothing."
+              : "This pot has no goal amount, so you can stop any time for free."}
+          </p>
+        </div>
+      </div>
 
-      <div className="mt-4 grid gap-2">
-        {paused ? (
-          <button
-            type="button"
-            onClick={() => void resume()}
-            disabled={act.isPending}
-            className="flex items-center gap-3 rounded-2xl bg-brand-soft p-4 text-left ring-1 ring-brand/30 transition hover:ring-brand"
-          >
-            <span className="grid h-10 w-10 place-items-center rounded-xl bg-brand text-white">
-              <Play className="h-4 w-4" />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block text-[15px] font-bold text-ink">Resume saving now</span>
-              <span className="block text-[13px] text-muted">
-                On a break until {plan.pausedUntil ? day(plan.pausedUntil) : "soon"}. It resumes on its own then.
-              </span>
-            </span>
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={() => setSheet("pause")}
-            disabled={!allowance.canPause}
-            className="flex items-center gap-3 rounded-2xl bg-paper p-4 text-left ring-1 ring-line transition hover:ring-brand/40 disabled:opacity-60"
-          >
-            <span className="grid h-10 w-10 place-items-center rounded-xl bg-white text-ink ring-1 ring-line">
-              <Pause className="h-4 w-4" />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block text-[15px] font-bold text-ink">Take a break</span>
-              <span className="block text-[13px] text-muted">
-                {allowance.left
-                  ? `Free. ${allowance.left} of ${PAUSE.maxPauses} breaks left, up to ${allowance.maxDays} days each.`
-                  : "You've used both breaks for this pot."}
-              </span>
-            </span>
-          </button>
-        )}
+      {hasGoal ? (
+        <div className="mt-4">
+          <QuitLadder penaltyRate={plan.penaltyRate} progress={quote.progress} />
+        </div>
+      ) : null}
 
+      {paused ? (
         <button
           type="button"
-          onClick={() => setSheet("stop")}
-          className="flex items-center gap-3 rounded-2xl p-4 text-left ring-1 ring-line transition hover:bg-[#fdf3f2] hover:ring-danger/30"
+          onClick={() => void resume()}
+          disabled={act.isPending}
+          className="mt-4 flex w-full items-center gap-3 rounded-2xl bg-brand-soft p-4 text-left ring-1 ring-brand/30 transition hover:ring-brand"
         >
-          <span className="grid h-10 w-10 place-items-center rounded-xl bg-[#fdecea] text-danger">
-            <Square className="h-4 w-4" />
+          <span className="grid h-10 w-10 place-items-center rounded-xl bg-brand text-white">
+            <Play className="h-4 w-4" />
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block text-[15px] font-bold text-ink">Stop saving</span>
-            <span className="tabular block text-[13px] text-muted">
-              {quote.free
-                ? "Free. Everything goes back to your wallet."
-                : `Costs ${formatXAF(quote.fee)} today (${Math.round(plan.penaltyRate * 100)}%).`}
-            </span>
+            <span className="block text-[15px] font-bold text-ink">Resume saving now</span>
+            <span className="block text-[13px] text-muted">This pot is on a break that was set earlier.</span>
           </span>
         </button>
-      </div>
-
-      {sheet === "pause" ? <PauseSheet plan={plan} onClose={() => setSheet(null)} /> : null}
-      {sheet === "stop" ? <StopSheet plan={plan} onClose={() => setSheet(null)} /> : null}
-    </section>
-  );
-}
-
-function PauseSheet({ plan, onClose }: { plan: SavingsPlan; onClose: () => void }) {
-  const options = pauseOptions(plan.frequency);
-  const [days, setDays] = useState(options[Math.min(1, options.length - 1)]);
-  const act = useSavingsAction(plan.id);
-  const [error, setError] = useState("");
-  const [openedAt] = useState(() => Date.now());
-  const until = new Date(openedAt + days * 86_400_000).toISOString();
-  const allowance = pauseAllowance(plan);
-
-  async function confirm() {
-    setError("");
-    try {
-      await act.mutateAsync({ action: "pause", days });
-      onClose();
-      celebrate({
-        title: "Enjoy your break",
-        line: `${plan.name} is paused until ${day(until)}`,
-        details: [
-          { label: "Saves due", value: "None until then" },
-          { label: "Missed-save fees", value: "None" },
-          { label: "Breaks left", value: String(allowance.left - 1) },
-        ],
-        note: "Your schedule moves forward by the length of the break. Resume early any time.",
-        pending: true,
-        doneLabel: "Got it",
-      });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not pause.");
-    }
-  }
-
-  return (
-    <Sheet title="Take a break" kicker={plan.name} onClose={onClose}>
-      <div className="mt-5 flex items-center gap-3 rounded-2xl bg-gold-soft p-4">
-        <Coffee className="h-5 w-5 shrink-0 text-[#7a5a1c]" />
-        <p className="text-[14px] leading-5 text-[#5c4413]">
-          No saves are due and no fees apply while you&apos;re on a break. Your money stays safe in the pot.
-        </p>
-      </div>
-
-      <p className="mt-6 text-[15px] font-bold text-ink">For how long?</p>
-      <div className="mt-3 grid grid-cols-2 gap-2">
-        {options.map((d) => (
-          <button
-            key={d}
-            type="button"
-            onClick={() => setDays(d)}
-            className={cn(
-              "rounded-2xl px-4 py-3 text-left transition",
-              days === d ? "bg-brand-soft ring-2 ring-brand" : "bg-paper ring-1 ring-line hover:ring-brand/40",
-            )}
-          >
-            <span className="block text-[15px] font-bold text-ink">{d} days</span>
-            <span className="block text-[12px] text-muted">
-              until {day(new Date(openedAt + d * 86_400_000).toISOString())}
-            </span>
-          </button>
-        ))}
-      </div>
-
-      <p className="mt-4 text-[13px] text-muted">
-        This uses 1 of your {allowance.left} remaining break{allowance.left === 1 ? "" : "s"} for this pot.
-      </p>
-      {error ? <p className="mt-3 text-sm font-semibold text-danger">{error}</p> : null}
+      ) : null}
 
       <button
         type="button"
-        onClick={() => void confirm()}
-        disabled={act.isPending}
-        className="mt-6 flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-ink text-[16px] font-bold text-white transition hover:bg-ink/90 disabled:opacity-60"
+        onClick={() => setStopOpen(true)}
+        className="mt-4 flex w-full items-center gap-3 rounded-2xl p-4 text-left ring-1 ring-line transition hover:bg-[#fdf3f2] hover:ring-danger/30"
       >
-        <Pause className="h-4 w-4" /> {act.isPending ? "Pausing…" : `Pause for ${days} days`}
+        <span className="grid h-10 w-10 place-items-center rounded-xl bg-[#fdecea] text-danger">
+          <Square className="h-4 w-4" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-[15px] font-bold text-ink">Stop saving</span>
+          <span className="tabular block text-[13px] text-muted">
+            {quote.free
+              ? "Free. Everything goes back to your wallet."
+              : `Costs ${formatXAF(quote.fee)} right now (${pct(quote.rate)}).`}
+          </span>
+        </span>
       </button>
-    </Sheet>
+
+      {stopOpen ? <StopSheet plan={plan} onClose={() => setStopOpen(false)} /> : null}
+    </section>
   );
 }
 
@@ -238,6 +207,19 @@ function StopSheet({ plan, onClose }: { plan: SavingsPlan; onClose: () => void }
   const [pinError, setPinError] = useState("");
   const [lockedUntil, setLockedUntil] = useState(0);
   const progress = plan.target ? Math.min(100, Math.round((plan.balance / plan.target) * 100)) : null;
+  // The next cheaper rung on the ladder, and how much more saving gets them there.
+  const nextStep = (() => {
+    if (!plan.target || quote.free || quote.progress == null) return null;
+    const tier = EARLY_STOP.tiers.find((t) => quote.progress! < t.below);
+    if (!tier) return null;
+    const idx = EARLY_STOP.tiers.indexOf(tier);
+    const next = EARLY_STOP.tiers[idx + 1];
+    const need = Math.max(1, Math.ceil(plan.target * tier.below - plan.balance));
+    const rateLabel = next
+      ? pct(Math.min(EARLY_STOP.maxRate, Math.round(plan.penaltyRate * next.factor * 1000) / 1000))
+      : "nothing";
+    return { need, rateLabel };
+  })();
 
   async function handleConfirm(pin: string) {
     setPinError("");
@@ -275,9 +257,15 @@ function StopSheet({ plan, onClose }: { plan: SavingsPlan; onClose: () => void }
           <div className="mt-2 h-2 overflow-hidden rounded-full bg-line">
             <div className="h-full rounded-full bg-brand" style={{ width: `${progress}%` }} />
           </div>
-          <p className="mt-3 text-[13px] leading-5 text-muted">
-            A break might be all you need: it&apos;s free and keeps your progress.
-          </p>
+          {nextStep ? (
+            <p className="mt-3 text-[13px] leading-5 text-ink">
+              Save <strong className="tabular">{formatXAF(nextStep.need)}</strong> more and stopping drops to{" "}
+              <strong>{nextStep.rateLabel}</strong>. Reach your goal and it&apos;s free.
+            </p>
+          ) : null}
+          <div className="mt-4">
+            <QuitLadder penaltyRate={plan.penaltyRate} progress={quote.progress} compact />
+          </div>
         </div>
       ) : null}
 
@@ -288,7 +276,7 @@ function StopSheet({ plan, onClose }: { plan: SavingsPlan; onClose: () => void }
         </div>
         <div className="flex justify-between gap-4 border-t border-line px-4 py-3">
           <dt className="text-[14px] text-muted">
-            {quote.free ? "Fee" : `Early stop fee (${Math.round(plan.penaltyRate * 100)}%)`}
+            {quote.free ? "Fee" : `Early stop fee (${pct(quote.rate)})`}
           </dt>
           <dd className={cn("tabular text-[14px] font-bold", quote.free ? "text-brand-deep" : "text-danger")}>
             {quote.free ? "Free" : `−${formatXAF(quote.fee)}`}
@@ -309,8 +297,8 @@ function StopSheet({ plan, onClose }: { plan: SavingsPlan; onClose: () => void }
             className="mt-0.5 h-5 w-5 shrink-0 accent-[#b42318]"
           />
           <span className="text-[13px] leading-5 text-ink">
-            I understand stopping before my goal costs <strong>{formatXAF(quote.fee)}</strong>, the fee I chose when I
-            started this pot. This can&apos;t be undone.
+            I understand stopping now costs <strong>{formatXAF(quote.fee)}</strong> ({pct(quote.rate)}). The earlier I
+            stop, the more it costs. This can&apos;t be undone.
           </span>
         </label>
       ) : null}

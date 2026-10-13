@@ -160,8 +160,14 @@ test("prepaying 4 days in advance pushes nextDueAt 4 days forward and boosts str
 test("isObjectiveMet and earlyWithdrawalPenalty enforce disciplinary locks", () => {
   const p = plan({ target: 50_000, balance: 20_000, penaltyRate: 0.1 });
   assert.equal(isObjectiveMet(p), false);
-  // Early withdrawal of 10,000 before reaching 50,000 target incurs 10% penalty (1,000)
-  assert.equal(earlyWithdrawalPenalty(p, 10_000), 1_000);
+  // 40% of the way: the "Building" tier charges 1.5x the promised 10% → 15% of 10,000
+  assert.equal(earlyWithdrawalPenalty(p, 10_000), 1_500);
+  // Just started (10%): 2x → 20%
+  assert.equal(earlyWithdrawalPenalty(plan({ target: 50_000, balance: 5_000, penaltyRate: 0.1 }), 5_000), 1_000);
+  // Almost there (90%): half → 5%
+  assert.equal(earlyWithdrawalPenalty(plan({ target: 50_000, balance: 45_000, penaltyRate: 0.1 }), 10_000), 500);
+  // Capped at 30% even for a 25% promise at the start
+  assert.equal(earlyWithdrawalPenalty(plan({ target: 50_000, balance: 1_000, penaltyRate: 0.25 }), 1_000), 300);
 
   // When objective is reached, early penalty is 0!
   const reached = plan({ target: 50_000, balance: 50_000, penaltyRate: 0.1 });

@@ -9,8 +9,8 @@ import {
   firstDueAt,
   isLivePlan,
   isObjectiveMet,
-  pausedPlan,
   resumedPlan,
+  savingsProgress,
   settlePlan,
   validatePlanInput,
   type SavingsInput,
@@ -250,7 +250,8 @@ export async function withdrawFromPlan(
     const now = new Date().toISOString();
     const met = isObjectiveMet(plan);
 
-    // Check early withdrawal break fee
+    // Check early withdrawal break fee (progress is measured before money leaves the pot)
+    const progressBefore = savingsProgress(plan) ?? 0;
     let penalty = 0;
     if (!met && value > 0 && plan.target && plan.target > 0) {
       penalty = earlyWithdrawalPenalty(plan, value);
@@ -278,7 +279,7 @@ export async function withdrawFromPlan(
           ...txBase(userId, plan, now),
           kind: "penalty",
           amount: penalty,
-          note: `Early withdrawal fee (${Math.round(plan.penaltyRate * 100)}%) · goal of ${plan.target ? plan.target.toLocaleString() : ""} XAF not yet met`,
+          note: `Early ${close ? "stop" : "withdrawal"} fee (${Math.round((penalty / value) * 1000) / 10}%) · ${Math.round(progressBefore * 100)}% of the ${plan.target ? plan.target.toLocaleString() : ""} XAF goal saved`,
         });
       }
     }
@@ -339,17 +340,6 @@ export async function updatePlanSettings(
   });
 }
 
-
-export async function pauseSavingsPlan(userId: string, planId: string, days: number) {
-  return withLedgerLock(async () => {
-    const db = await getDb();
-    const plan = (db.savings || []).find((p) => p.userId === userId && p.id === planId);
-    if (!plan) throw new Error("Savings plan not found.");
-    Object.assign(plan, pausedPlan(plan, days), { userId });
-    await saveDb(db);
-    return publicPlan(plan);
-  });
-}
 
 export async function resumeSavingsPlan(userId: string, planId: string) {
   return withLedgerLock(async () => {

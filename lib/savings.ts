@@ -144,13 +144,56 @@ export function isObjectiveMet(
   return false;
 }
 
+/**
+ * Quitting costs more the earlier you quit. The fee is the rate the saver
+ * promised, scaled by how far they've got: every franc saved makes stopping
+ * cheaper, so the pull is always toward the finish line.
+ */
+export const EARLY_STOP = {
+  tiers: [
+    { below: 0.25, factor: 2, label: "Just started" },
+    { below: 0.5, factor: 1.5, label: "Building" },
+    { below: 0.75, factor: 1, label: "Halfway there" },
+    { below: 1, factor: 0.5, label: "Almost there" },
+  ],
+  /** Never take more than this share of what's withdrawn, whatever the tier. */
+  maxRate: 0.3,
+} as const;
+
+/** 0..1 share of the goal already saved. Null for pots without a goal amount. */
+export function savingsProgress(plan: Pick<SavingsPlan, "balance" | "target">) {
+  if (!plan.target || plan.target <= 0) return null;
+  return Math.max(0, Math.min(1, plan.balance / plan.target));
+}
+
+/** The early-stop rate that applies right now, with the tier it comes from. */
+export function earlyStopRate(
+  plan: Pick<SavingsPlan, "balance" | "target" | "penaltyRate"> & { targetDate?: string },
+) {
+  if (isObjectiveMet(plan)) return { rate: 0, factor: 0, tier: null as null | (typeof EARLY_STOP.tiers)[number] };
+  const progress = savingsProgress(plan) ?? 0;
+  const tier = EARLY_STOP.tiers.find((t) => progress < t.below) ?? EARLY_STOP.tiers[EARLY_STOP.tiers.length - 1];
+  const rate = Math.min(EARLY_STOP.maxRate, Math.round(plan.penaltyRate * tier.factor * 1000) / 1000);
+  return { rate, factor: tier.factor, tier };
+}
+
 /** Computes the early withdrawal fee if objective is not yet reached. */
 export function earlyWithdrawalPenalty(
   plan: Pick<SavingsPlan, "balance" | "target" | "penaltyRate"> & { targetDate?: string },
   amount: number,
 ) {
-  if (isObjectiveMet(plan)) return 0;
-  return Math.round(amount * plan.penaltyRate);
+  const { rate } = earlyStopRate(plan);
+  return rate ? Math.round(amount * rate) : 0;
+}
+
+/** The fee ladder for a promised rate, for showing savers what quitting would cost at each stage. */
+export function earlyStopLadder(penaltyRate: number) {
+  return EARLY_STOP.tiers.map((t, i) => ({
+    from: i === 0 ? 0 : EARLY_STOP.tiers[i - 1].below,
+    to: t.below,
+    label: t.label,
+    rate: Math.min(EARLY_STOP.maxRate, Math.round(penaltyRate * t.factor * 1000) / 1000),
+  }));
 }
 
 /** Calculate how many cycles an advance deposit covers and the new due date. */
@@ -344,46 +387,13 @@ export function monthlyPace(plan: Pick<SavingsPlan, "amount" | "frequency">) {
 /* ------------------------------------------------------------------ */
 
 /**
- * Pausing is a pressure valve, not an exit: a few free breaks per pot, each
- * at most about one cycle long. Stopping early is always possible but costs
- * the fee the saver promised when they created the pot.
+ * There is no pausing: a savings pot is a promise. (Pots paused under the
+ * short-lived pause feature still resume on schedule; see resumedPlan.)
  */
-export const PAUSE = {
-  maxPauses: 2,
-  maxDays: { daily: 7, weekly: 14, monthly: 31 } as Record<SavingsFrequency, number>,
-} as const;
 
-/** True for pots that are still running, whether saving or on a break. */
+/** True for pots that are still running. */
 export function isLivePlan(plan: Pick<SavingsPlan, "status">) {
   return plan.status === "active" || plan.status === "paused";
-}
-
-export function pauseAllowance(plan: Pick<SavingsPlan, "frequency" | "pauseCount" | "status">) {
-  const used = plan.pauseCount || 0;
-  const left = Math.max(0, PAUSE.maxPauses - used);
-  return { used, left, maxDays: PAUSE.maxDays[plan.frequency], canPause: plan.status === "active" && left > 0 };
-}
-
-export function pauseOptions(frequency: SavingsFrequency) {
-  const max = PAUSE.maxDays[frequency];
-  return [3, 7, 14, 31].filter((d) => d <= max);
-}
-
-/** Put a plan on a break for `days`. */
-export function pausedPlan<T extends SavingsPlan>(plan: T, days: number, now = new Date()): T {
-  const { maxDays, canPause } = pauseAllowance(plan);
-  if (!canPause) throw new Error(plan.status !== "active" ? "Only active pots can be paused." : "You've used all your pauses for this pot.");
-  const length = Math.round(days);
-  if (!Number.isFinite(length) || length < 1 || length > maxDays) {
-    throw new Error(`You can pause for up to ${maxDays} days.`);
-  }
-  return {
-    ...plan,
-    status: "paused",
-    pausedAt: now.toISOString(),
-    pausedUntil: new Date(now.getTime() + length * 86_400_000).toISOString(),
-    pauseCount: (plan.pauseCount || 0) + 1,
-  };
 }
 
 /**
@@ -407,6 +417,8 @@ export function resumedPlan<T extends SavingsPlan>(plan: T, at = new Date()): T 
 
 /** What stopping a pot right now would cost and return. */
 export function stopQuote(plan: Pick<SavingsPlan, "balance" | "target" | "penaltyRate"> & { targetDate?: string }) {
-  const fee = plan.target && plan.target > 0 ? earlyWithdrawalPenalty(plan, plan.balance) : 0;
-  return { fee, returned: plan.balance - fee, free: fee === 0 };
+  const hasGoal = Boolean(plan.target && plan.target > 0);
+  const { rate, tier } = hasGoal ? earlyStopRate(plan) : { rate: 0, tier: null };
+  const fee = rate ? Math.round(plan.balance * rate) : 0;
+  return { fee, rate, tier, progress: savingsProgress(plan), returned: plan.balance - fee, free: fee === 0 };
 }

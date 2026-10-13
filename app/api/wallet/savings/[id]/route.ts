@@ -4,7 +4,6 @@ import { pinFailResponse, verifyUserPin } from "@/lib/server/pin";
 import {
   depositToPlan,
   findPlan,
-  pauseSavingsPlan,
   publicPlan,
   resumeSavingsPlan,
   settleSavings,
@@ -47,13 +46,10 @@ export async function POST(request: Request, { params }: Params) {
     }
   }
 
-  // Breaks never move money, so they don't need a PIN.
-  if (action === "pause" || action === "resume") {
+  // Only pots paused under the retired pause feature can be resumed. Pausing itself is gone.
+  if (action === "resume") {
     try {
-      const plan =
-        action === "pause"
-          ? await pauseSavingsPlan(auth.user.id, id, Number(body.days))
-          : await resumeSavingsPlan(auth.user.id, id);
+      const plan = await resumeSavingsPlan(auth.user.id, id);
       return NextResponse.json({ ok: true, plan });
     } catch (error) {
       return NextResponse.json({ error: error instanceof Error ? error.message : "Could not update the pot." }, { status: 400 });

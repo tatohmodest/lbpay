@@ -25,6 +25,7 @@ import { isPinError, readPinFail } from "@/lib/pin-fail";
 import {
   SAVINGS,
   calculateAdvanceCoverage,
+  earlyStopRate,
   earlyWithdrawalPenalty,
   frequencyEvery,
   isObjectiveMet,
@@ -296,6 +297,8 @@ export function SavingsWithdrawModal({
   const value = Number(amount) || 0;
   const met = isObjectiveMet(plan);
   const earlyPenalty = !met && plan.target && plan.target > 0 ? earlyWithdrawalPenalty(plan, value) : 0;
+  const earlyRate = earlyStopRate(plan).rate;
+  const earlyPct = `${Math.round(earlyRate * 1000) / 10}%`;
   const netReturned = Math.max(0, value - earlyPenalty);
   const isAll = value === plan.balance;
 
@@ -440,10 +443,11 @@ export function SavingsWithdrawModal({
               <div className="flex items-start gap-3">
                 <AlertTriangle className="h-5 w-5 text-rose-600 shrink-0 mt-0.5" />
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-black text-rose-950">Early Break Penalty Warning</p>
+                  <p className="text-sm font-black text-rose-950">This costs an early withdrawal fee</p>
                   <p className="mt-1 text-xs text-rose-900 leading-relaxed">
-                    Your goal of <strong>{formatXAF(plan.target || 0)}</strong> is not yet met. As pledged when creating this
-                    pot, an early withdrawal fee of <strong>{Math.round(plan.penaltyRate * 100)}%</strong> applies:
+                    You haven&apos;t reached your goal of <strong>{formatXAF(plan.target || 0)}</strong> yet. At your
+                    current progress the fee is <strong>{earlyPct}</strong>. It gets smaller the closer you get, and
+                    disappears at the goal.
                   </p>
                   <div className="mt-3 space-y-1.5 rounded-xl bg-white/80 p-3 text-xs font-mono">
                     <div className="flex justify-between text-muted">
@@ -451,7 +455,7 @@ export function SavingsWithdrawModal({
                       <span>{formatXAF(value)}</span>
                     </div>
                     <div className="flex justify-between font-bold text-rose-700">
-                      <span>Early break fee ({Math.round(plan.penaltyRate * 100)}%):</span>
+                      <span>Early withdrawal fee ({earlyPct}):</span>
                       <span>−{formatXAF(earlyPenalty)}</span>
                     </div>
                     <div className="flex justify-between border-t border-line/60 pt-1 font-black text-ink">

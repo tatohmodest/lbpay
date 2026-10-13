@@ -25,7 +25,6 @@ import { formatDate, formatXAF, isMoneyOut } from "@/lib/format";
 import { useMe, useSavingsAction, useSavingsPlan } from "@/lib/hooks/wallet";
 import { useNotify } from "@/lib/notify";
 import {
-  PAUSE,
   cyclesToTarget,
   isLivePlan,
   estimatedFinishAt,
@@ -243,7 +242,7 @@ export default function SavingsPlanPage() {
             icon={Lock}
             label="Your fee"
             value={`${Math.round(plan.penaltyRate * 100)}%`}
-            hint={met ? "Free now: goal met" : "If you miss or stop early"}
+            hint={met ? "Free now: goal met" : "Per missed save · stopping scales"}
           />
         </section>
 
@@ -314,16 +313,17 @@ export default function SavingsPlanPage() {
                 <span className="text-amber-600 font-bold">•</span>
                 <span>
                   <strong>Locked goal:</strong> Your goal of <strong className="text-ink">{formatXAF(plan.target)}</strong>{" "}
-                  can be raised but never lowered. Withdrawing or stopping before you reach it costs{" "}
-                  {Math.round(plan.penaltyRate * 100)}% of what you take out. Once you reach it, everything is free.
+                  can be raised but never lowered. Taking money out before you reach it costs a fee that shrinks as you
+                  get closer: twice your {Math.round(plan.penaltyRate * 100)}% at the start, half of it near the end. Once
+                  you reach it, everything is free.
                 </span>
               </li>
             ) : null}
             <li className="flex items-start gap-2">
               <span className="text-brand font-bold">•</span>
               <span>
-                <strong>Breaks:</strong> Up to {PAUSE.maxPauses} free breaks per pot. No saves are due and no fees apply
-                while you&apos;re on one.
+                <strong>No pausing:</strong> A pot is a promise. Pay ahead if you know a hard week is coming: it moves
+                your next due date forward.
               </span>
             </li>
           </ul>
