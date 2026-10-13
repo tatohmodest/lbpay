@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, Code2, Download, Heart, Menu, Receipt, ShieldCheck, Store, Wallet } from "lucide-react";
+import { BookOpen, Code2, Download, Heart, Menu, Receipt, ShieldCheck, Store, TrendingUp, Wallet } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { RightDrawer } from "@/components/ui/right-drawer";
@@ -39,6 +39,7 @@ export function SiteHeader() {
   ];
   const secondary = [
     { href: "/about", label: t("nav.about"), icon: Heart, copy: "Who builds LBPay, and why" },
+    { href: "/investors", label: "Investors", icon: TrendingUp, copy: "Back what we're building" },
     { href: "/docs", label: t("nav.docs"), icon: BookOpen, copy: "API reference and guides" },
   ];
   if (pathname === "/welcome") return null;

@@ -25,6 +25,7 @@ const PUBLIC = [
   "/pricing",
   "/security",
   "/about",
+  "/investors",
   "/privacy",
   "/copyright",
   "/pin",

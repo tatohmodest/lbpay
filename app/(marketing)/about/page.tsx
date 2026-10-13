@@ -164,8 +164,9 @@ export default function AboutPage() {
               icon: Sparkles,
               title: "Partners & investors",
               copy: "Building payments for Cameroon is a big job. If you want to help us do it, let's talk.",
-              cta: "Start a conversation",
+              cta: "See the investor page",
               subject: "Partnership%20%2F%20investment",
+              href: "/investors",
             },
             {
               icon: ShieldCheck,
@@ -177,7 +178,7 @@ export default function AboutPage() {
           ].map((c) => (
             <a
               key={c.title}
-              href={`mailto:${CONTACT_EMAIL}?subject=${c.subject}`}
+              href={"href" in c && c.href ? c.href : `mailto:${CONTACT_EMAIL}?subject=${c.subject}`}
               className="group flex flex-col rounded-[1.75rem] bg-paper p-7 ring-1 ring-line/60 transition hover:-translate-y-0.5 hover:ring-brand/40"
             >
               <span className="grid h-10 w-10 place-items-center rounded-xl bg-white text-brand-deep ring-1 ring-line">

@@ -35,11 +35,11 @@ export function CopyHandle({
       onClick={() => void copy()}
       title="Copy LBPay ID"
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full font-mono transition active:scale-95",
+        "inline-flex max-w-full min-w-0 items-center gap-1.5 rounded-full font-mono transition active:scale-95",
         className,
       )}
     >
-      {value}
+      <span className="min-w-0 break-all text-left">{value}</span>
       {copied ? <Check className="h-3.5 w-3.5 shrink-0" /> : <Copy className="h-3.5 w-3.5 shrink-0 opacity-70" />}
     </button>
   );

@@ -27,6 +27,7 @@ const columns = [
     title: "Company",
     links: [
       { href: "/about", label: "About LBPay" },
+      { href: "/investors", label: "Investors" },
       { href: "/security", label: "Security" },
       { href: "/#faq", label: "Help & FAQ" },
       { href: `mailto:${CONTACT_EMAIL}`, label: "Contact us" },
