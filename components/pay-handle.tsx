@@ -1,5 +1,6 @@
 "use client";
 
+import { useL } from "@/lib/i18n/use-i18n";
 import { canonicalizeHandlePath } from "@/lib/origin";
 import { useQuery } from "@tanstack/react-query";
 import { CheckoutPay } from "@/components/checkout-pay";
@@ -7,10 +8,11 @@ import { Logo } from "@/components/logo";
 
 type HandlePayload = {
   found?: boolean;
-  user?: { name: string; lbpayId: string; avatar?: string; businessName?: string };
+  user?: { name: string; lbpayId: string; avatar?: string; businessName?: string; verified?: boolean };
 };
 
 export function PayHandle({ handle }: { handle: string }) {
+  const L = useL();
   const pay = useQuery({
     queryKey: ["pay-handle", handle],
     queryFn: async () => {
@@ -34,8 +36,10 @@ export function PayHandle({ handle }: { handle: string }) {
             <Logo href="/" markClassName="h-8 w-8" />
           </div>
           <section className="rounded-[1.75rem] bg-white p-8 ring-1 ring-line/80">
-            <h1 className="text-xl font-black">Account not found</h1>
-            <p className="mt-2 text-sm text-muted">This pay link is not linked to an LBPay account.</p>
+            <h1 className="text-xl font-black">{L("Account not found", "Compte introuvable")}</h1>
+            <p className="mt-2 text-sm text-muted">
+              {L("This pay link is not linked to an LBPay account.", "Ce lien de paiement n'est relié à aucun compte LBPay.")}
+            </p>
           </section>
         </div>
       </main>
@@ -45,7 +49,7 @@ export function PayHandle({ handle }: { handle: string }) {
   if (!user) {
     return (
       <main className="grid min-h-screen place-items-center bg-paper p-4">
-        <p className="text-sm text-muted">Opening payment…</p>
+        <p className="text-sm text-muted">{L("Opening payment…", "Ouverture du paiement…")}</p>
       </main>
     );
   }
@@ -53,10 +57,11 @@ export function PayHandle({ handle }: { handle: string }) {
   return (
     <CheckoutPay
       handle={user.lbpayId}
-      title={`Pay ${user.name}`}
+      title={L(`Pay ${user.name}`, `Payer ${user.name}`)}
       merchantName={user.name}
       merchantHandle={user.lbpayId}
       merchantAvatar={user.avatar}
+      merchantVerified={Boolean(user.verified)}
     />
   );
 }
