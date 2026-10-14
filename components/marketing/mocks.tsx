@@ -1,3 +1,4 @@
+import { SiteOrigin } from "@/components/docs/code-block";
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -276,7 +277,7 @@ export function ApiConsole({ className }: { className?: string }) {
       </div>
       <pre className="overflow-x-auto px-4 py-4">
         <code>
-          <span className="text-white/40">$</span> curl https://lbpay.cm/api/v1/payments \{"\n"}
+          <span className="text-white/40">$</span> curl <SiteOrigin />/api/v1/payments \{"\n"}
           {"  "}-H <span className="text-[#9fe8c4]">&quot;Authorization: Bearer sk_test_…&quot;</span> \{"\n"}
           {"  "}-d <span className="text-[#9fe8c4]">&apos;{"{"} &quot;amount&quot;: 7500, &quot;currency&quot;: &quot;XAF&quot;,</span>{"\n"}
           {"        "}<span className="text-[#9fe8c4]">&quot;customer&quot;: {"{"} &quot;phone&quot;: &quot;670112233&quot; {"}"},</span>{"\n"}

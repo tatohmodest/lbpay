@@ -3,14 +3,14 @@ import { findTxById, findUserById, getWallet, listAllTx, patchTx, recordLedgerMo
 import { requireAdmin } from "@/lib/server/guard";
 
 export async function GET() {
-  const auth = await requireAdmin();
+  const auth = await requireAdmin("finance");
   if (auth.error || !auth.user) return auth.error!;
   const transactions = await listAllTx();
   return NextResponse.json({ transactions });
 }
 
 export async function POST(request: Request) {
-  const auth = await requireAdmin();
+  const auth = await requireAdmin("finance");
   if (auth.error || !auth.user) return auth.error!;
   const body = await request.json().catch(() => ({}));
   const tx = await findTxById(String(body.id || ""));

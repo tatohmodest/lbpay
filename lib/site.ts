@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 export const SITE_NAME = "LBPay";
 export const SITE_TAGLINE = "Financial infrastructure for Cameroon";
 
-const FALLBACK_SITE_URL = "https://lbpay.cm";
+const FALLBACK_SITE_URL = "https://lbpay.loopingbinary.com";
 
 function normalizeSiteUrl(raw: string | undefined): string {
   let value = (raw || "").trim().replace(/^['"]|['"]$/g, "");
@@ -207,3 +207,6 @@ export const NOINDEX: Metadata = {
     googleBot: { index: false, follow: false, noimageindex: true },
   },
 };
+
+/** Placeholder in docs snippets. Swapped for the domain the reader is actually on. */
+export const DOCS_ORIGIN = "https://lbpay.loopingbinary.com";

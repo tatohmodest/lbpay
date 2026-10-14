@@ -8,7 +8,7 @@
 export const FEE_RATES = {
   deposit: 0.0153,
   checkout: 0.015,
-  apiCollection: 0.02,
+  apiCollection: 0.025,
   withdraw: 0.025,
   crossNetwork: 0.035,
   airtime: 0,
@@ -30,7 +30,7 @@ export function checkoutFee(amount: number) {
   return feeOn(amount, FEE_RATES.checkout);
 }
 
-/** 2% of an API collection, deducted from what the developer is credited. */
+/** 2.5% of an API collection, deducted from what the developer is credited. */
 export function apiCollectionFee(amount: number) {
   return feeOn(amount, FEE_RATES.apiCollection);
 }

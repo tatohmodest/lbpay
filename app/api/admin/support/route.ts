@@ -5,7 +5,7 @@ import { listSupportThreadsForAdmin, supportUnreadAdminCount } from "@/lib/serve
 
 export async function GET() {
   try {
-    const auth = await requireAdmin();
+    const auth = await requireAdmin("support");
     if (auth.error || !auth.user) return auth.error!;
     const threads = await listSupportThreadsForAdmin();
     const unread = await supportUnreadAdminCount();

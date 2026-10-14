@@ -1,0 +1,73 @@
+# Builds LBPay on every push to main and every pull request.
+# If the Cloudflare secrets are set in GitHub (Settings → Secrets → Actions),
+# a green build on main is also deployed. Without them it only builds and tests.
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+      NEXT_PUBLIC_SITE_URL: https://lbpay.loopingbinary.com
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Typecheck
+        run: npx tsc --noEmit -p .
+
+      - name: Unit tests
+        run: npx --yes tsx@4.19.2 --test lib/*.test.ts
+
+      - name: Build
+        run: npx next build
+
+  deploy:
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      NEXT_TELEMETRY_DISABLED: "1"
+      NEXT_PUBLIC_SITE_URL: https://lbpay.loopingbinary.com
+    steps:
+      - name: Skip when Cloudflare secrets are missing
+        if: env.CLOUDFLARE_API_TOKEN == ''
+        run: echo "No CLOUDFLARE_API_TOKEN secret, so nothing to deploy. Add it to deploy from GitHub."
+
+      - uses: actions/checkout@v4
+        if: env.CLOUDFLARE_API_TOKEN != ''
+
+      - uses: actions/setup-node@v4
+        if: env.CLOUDFLARE_API_TOKEN != ''
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install
+        if: env.CLOUDFLARE_API_TOKEN != ''
+        run: npm ci
+
+      - name: Build and deploy to Cloudflare
+        if: env.CLOUDFLARE_API_TOKEN != ''
+        run: npm run deploy

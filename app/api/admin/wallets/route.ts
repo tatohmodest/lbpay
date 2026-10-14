@@ -1,21 +1,19 @@
 import { NextResponse } from "next/server";
-import { findUserById, getWallet, listUsers, publicUser, recordLedgerMove, writeAudit } from "@/lib/server/db";
+import { adminSnapshot, findUserById, publicUser, recordLedgerMove, writeAudit } from "@/lib/server/db";
 import { requireAdmin } from "@/lib/server/guard";
 
 export async function GET() {
-  const auth = await requireAdmin();
+  const auth = await requireAdmin("finance");
   if (auth.error || !auth.user) return auth.error!;
-  const users = await listUsers();
-  const wallets = [];
-  for (const user of users) {
-    const wallet = await getWallet(user.id);
-    wallets.push({ user: publicUser(user), balance: wallet.balance });
-  }
+  const snap = await adminSnapshot();
+  const wallets = snap.users
+    .map((user) => ({ user: publicUser(user), balance: snap.balances.get(user.id) ?? 0 }))
+    .sort((a, b) => b.balance - a.balance);
   return NextResponse.json({ wallets });
 }
 
 export async function POST(request: Request) {
-  const auth = await requireAdmin();
+  const auth = await requireAdmin("finance");
   if (auth.error || !auth.user) return auth.error!;
   const body = await request.json().catch(() => ({}));
   const user = await findUserById(String(body.userId || ""));

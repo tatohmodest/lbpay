@@ -52,7 +52,7 @@ export async function POST(request: Request) {
           reference,
         });
 
-  // Developers pay 2% on Mobile Money and card collections; wallet-to-wallet is free.
+  // Developers pay 2.5% on Mobile Money and card collections; wallet-to-wallet is free.
   const fee = method === "wallet" ? 0 : apiCollectionFee(amount);
   const moved = await recordLedgerMove({
     userId: user.id,

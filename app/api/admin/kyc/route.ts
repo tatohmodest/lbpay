@@ -1,18 +1,18 @@
 import { NextResponse } from "next/server";
-import { findKycById, findUserById, listKyc, listKeys, publicUser, reviewKycApplication, writeAudit } from "@/lib/server/db";
+import { adminSnapshot, findKycById, listKeys, publicUser, reviewKycApplication, writeAudit } from "@/lib/server/db";
 import { requireAdmin } from "@/lib/server/guard";
 import { issueLiveKey, issueSandboxKey } from "@/lib/server/apikey";
 import { pushAccount } from "@/lib/server/push";
 
 export async function GET() {
-  const auth = await requireAdmin();
+  const auth = await requireAdmin("kyc");
   if (auth.error || !auth.user) return auth.error!;
-  const apps = await listKyc();
-  const rows = [];
-  for (const app of apps) {
-    const user = await findUserById(app.userId);
-    rows.push({ ...app, user: user ? publicUser(user) : null });
-  }
+  const snap = await adminSnapshot();
+  const byId = new Map(snap.users.map((u) => [u.id, u] as const));
+  const rows = snap.kyc.map((app) => {
+    const user = byId.get(app.userId);
+    return { ...app, user: user ? publicUser(user) : null };
+  });
   rows.sort((a, b) => {
     if (a.status === "pending" && b.status !== "pending") return -1;
     if (a.status !== "pending" && b.status === "pending") return 1;
@@ -22,7 +22,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const auth = await requireAdmin();
+  const auth = await requireAdmin("kyc");
   if (auth.error || !auth.user) return auth.error!;
   const body = await request.json().catch(() => ({}));
   const app = await findKycById(String(body.id || ""));

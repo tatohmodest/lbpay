@@ -17,7 +17,7 @@ type Props = { params: Promise<{ id: string }> };
 
 export async function GET(_request: Request, { params }: Props) {
   try {
-    const auth = await requireAdmin();
+    const auth = await requireAdmin("support");
     if (auth.error || !auth.user) return auth.error!;
     const { id } = await params;
     const thread = await findSupportThreadById(id);
@@ -32,7 +32,7 @@ export async function GET(_request: Request, { params }: Props) {
 
 export async function POST(request: Request, { params }: Props) {
   try {
-    const auth = await requireAdmin();
+    const auth = await requireAdmin("support");
     if (auth.error || !auth.user) return auth.error!;
     const { id } = await params;
     const thread = await findSupportThreadById(id);

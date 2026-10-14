@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/server/guard";
-import { isAdmin, shouldSkipAdminOtp } from "@/lib/roles";
+import { adminScopesFor, isAdmin, isAdminOwner, shouldSkipAdminOtp } from "@/lib/roles";
 import { readAdminSession } from "@/lib/server/session";
 
 export async function GET() {
@@ -9,12 +9,13 @@ export async function GET() {
   if (!isAdmin(auth.user)) {
     return NextResponse.json({ admin: false, error: "Admin only." }, { status: 403 });
   }
+  const access = { owner: isAdminOwner(auth.user), scopes: adminScopesFor(auth.user) };
   if (shouldSkipAdminOtp(auth.user)) {
-    return NextResponse.json({ admin: true, needOtp: false });
+    return NextResponse.json({ admin: true, needOtp: false, ...access });
   }
   const step = await readAdminSession();
   if (!step || step.userId !== auth.user.id) {
     return NextResponse.json({ admin: true, needOtp: true });
   }
-  return NextResponse.json({ admin: true, needOtp: false });
+  return NextResponse.json({ admin: true, needOtp: false, ...access });
 }

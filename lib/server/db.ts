@@ -53,6 +53,10 @@ export type StoredUser = {
   /** Earlier LBPay IDs. Still reserved to this user so old links keep working. */
   previousHandles?: string[];
   handleChangedAt?: string;
+  /** Staff admin permissions. Unset = full access (owners always have everything). */
+  adminScopes?: string[];
+  /** Set when an admin changes roles or permissions, so the newest decision wins over older copies. */
+  rolesUpdatedAt?: string;
   createdAt: string;
 };
 
@@ -395,18 +399,29 @@ function pickKycState(left: string | undefined, right: string | undefined): KycS
 function mergePrivileges(base: StoredUser, next: StoredUser): StoredUser {
   const older = normalizeUser(base);
   const newer = normalizeUser(next);
-  const roles = [...new Set([...older.roles, ...newer.roles])] as AccountKind[];
+  // An explicit admin decision (grant, revoke, permissions) wins over an older copy;
+  // otherwise roles are unioned so a stale copy never drops a role it didn't know about.
+  const decided =
+    newer.rolesUpdatedAt || older.rolesUpdatedAt
+      ? (newer.rolesUpdatedAt || "") >= (older.rolesUpdatedAt || "")
+        ? newer
+        : older
+      : null;
+  const roles = (decided ? [...decided.roles] : [...new Set([...older.roles, ...newer.roles])]) as AccountKind[];
   const kyc = {
     personal: pickKycState(older.kyc.personal, newer.kyc.personal),
     business: pickKycState(older.kyc.business, newer.kyc.business),
     developer: pickKycState(older.kyc.developer, newer.kyc.developer),
   };
-  if (kyc.business === "verified" && !roles.includes("business")) roles.push("business");
-  if (kyc.developer === "verified" && !roles.includes("developer")) roles.push("developer");
+  if (!decided) {
+    if (kyc.business === "verified" && !roles.includes("business")) roles.push("business");
+    if (kyc.developer === "verified" && !roles.includes("developer")) roles.push("developer");
+  }
   return {
     ...older,
     ...newer,
     roles,
+    ...(decided ? { adminScopes: decided.adminScopes, rolesUpdatedAt: decided.rolesUpdatedAt } : {}),
     kyc,
     kycStatus: kyc.personal,
     businessName: newer.businessName || older.businessName,
@@ -1384,6 +1399,7 @@ export async function listLogs(userId: string) {
 
 export async function grantRole(user: StoredUser, role: AccountKind) {
   if (!user.roles.includes(role)) user.roles.push(role);
+  user.rolesUpdatedAt = new Date().toISOString();
   return upsertUser(user);
 }
 
@@ -1436,6 +1452,8 @@ export async function deleteAccountForUser(userId: string) {
 export async function revokeRole(user: StoredUser, role: AccountKind) {
   if (role === "personal") return user;
   user.roles = user.roles.filter((item) => item !== role);
+  if (role === "admin") user.adminScopes = undefined;
+  user.rolesUpdatedAt = new Date().toISOString();
   return upsertUser(user);
 }
 
@@ -1585,3 +1603,20 @@ export async function listPublicReviews(): Promise<PublicReview[]> {
 }
 
 
+
+/**
+ * One consistent read for the admin console. Admin routes used to call
+ * getWallet per user, and every read reloads the whole ledger from storage,
+ * so a page cost two full loads per user. This costs one.
+ */
+export async function adminSnapshot() {
+  const db = await getDb();
+  return {
+    users: db.users.map(normalizeUser),
+    balances: new Map(db.wallets.map((w) => [w.userId, w.balance] as const)),
+    transactions: [...db.transactions].sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt)),
+    kyc: db.kyc,
+    savings: db.savings || [],
+    audit: db.audit,
+  };
+}

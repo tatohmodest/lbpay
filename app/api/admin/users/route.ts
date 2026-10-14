@@ -1,29 +1,46 @@
 import { NextResponse } from "next/server";
-import { getWallet, grantRole, listUsers, publicUser, revokeRole, upsertUser, writeAudit } from "@/lib/server/db";
+import { adminSnapshot, grantRole, listUsers, publicUser, revokeRole, upsertUser, writeAudit } from "@/lib/server/db";
+import { ADMIN_SCOPES, adminScopesFor, isAdminOwner, type AdminScope } from "@/lib/roles";
 import { requireAdmin } from "@/lib/server/guard";
 import type { AccountKind } from "@/lib/types";
 import { pushAccount } from "@/lib/server/push";
 
 export async function GET() {
-  const auth = await requireAdmin();
+  const auth = await requireAdmin("users");
   if (auth.error || !auth.user) return auth.error!;
-  const users = await listUsers();
-  const rows = [];
-  for (const user of users) {
-    const wallet = await getWallet(user.id);
-    rows.push({ ...publicUser(user), balance: wallet.balance });
-  }
-  return NextResponse.json({ users: rows });
+  const snap = await adminSnapshot();
+  const rows = snap.users
+    .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))
+    .map((user) => ({
+      ...publicUser(user),
+      balance: snap.balances.get(user.id) ?? 0,
+      createdAt: user.createdAt,
+      owner: isAdminOwner(user),
+      adminScopes: adminScopesFor(user),
+    }));
+  return NextResponse.json({
+    users: rows,
+    viewer: { id: auth.user.id, owner: isAdminOwner(auth.user) },
+  });
 }
 
 export async function POST(request: Request) {
-  const auth = await requireAdmin();
+  const auth = await requireAdmin("users");
   if (auth.error || !auth.user) return auth.error!;
   const body = await request.json().catch(() => ({}));
+  const owner = isAdminOwner(auth.user);
+  const touchesAdmin = body.role === "admin" || body.action === "scopes";
+  // Creating admins, removing them, or changing what they can do is owner-only.
+  if (touchesAdmin && !owner) {
+    return NextResponse.json({ error: "Only an owner can manage admins." }, { status: 403 });
+  }
   const userId = String(body.userId || "");
   const users = await listUsers();
   const target = users.find((item) => item.id === userId);
   if (!target) return NextResponse.json({ error: "User not found." }, { status: 404 });
+  if (isAdminOwner(target) && !owner) {
+    return NextResponse.json({ error: "Only an owner can change an owner's account." }, { status: 403 });
+  }
 
   if (body.action === "freeze") {
     target.status = "frozen";
@@ -50,6 +67,8 @@ export async function POST(request: Request) {
     if (!["personal", "business", "developer", "admin"].includes(role)) {
       return NextResponse.json({ error: "Unknown role." }, { status: 400 });
     }
+    // New staff start with support only; the owner widens it from the Users page.
+    if (role === "admin" && !target.roles.includes("admin")) target.adminScopes = ["support"];
     await grantRole(target, role);
     await writeAudit({
       actorId: auth.user.id,
@@ -70,6 +89,23 @@ export async function POST(request: Request) {
       targetType: "user",
       targetId: target.id,
       note: role,
+    });
+  } else if (body.action === "scopes") {
+    if (!target.roles.includes("admin")) {
+      return NextResponse.json({ error: "Make this person an admin first." }, { status: 400 });
+    }
+    const scopes = (Array.isArray(body.scopes) ? body.scopes : []).filter((x: unknown): x is AdminScope =>
+      (ADMIN_SCOPES as readonly string[]).includes(String(x)),
+    );
+    target.adminScopes = scopes;
+    target.rolesUpdatedAt = new Date().toISOString();
+    await upsertUser(target);
+    await writeAudit({
+      actorId: auth.user.id,
+      action: "admin.scopes",
+      targetType: "user",
+      targetId: target.id,
+      note: scopes.join(",") || "none",
     });
   } else {
     return NextResponse.json({ error: "Unknown action." }, { status: 400 });

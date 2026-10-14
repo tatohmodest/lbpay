@@ -1,11 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { Check, Copy } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { DOCS_ORIGIN } from "@/lib/site";
+
+const noop = () => () => {};
+/** The domain the reader is on, so copied snippets point at the right server. */
+export function useSiteOrigin() {
+  return useSyncExternalStore(noop, () => window.location.origin, () => DOCS_ORIGIN);
+}
+
+export function SiteOrigin() {
+  return <>{useSiteOrigin()}</>;
+}
 
 export function CodeBlock({
-  code,
+  code: raw,
   label,
   className,
 }: {
@@ -14,6 +25,8 @@ export function CodeBlock({
   className?: string;
 }) {
   const [copied, setCopied] = useState(false);
+  const origin = useSiteOrigin();
+  const code = raw.split(DOCS_ORIGIN).join(origin);
 
   async function copy() {
     try {

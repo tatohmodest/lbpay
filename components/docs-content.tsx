@@ -137,12 +137,8 @@ export function DocsContent({
 { "to": "@handle", "amount": 5000, "pin": "1234", "note": "Lunch" }`}
           />
           <p>
-            Withdrawals and “send to MTN / Orange” are disbursements. Cash leaves LBPay through
-            PayUnit (<code>POST /api/gateway/deposit</code> then{" "}
-            <code>/api/gateway/deposit/confirm</code> on <code>https://gateway.payunit.net</code>,
-            account number <code>237</code> + 9-digit MSISDN). Deposit is 1.53%. Withdrawal is 2.5%. API collections cost 2%, taken from the amount credited to you.
-            Minimum withdrawal is 1,000 XAF. PayUnit must enable the deposit/disbursement product
-            on the merchant account; a PayUnit wallet balance alone is not enough.
+            Withdrawals and “send to MTN / Orange” are payouts: money leaves LBPay to a Cameroon
+            MTN or Orange number (<code>237</code> + 9 digits). Minimum withdrawal is 1,000 XAF.
           </p>
           <CodeBlock
             label="POST /api/wallet/disburse"
@@ -150,8 +146,8 @@ export function DocsContent({
 { "amount": 10000, "phone": "670112233", "network": "mtn", "pin": "1234" }`}
           />
           <p>
-            Deposits collect from MTN, Orange, or card via PayUnit initialize + makepayment, then
-            credit the wallet when the rail reports success.
+            Deposits collect from MTN, Orange, or card and credit the wallet the moment the network
+            confirms. See <Link href="/pricing" className="font-semibold text-brand-deep underline">pricing</Link> for every fee.
           </p>
         </Section>
 
@@ -161,6 +157,10 @@ export function DocsContent({
             <code>mobile_money</code>, <code>mtn</code>, <code>orange</code>, <code>card</code>, or{" "}
             <code>wallet</code>.
           </p>
+          <Callout>
+            Fee: 2.5% on MTN, Orange and card payments, taken from what you receive. A 10,000 XAF
+            payment lands as 9,750 XAF in your wallet. Payments from an LBPay wallet are free.
+          </Callout>
           <CodeTabs examples={PAYMENT_EXAMPLES} />
         </Section>
 
@@ -186,7 +186,7 @@ export function DocsContent({
           </p>
           <CodeBlock
             label="GET /api/v1/balance"
-            code={`curl https://lbpay.cm/api/v1/balance \\
+            code={`curl https://lbpay.loopingbinary.com/api/v1/balance \\
   -H "Authorization: Bearer sk_test_YOUR_SECRET"`}
           />
         </Section>

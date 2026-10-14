@@ -33,7 +33,7 @@ export const DOC_GROUPS: DocGroup[] = [
 export const DOC_SECTIONS: DocItem[] = DOC_GROUPS.flatMap((group) => group.items);
 
 export const PAYMENT_EXAMPLES = {
-  curl: `curl https://lbpay.cm/api/v1/payments \\
+  curl: `curl https://lbpay.loopingbinary.com/api/v1/payments \\
   -H "Authorization: Bearer sk_test_YOUR_SECRET" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -51,7 +51,7 @@ export const PAYMENT_EXAMPLES = {
 } as const;
 
 export const PAYOUT_EXAMPLES = {
-  curl: `curl https://lbpay.cm/api/v1/payouts \\
+  curl: `curl https://lbpay.loopingbinary.com/api/v1/payouts \\
   -H "Authorization: Bearer sk_test_YOUR_SECRET" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -67,7 +67,7 @@ export const PAYOUT_EXAMPLES = {
 } as const;
 
 export const LINK_EXAMPLES = {
-  curl: `curl https://lbpay.cm/api/v1/payment-links \\
+  curl: `curl https://lbpay.loopingbinary.com/api/v1/payment-links \\
   -H "Authorization: Bearer sk_test_YOUR_SECRET" \\
   -H "Content-Type: application/json" \\
   -d '{

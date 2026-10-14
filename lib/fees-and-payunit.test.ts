@@ -32,7 +32,7 @@ test("quick transfer across networks is 3.5 percent of the amount they receive",
 test("fee labels preserve one decimal when needed", () => {
   assert.equal(feePercent(FEE_RATES.deposit), "1.53");
   assert.equal(feePercent(FEE_RATES.checkout), "1.5");
-  assert.equal(feePercent(FEE_RATES.apiCollection), "2");
+  assert.equal(feePercent(FEE_RATES.apiCollection), "2.5");
   assert.equal(feePercent(FEE_RATES.withdraw), "2.5");
   assert.equal(feePercent(FEE_RATES.crossNetwork), "3.5");
   assert.equal(feePercentLabel(FEE_RATES.withdraw), "Charge (2.5%)");

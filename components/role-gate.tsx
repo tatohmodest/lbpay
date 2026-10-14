@@ -110,6 +110,8 @@ export function useAdminSession() {
         status: number;
         admin?: boolean;
         needOtp?: boolean;
+        owner?: boolean;
+        scopes?: string[];
         error?: string;
       };
     },

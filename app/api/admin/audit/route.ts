@@ -3,7 +3,7 @@ import { listAudit } from "@/lib/server/db";
 import { requireAdmin } from "@/lib/server/guard";
 
 export async function GET() {
-  const auth = await requireAdmin();
+  const auth = await requireAdmin("audit");
   if (auth.error || !auth.user) return auth.error!;
   return NextResponse.json({ audit: await listAudit() });
 }

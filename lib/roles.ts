@@ -70,3 +70,39 @@ export function emptyProfile(): UserProfile {
     kyc: defaultKyc(),
   };
 }
+
+/* ------------------------------------------------------------------ */
+/* Admin permissions                                                   */
+/* ------------------------------------------------------------------ */
+
+/**
+ * What a staff admin may touch. Owners (emails in ADMIN_EMAILS) have every
+ * scope and are the only ones who can create admins or change scopes.
+ */
+export const ADMIN_SCOPES = ["support", "kyc", "users", "finance", "audit"] as const;
+export type AdminScope = (typeof ADMIN_SCOPES)[number];
+
+export const ADMIN_SCOPE_INFO: Record<AdminScope, { label: string; copy: string }> = {
+  support: { label: "Support", copy: "Read and reply to customer chats" },
+  kyc: { label: "KYC", copy: "Approve or reject identity and business checks" },
+  users: { label: "Users", copy: "Freeze or restore accounts, grant business and developer access" },
+  finance: { label: "Finance", copy: "Fix transactions and credit or debit wallets" },
+  audit: { label: "Audit", copy: "Read the audit log" },
+};
+
+type AdminLike = { email?: string | null; roles?: AccountKind[]; adminScopes?: readonly string[] | null } | null | undefined;
+
+export function isAdminOwner(user: AdminLike) {
+  return isAdmin(user) && Boolean(user?.email && isBootstrapAdmin(user.email));
+}
+
+/** Scopes this admin holds. Admins created before scopes existed keep full access until an owner sets theirs. */
+export function adminScopesFor(user: AdminLike): AdminScope[] {
+  if (!isAdmin(user)) return [];
+  if (isAdminOwner(user) || !Array.isArray(user?.adminScopes)) return [...ADMIN_SCOPES];
+  return ADMIN_SCOPES.filter((scope) => user!.adminScopes!.includes(scope));
+}
+
+export function hasAdminScope(user: AdminLike, scope: AdminScope) {
+  return adminScopesFor(user).includes(scope);
+}
