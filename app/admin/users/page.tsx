@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatXAF } from "@/lib/format";
 import { useNotify } from "@/lib/notify";
-import { ADMIN_SCOPES, ADMIN_SCOPE_INFO } from "@/lib/roles";
+import { ADMIN_SCOPES, ADMIN_SCOPE_INFO, type AdminScope } from "@/lib/roles";
 import { cn } from "@/lib/cn";
 
 type AdminUser = {
@@ -43,9 +43,14 @@ function UsersInner() {
   const users = useQuery({
     queryKey: ["admin-users"],
     queryFn: async () =>
-      (await fetch("/api/admin/users")).json() as Promise<{ users: AdminUser[]; viewer?: { id: string; owner: boolean } }>,
+      (await fetch("/api/admin/users")).json() as Promise<{
+        users: AdminUser[];
+        viewer?: { id: string; owner: boolean; scopes: string[] };
+      }>,
   });
   const viewerOwner = Boolean(users.data?.viewer?.owner);
+  const viewerScopes = users.data?.viewer?.scopes ?? [];
+  const canGive = (scope: string) => viewerOwner || viewerScopes.includes(scope);
   const mutate = useMutation({
     mutationFn: (body: Record<string, unknown>) =>
       fetch("/api/admin/users", {
@@ -84,6 +89,7 @@ function UsersInner() {
   return (
     <div className="space-y-4">
       <AdminHeader title="Users" copy="Freeze, restore, grant roles and staff permissions." />
+      <InviteAdmin canGive={canGive} />
       <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name, email, or ID" />
       <div className="flex flex-wrap gap-1.5">
         {(["all", "staff", "business", "developer", "frozen"] as const).map((key) => (
@@ -143,7 +149,7 @@ function UsersInner() {
               {user.roles.includes("admin") && !user.owner ? (
                 <div className="mt-3 rounded-2xl bg-paper p-3">
                   <p className="text-[11px] font-semibold uppercase tracking-wide text-muted">
-                    Staff permissions {viewerOwner ? "· tap to switch" : ""}
+                    Staff permissions · tap to switch
                   </p>
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     {ADMIN_SCOPES.map((scope) => {
@@ -152,7 +158,7 @@ function UsersInner() {
                         <button
                           key={scope}
                           type="button"
-                          disabled={!viewerOwner || mutate.isPending}
+                          disabled={!canGive(scope) || mutate.isPending}
                           title={ADMIN_SCOPE_INFO[scope].copy}
                           onClick={() =>
                             mutate.mutate({
@@ -186,7 +192,7 @@ function UsersInner() {
                 >
                   {user.status === "frozen" ? "Unfreeze" : "Freeze"}
                 </Button>
-                {(viewerOwner ? (["business", "developer", "admin"] as const) : (["business", "developer"] as const)).map((role) => (
+                {(user.owner ? (["business", "developer"] as const) : (["business", "developer", "admin"] as const)).map((role) => (
                   <Button
                     key={role}
                     size="sm"
@@ -208,5 +214,143 @@ function UsersInner() {
         )}
       </AdminPanel>
     </div>
+  );
+}
+
+function InviteAdmin({ canGive }: { canGive: (scope: string) => boolean }) {
+  const notify = useNotify();
+  const client = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [email, setEmail] = useState("");
+  const [scopes, setScopes] = useState<string[]>(["support"]);
+  const invites = useQuery({
+    queryKey: ["admin-invites"],
+    queryFn: async () =>
+      (await fetch("/api/admin/invites")).json() as Promise<{
+        invites?: Array<{ email: string; scopes: string[]; createdAt: string }>;
+      }>,
+  });
+  const call = (method: "POST" | "DELETE", body: Record<string, unknown>) =>
+    fetch("/api/admin/invites", {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }).then(async (res) => {
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Failed");
+      return data as { status?: string; emailed?: boolean };
+    });
+  const invite = useMutation({
+    mutationFn: () => call("POST", { email, scopes }),
+    onSuccess: (data) => {
+      client.invalidateQueries({ queryKey: ["admin-invites"] });
+      client.invalidateQueries({ queryKey: ["admin-users"] });
+      notify.success(
+        data.status === "added" ? "Admin added" : "Invite sent",
+        data.status === "added"
+          ? `${email} already had an account, so they're an admin now.`
+          : data.emailed
+            ? `${email} becomes an admin once they sign up and confirm their email.`
+            : `Saved, but the email didn't send. Ask ${email} to sign up with that address.`,
+      );
+      setEmail("");
+      setScopes(["support"]);
+      setOpen(false);
+    },
+    onError: (err: Error) => notify.error("Not sent", err.message),
+  });
+  const cancel = useMutation({
+    mutationFn: (to: string) => call("DELETE", { email: to }),
+    onSuccess: () => client.invalidateQueries({ queryKey: ["admin-invites"] }),
+    onError: (err: Error) => notify.error("Failed", err.message),
+  });
+  const pending = invites.data?.invites || [];
+
+  return (
+    <AdminPanel>
+      <div className="px-2 py-1">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="font-black">Admin team</p>
+            <p className="text-xs text-muted">Invite someone by email. They only get the permissions you tick.</p>
+          </div>
+          {!open ? (
+            <Button size="sm" onClick={() => setOpen(true)}>
+              Invite admin
+            </Button>
+          ) : null}
+        </div>
+
+        {open ? (
+          <form
+            className="mt-3 space-y-3 rounded-2xl bg-paper p-3"
+            onSubmit={(e) => {
+              e.preventDefault();
+              invite.mutate();
+            }}
+          >
+            <Input
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="name@example.com"
+              autoFocus
+            />
+            <div className="flex flex-wrap gap-1.5">
+              {ADMIN_SCOPES.filter(canGive).map((scope) => {
+                const on = scopes.includes(scope);
+                return (
+                  <button
+                    key={scope}
+                    type="button"
+                    title={ADMIN_SCOPE_INFO[scope].copy}
+                    onClick={() => setScopes(on ? scopes.filter((x) => x !== scope) : [...scopes, scope])}
+                    className={cn(
+                      "rounded-full px-3 py-1 text-[12px] font-bold transition",
+                      on ? "bg-brand text-white" : "bg-white text-muted ring-1 ring-line",
+                    )}
+                  >
+                    {on ? "✓ " : ""}
+                    {ADMIN_SCOPE_INFO[scope].label}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="flex gap-2">
+              <Button type="submit" disabled={invite.isPending || !email || !scopes.length}>
+                {invite.isPending ? "Sending…" : "Send invite"}
+              </Button>
+              <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
+                Cancel
+              </Button>
+            </div>
+          </form>
+        ) : null}
+
+        {pending.length ? (
+          <ul className="mt-3 divide-y divide-line">
+            {pending.map((inv) => (
+              <li key={inv.email} className="flex items-center justify-between gap-3 py-2 text-sm">
+                <span className="min-w-0">
+                  <span className="block truncate font-semibold">{inv.email}</span>
+                  <span className="text-xs text-muted">
+                    Waiting to sign up · {inv.scopes.map((x) => ADMIN_SCOPE_INFO[x as AdminScope]?.label || x).join(", ")}
+                  </span>
+                </span>
+                <button
+                  type="button"
+                  className="text-xs font-bold text-danger"
+                  disabled={cancel.isPending}
+                  onClick={() => cancel.mutate(inv.email)}
+                >
+                  Cancel
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </div>
+    </AdminPanel>
   );
 }

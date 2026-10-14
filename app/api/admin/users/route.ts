@@ -20,7 +20,7 @@ export async function GET() {
     }));
   return NextResponse.json({
     users: rows,
-    viewer: { id: auth.user.id, owner: isAdminOwner(auth.user) },
+    viewer: { id: auth.user.id, owner: isAdminOwner(auth.user), scopes: adminScopesFor(auth.user) },
   });
 }
 
@@ -29,11 +29,9 @@ export async function POST(request: Request) {
   if (auth.error || !auth.user) return auth.error!;
   const body = await request.json().catch(() => ({}));
   const owner = isAdminOwner(auth.user);
-  const touchesAdmin = body.role === "admin" || body.action === "scopes";
-  // Creating admins, removing them, or changing what they can do is owner-only.
-  if (touchesAdmin && !owner) {
-    return NextResponse.json({ error: "Only an owner can manage admins." }, { status: 403 });
-  }
+  // Admins with Users permission can add or remove other admins, but can only
+  // hand out permissions they hold themselves. Owners can't be touched by staff.
+  const mine = adminScopesFor(auth.user);
   const userId = String(body.userId || "");
   const users = await listUsers();
   const target = users.find((item) => item.id === userId);
@@ -67,8 +65,8 @@ export async function POST(request: Request) {
     if (!["personal", "business", "developer", "admin"].includes(role)) {
       return NextResponse.json({ error: "Unknown role." }, { status: 400 });
     }
-    // New staff start with support only; the owner widens it from the Users page.
-    if (role === "admin" && !target.roles.includes("admin")) target.adminScopes = ["support"];
+    // New staff start with support only; widen it from the Users page.
+    if (role === "admin" && !target.roles.includes("admin")) target.adminScopes = mine.includes("support") ? ["support"] : [];
     await grantRole(target, role);
     await writeAudit({
       actorId: auth.user.id,
@@ -94,9 +92,15 @@ export async function POST(request: Request) {
     if (!target.roles.includes("admin")) {
       return NextResponse.json({ error: "Make this person an admin first." }, { status: 400 });
     }
-    const scopes = (Array.isArray(body.scopes) ? body.scopes : []).filter((x: unknown): x is AdminScope =>
+    const asked = (Array.isArray(body.scopes) ? body.scopes : []).filter((x: unknown): x is AdminScope =>
       (ADMIN_SCOPES as readonly string[]).includes(String(x)),
     );
+    if (!owner && asked.some((x: AdminScope) => !mine.includes(x))) {
+      return NextResponse.json({ error: "You can only give permissions you have yourself." }, { status: 403 });
+    }
+    // Keep any permission the target has that this admin can't see or change.
+    const kept = adminScopesFor(target).filter((x) => !owner && !mine.includes(x));
+    const scopes = [...new Set([...kept, ...asked])];
     target.adminScopes = scopes;
     target.rolesUpdatedAt = new Date().toISOString();
     await upsertUser(target);

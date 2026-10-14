@@ -4,6 +4,7 @@ import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { useMe } from "@/lib/hooks/wallet";
 import { AppHeader, BottomNav } from "@/components/layout/app-header";
+import type { ReactNode } from "react";
 import { ConsoleSidebar, type NavItem } from "@/components/layout/console-sidebar";
 import { cn } from "@/lib/cn";
 
@@ -48,12 +49,15 @@ export function ConsoleShell({
   title,
   subtitle,
   cta,
+  bottomNav,
   children,
 }: {
   items: NavItem[];
   title: string;
   subtitle: string;
   cta?: { href: string; label: string };
+  /** Replaces the wallet tabs on mobile, e.g. the admin area's own tabs. */
+  bottomNav?: ReactNode;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -87,7 +91,7 @@ export function ConsoleShell({
         >
           {children}
         </main>
-        <BottomNav />
+        {bottomNav ?? <BottomNav />}
       </div>
     </Guard>
   );

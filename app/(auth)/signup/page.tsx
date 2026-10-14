@@ -24,8 +24,8 @@ export const metadata: Metadata = {
 export default async function SignupPage({
   searchParams,
 }: {
-  searchParams: Promise<{ ref?: string }>;
+  searchParams: Promise<{ ref?: string; email?: string }>;
 }) {
   const params = await searchParams;
-  return <AuthForm mode="signup" invitedBy={params.ref} />;
+  return <AuthForm mode="signup" invitedBy={params.ref} initialEmail={params.email?.slice(0, 254)} />;
 }

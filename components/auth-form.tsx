@@ -24,10 +24,12 @@ export function AuthForm({
   mode,
   notice,
   invitedBy,
+  initialEmail,
 }: {
   mode: "login" | "signup";
   notice?: string;
   invitedBy?: string;
+  initialEmail?: string;
 }) {
   const router = useRouter();
   const notify = useNotify();
@@ -35,7 +37,7 @@ export function AuthForm({
   const { login, unlockPin } = useApp();
   const [step, setStep] = useState<"form" | "pin">("form");
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(initialEmail || "");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [pin, setPin] = useState("");

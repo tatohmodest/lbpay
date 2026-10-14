@@ -286,3 +286,66 @@ function isBottomNavActive(href: string, pathname: string) {
   }
   return pathname === href || pathname.startsWith(`${href}/`);
 }
+
+export type SectionTab = { href: string; label: string; icon: React.ComponentType<{ className?: string }>; badge?: number };
+
+/**
+ * Bottom bar for a separate area (admin). Shows that area's own tabs, plus one
+ * button back to the normal wallet tabs.
+ */
+export function SectionBottomNav({
+  tabs,
+  root,
+  exit = { href: "/wallet", label: "Wallet" },
+}: {
+  tabs: SectionTab[];
+  root: string;
+  exit?: { href: string; label: string };
+}) {
+  const pathname = usePathname();
+  return (
+    <nav
+      aria-label="Admin"
+      className="fixed bottom-0 left-0 z-50 flex h-[4.5rem] w-full items-center justify-around border-t border-line/60 bg-white/95 pb-safe backdrop-blur-xl md:hidden"
+    >
+      {tabs.map((tab) => {
+        const active = tab.href === root ? pathname === root : pathname === tab.href || pathname.startsWith(`${tab.href}/`);
+        const Icon = tab.icon;
+        return (
+          <Link
+            key={tab.href}
+            href={tab.href}
+            aria-current={active ? "page" : undefined}
+            className={cn(
+              "relative flex min-w-0 flex-1 flex-col items-center gap-1 text-[11px] font-medium tracking-wide",
+              active ? "text-brand-deep" : "text-muted",
+            )}
+          >
+            <span
+              className={cn(
+                "grid h-8 w-12 place-items-center rounded-full transition",
+                active ? "bg-brand-soft" : "bg-transparent",
+              )}
+            >
+              <Icon className="h-[18px] w-[18px]" />
+            </span>
+            {tab.badge ? (
+              <span className="absolute right-[22%] top-0 min-w-4 rounded-full bg-danger px-1 text-center text-[10px] font-bold leading-4 text-white">
+                {tab.badge > 9 ? "9+" : tab.badge}
+              </span>
+            ) : null}
+            <span className="truncate">{tab.label}</span>
+          </Link>
+        );
+      })}
+      <Link
+        href={exit.href}
+        className="flex min-w-0 flex-1 flex-col items-center gap-1 text-[11px] font-medium tracking-wide text-muted"
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={ACTION_ART.wallet} alt="" width={32} height={32} draggable={false} className="h-8 w-8 object-contain opacity-90" />
+        {exit.label}
+      </Link>
+    </nav>
+  );
+}

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { catchRoute, jsonError } from "@/lib/server/api";
-import { bumpOtpAttempt, clearOtp, findUserByEmail, takeOtp, upsertUser } from "@/lib/server/db";
+import { bumpOtpAttempt, claimAdminInvite, clearOtp, findUserByEmail, takeOtp, upsertUser } from "@/lib/server/db";
 import { verifySecret } from "@/lib/server/crypto";
 import { setPreauth } from "@/lib/server/session";
 import { isBootstrapAdmin } from "@/lib/roles";
@@ -34,6 +34,8 @@ export async function POST(request: Request) {
     if (isBootstrapAdmin(user.email) && !user.roles?.includes("admin")) {
       user.roles = [...(user.roles || ["personal"]), "admin"];
     }
+    // Email is now proven, so a pending admin invite for it can be used.
+    await claimAdminInvite(user);
     await upsertUser(user);
     await clearOtp(email);
     await setPreauth(user.id, user.pinHash ? "pin" : "pin-setup");

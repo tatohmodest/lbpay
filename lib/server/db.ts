@@ -223,7 +223,15 @@ export type DbShape = {
   supportThreads?: StoredSupportThread[];
   supportMessages?: StoredSupportMessage[];
   savings?: StoredSavingsPlan[];
+  adminInvites?: AdminInvite[];
   vapid?: { publicKey: string; privateKey: string };
+};
+
+export type AdminInvite = {
+  email: string;
+  scopes: string[];
+  invitedBy: string;
+  createdAt: string;
 };
 
 const LOCAL_FILE = path.join(process.cwd(), "data", "lbpay.json");
@@ -346,6 +354,7 @@ function withCollections(db: DbShape): DbShape {
     supportThreads: db.supportThreads || [],
     supportMessages: db.supportMessages || [],
     savings: db.savings || [],
+    adminInvites: db.adminInvites || [],
     vapid: db.vapid,
   };
 }
@@ -1619,4 +1628,46 @@ export async function adminSnapshot() {
     savings: db.savings || [],
     audit: db.audit,
   };
+}
+
+/* ------------------------------------------------------------------ */
+/* Admin invites                                                       */
+/* ------------------------------------------------------------------ */
+
+export async function listAdminInvites() {
+  const db = await getDb();
+  return [...(db.adminInvites || [])].sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt));
+}
+
+export async function saveAdminInvite(invite: AdminInvite) {
+  const db = await getDb();
+  const email = invite.email.trim().toLowerCase();
+  db.adminInvites = [{ ...invite, email }, ...(db.adminInvites || []).filter((i) => i.email !== email)];
+  await saveDb(db);
+}
+
+export async function removeAdminInvite(email: string) {
+  const db = await getDb();
+  const before = (db.adminInvites || []).length;
+  db.adminInvites = (db.adminInvites || []).filter((i) => i.email !== email.trim().toLowerCase());
+  if (db.adminInvites.length !== before) await saveDb(db);
+  return db.adminInvites.length !== before;
+}
+
+/**
+ * Turn a pending invite into admin access. Call only once the person has
+ * proved they own the email (after the email code), never at sign-up.
+ */
+export async function claimAdminInvite(user: StoredUser) {
+  const db = await getDb();
+  const email = user.email.trim().toLowerCase();
+  const invite = (db.adminInvites || []).find((i) => i.email === email);
+  if (!invite) return false;
+  if (!user.roles.includes("admin")) user.roles = [...user.roles, "admin"];
+  user.adminScopes = invite.scopes;
+  user.rolesUpdatedAt = new Date().toISOString();
+  db.adminInvites = (db.adminInvites || []).filter((i) => i.email !== email);
+  await saveDb(db);
+  await writeAudit({ actorId: invite.invitedBy, action: "admin.invite.claimed", targetType: "user", targetId: user.id, note: invite.scopes.join(",") });
+  return true;
 }
