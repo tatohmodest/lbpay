@@ -10,6 +10,7 @@ import { useBrowserOrigin } from "@/lib/use-origin";
 import { SaleBadge } from "@/components/product-price";
 import { ShareRow } from "@/components/share-row";
 import { cn } from "@/lib/cn";
+import { mediaSrc } from "@/lib/media";
 
 /**
  * One product, shop-shelf style: a white card with an inset photo, the name,
@@ -41,7 +42,7 @@ export function ProductCard({
       {product.imageUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={product.imageUrl}
+          src={mediaSrc(product.imageUrl)}
           alt={product.title}
           loading="lazy"
           className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"

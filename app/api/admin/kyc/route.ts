@@ -28,13 +28,25 @@ export async function POST(request: Request) {
   const app = await findKycById(String(body.id || ""));
   if (!app) return NextResponse.json({ error: "Application not found." }, { status: 404 });
   const decision = body.decision === "reject" ? "rejected" : "approved";
+  const note = String(body.note || "").trim().slice(0, 500);
+  // Decide pending applications only. "Approve" on an already-approved one is the
+  // explicit "restore access" repair; a rejected application stays rejected (they re-apply).
+  if (app.status === "rejected") {
+    return NextResponse.json({ error: "This application was rejected. The person needs to send a new one." }, { status: 409 });
+  }
+  if (app.status === "approved" && decision === "rejected") {
+    return NextResponse.json({ error: "This application is already approved." }, { status: 409 });
+  }
+  if (decision === "rejected" && !note) {
+    return NextResponse.json({ error: "Say why, so the person knows what to fix." }, { status: 400 });
+  }
 
   let reviewed;
   try {
     reviewed = await reviewKycApplication({
       app,
       decision,
-      note: String(body.note || ""),
+      note,
       reviewerId: auth.user.id,
     });
   } catch (error) {
@@ -60,7 +72,7 @@ export async function POST(request: Request) {
     decision === "approved" ? "KYC approved" : "KYC update",
     decision === "approved"
       ? `Your ${app.track} verification is approved.`
-      : `Your ${app.track} verification was not approved.`,
+      : `Your ${app.track} verification was not approved: ${note}`,
     app.track === "business" ? "/business" : app.track === "developer" ? "/developers" : "/wallet/profile",
   );
   return NextResponse.json({

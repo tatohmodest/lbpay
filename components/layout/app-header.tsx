@@ -103,7 +103,7 @@ export function AppHeader({ onOpenMenu }: { onOpenMenu?: () => void }) {
             className="hidden h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-white sm:flex"
           >
             <AppImg
-              src={state.user.avatar}
+              src={resolveAvatar(state.user.avatar)}
               alt={state.user.name || "Account"}
               width={40}
               height={40}
@@ -142,7 +142,7 @@ export function AppHeader({ onOpenMenu }: { onOpenMenu?: () => void }) {
             >
               <span className="flex h-10 w-10 overflow-hidden rounded-full border border-line">
                 <AppImg
-                  src={state.user.avatar}
+                  src={resolveAvatar(state.user.avatar)}
                   alt=""
                   width={40}
                   height={40}

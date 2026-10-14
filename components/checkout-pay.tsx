@@ -24,6 +24,7 @@ import {
 import { cameroonMsisdn, isCameroonMsisdn } from "@/lib/phone";
 import type { PaymentMethod } from "@/lib/types";
 import { cn } from "@/lib/cn";
+import { mediaSrc } from "@/lib/media";
 
 type Method = PaymentMethod;
 
@@ -388,7 +389,7 @@ export function CheckoutPay({
     ) : (
       <div className="text-center">
         <AppImg
-          src={merchantAvatar}
+          src={mediaSrc(merchantAvatar)}
           alt=""
           className="mx-auto h-20 w-20 rounded-[1.4rem] object-cover ring-4 ring-paper"
         />

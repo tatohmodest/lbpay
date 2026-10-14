@@ -5,6 +5,7 @@ import { Camera } from "lucide-react";
 import { compressKycImage } from "@/lib/image-compress";
 import { kycKindLabel, MAX_KYC_UPLOAD_BYTES, type KycImageKind } from "@/lib/kyc";
 import { cn } from "@/lib/cn";
+import { mediaSrc } from "@/lib/media";
 
 export function KycPhotoField({
   kind,
@@ -60,7 +61,7 @@ export function KycPhotoField({
       >
         {url ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={url} alt="" className="h-40 w-full rounded-xl object-cover" />
+          <img src={mediaSrc(url)} alt="" className="h-40 w-full rounded-xl object-cover" />
         ) : (
           <>
             <Camera className="h-6 w-6 text-brand" />

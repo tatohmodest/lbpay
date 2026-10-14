@@ -114,7 +114,7 @@ async function signingKey(secret: string, date: string, region: string, service:
 }
 
 async function signedR2Request(input: {
-  method: "PUT" | "DELETE";
+  method: "PUT" | "DELETE" | "GET";
   key: string;
   body?: Uint8Array;
   contentType?: string;
@@ -168,10 +168,24 @@ async function signedR2Request(input: {
     headers,
     body: input.body ? payload : undefined,
   });
+  if (input.method === "GET") return res;
   if (!res.ok) {
     const detail = await res.text().catch(() => "");
     throw new Error(detail.slice(0, 180) || `R2 ${input.method} failed (${res.status}).`);
   }
+  return res;
+}
+
+/**
+ * Read a stored file with our own credentials. The bucket does not need public
+ * access, which matters for KYC: identity photos are never on a public URL.
+ */
+export async function readFromR2(key: string): Promise<Response | null> {
+  if (!r2Configured()) return null;
+  const res = await signedR2Request({ method: "GET", key });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`R2 GET failed (${res.status}).`);
+  return res;
 }
 
 export async function uploadToR2(input: {

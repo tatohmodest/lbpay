@@ -1,3 +1,4 @@
+import { mediaKey, mediaSrc } from "@/lib/media";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { SITE_NAME, SITE_OG_IMAGE, SITE_URL } from "@/lib/site";
@@ -50,6 +51,10 @@ export function shareImage(
       alt: opts.alt,
     };
   }
+  // Our R2 files are served by LBPay itself (the bucket has no reliable public address).
+  // KYC photos are private and never used as previews.
+  const key = mediaKey(url);
+  if (key) return key.startsWith("kyc/") ? null : { url: `${origin}${mediaSrc(url)}`, alt: opts.alt };
   if (url.startsWith("data:image/")) {
     return opts.fallbackRoute ? { url: `${origin}${opts.fallbackRoute}`, alt: opts.alt } : null;
   }

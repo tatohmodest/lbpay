@@ -11,6 +11,7 @@ import { useApp } from "@/lib/store";
 import { useMe } from "@/lib/hooks/wallet";
 import type { UserProfile } from "@/lib/types";
 import { useQueryClient } from "@tanstack/react-query";
+import { mediaSrc } from "@/lib/media";
 
 export function ProfileAvatar({ src, name }: { src: string; name: string }) {
   const notify = useNotify();
@@ -59,7 +60,7 @@ export function ProfileAvatar({ src, name }: { src: string; name: string }) {
     <label className="relative mx-auto block h-24 w-24 cursor-pointer">
       {showPhoto ? (
         <AppImg
-          src={preview || src}
+          src={mediaSrc(preview || src)}
           alt={name || "Profile photo"}
           width={96}
           height={96}

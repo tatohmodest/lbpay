@@ -1,3 +1,5 @@
+import { mediaSrc } from "@/lib/media";
+
 export const DEFAULT_AVATAR = "/illustrations/empty-wallet.webp";
 
 const PLACEHOLDERS = new Set([
@@ -16,7 +18,7 @@ export function isDefaultAvatar(src?: string | null) {
 export function resolveAvatar(src?: string | null) {
   const value = (src || "").trim();
   if (!value || PLACEHOLDERS.has(value)) return DEFAULT_AVATAR;
-  return value;
+  return mediaSrc(value);
 }
 
 export function nameInitials(name?: string | null) {

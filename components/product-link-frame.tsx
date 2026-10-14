@@ -1,6 +1,7 @@
 import { formatXAF } from "@/lib/format";
 import { normalizeLinkTemplate, type LinkTemplateId } from "@/lib/link-templates";
 import { cn } from "@/lib/cn";
+import { mediaSrc } from "@/lib/media";
 
 export function ProductLinkFrame({
   title,
@@ -39,7 +40,7 @@ export function ProductLinkFrame({
       {imageUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={imageUrl}
+          src={mediaSrc(imageUrl)}
           alt={name}
           className={cn(
             "w-full object-cover",

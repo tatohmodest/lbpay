@@ -12,6 +12,7 @@ import { useNotify } from "@/lib/notify";
 import { copyText } from "@/lib/clipboard";
 import { payLinkPath, payLinkUrl } from "@/lib/origin";
 import { useBrowserOrigin } from "@/lib/use-origin";
+import { mediaSrc } from "@/lib/media";
 
 export type ManagedPaymentLink = {
   id: string;
@@ -162,7 +163,7 @@ export function PaymentLinkManageList({
                 <div className="h-44 w-full shrink-0 overflow-hidden rounded-2xl bg-paper sm:h-28 sm:w-36">
                   {link.imageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={link.imageUrl} alt={link.title} className="h-full w-full object-cover" />
+                    <img src={mediaSrc(link.imageUrl)} alt={link.title} className="h-full w-full object-cover" />
                   ) : (
                     <div className="grid h-full place-items-center px-3 text-center">
                       <p className="text-sm font-black text-brand-deep">{link.title}</p>

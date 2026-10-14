@@ -12,6 +12,7 @@ import { useBrowserOrigin } from "@/lib/use-origin";
 import { BadgeCheck, Lock, Search, ShieldCheck, ShoppingBag } from "lucide-react";
 import { NetworkMark } from "@/components/network-mark";
 import { useState } from "react";
+import { mediaSrc } from "@/lib/media";
 
 type ShopPayload = {
   found?: boolean;
@@ -88,7 +89,7 @@ export function ShopListing({ handle }: { handle: string }) {
         <section className="lb-rise relative overflow-hidden rounded-[2rem] bg-white p-5 shadow-[0_30px_60px_-30px_rgba(6,38,28,0.35)] ring-1 ring-line sm:p-7">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
             <AppImg
-              src={user.avatar}
+              src={mediaSrc(user.avatar)}
               alt=""
               className="h-20 w-20 shrink-0 rounded-[1.4rem] object-cover ring-4 ring-paper"
             />

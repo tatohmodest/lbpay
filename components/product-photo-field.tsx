@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Camera } from "lucide-react";
 import { compressProductImage, MAX_IMAGE_UPLOAD_BYTES } from "@/lib/image-compress";
 import { cn } from "@/lib/cn";
+import { mediaSrc } from "@/lib/media";
 
 function isHeic(file: File) {
   return /heic|heif/i.test(file.type) || /\.hei[cf]$/i.test(file.name);
@@ -72,7 +73,7 @@ export function ProductPhotoField({
       >
         {url ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={url} alt="" className="aspect-[5/4] w-full object-cover" />
+          <img src={mediaSrc(url)} alt="" className="aspect-[5/4] w-full object-cover" />
         ) : (
           <span className="flex aspect-[5/4] w-full flex-col items-center justify-center gap-2 bg-paper px-6 text-center">
             <span className="grid h-12 w-12 place-items-center rounded-full bg-brand-soft text-brand">

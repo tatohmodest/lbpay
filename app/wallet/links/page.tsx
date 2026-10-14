@@ -18,6 +18,7 @@ import { shopHandlePath } from "@/lib/origin";
 import { shopShareText, shopUrl } from "@/lib/shop";
 import { shopSlotState, SHOP_LIMITS } from "@/lib/shop-limits";
 import { useBrowserOrigin } from "@/lib/use-origin";
+import { mediaSrc } from "@/lib/media";
 
 type LinkRow = {
   id: string;
@@ -120,7 +121,7 @@ export default function WalletLinksPage() {
           <div className="min-w-0">
             <div className="flex items-center gap-3">
               <AppImg
-                src={me.data?.user?.avatar}
+                src={mediaSrc(me.data?.user?.avatar)}
                 alt=""
                 className="h-14 w-14 rounded-2xl object-cover ring-2 ring-white/20"
               />

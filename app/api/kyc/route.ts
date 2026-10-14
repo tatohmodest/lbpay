@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createKyc, listKycForUser, upsertUser } from "@/lib/server/db";
 import { requireActiveUser } from "@/lib/server/guard";
 import { isOurCloudinaryUrl } from "@/lib/server/cloudinary";
+import { alertNewKyc } from "@/lib/server/kyc-alerts";
 import { isBusinessKind, kycDocsComplete, type KycDocuments, type KycDocumentType } from "@/lib/kyc";
 import type { KycTrack } from "@/lib/types";
 
@@ -111,6 +112,7 @@ export async function POST(request: Request) {
     auth.user.businessKind = businessKind;
   }
   await upsertUser(auth.user);
+  await alertNewKyc(app, auth.user);
 
   return NextResponse.json({ ok: true, application: app, user: auth.user });
 }

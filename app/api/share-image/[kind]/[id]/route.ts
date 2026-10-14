@@ -1,3 +1,4 @@
+import { mediaSrc } from "@/lib/media";
 import { NextResponse } from "next/server";
 import { findLinkBySlug, findUserByHandle } from "@/lib/server/db";
 import { isSafeProductImageUrl } from "@/lib/product-image";
@@ -20,6 +21,7 @@ export async function GET(_request: Request, context: { params: Promise<{ kind: 
     if (user) raw = resolveAvatar(user.avatar) || "";
   }
   if (!raw) return new NextResponse("Not found", { status: 404 });
+  raw = String(mediaSrc(raw));
 
   const data = raw.match(DATA_URL);
   if (data) {
