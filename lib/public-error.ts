@@ -23,13 +23,13 @@ export function mapRailError(raw: unknown): PublicError {
   if (COLLECTION_OFF.test(text) || DISBURSE_OFF.test(text)) {
     return {
       code: "PAYUNIT_PRODUCT_NOT_ACTIVE",
-      user: "PayUnit has not activated Mobile Money disbursement on this merchant account. A PayUnit balance is not enough. Ask PayUnit support to enable the deposit/disbursement product, then try again.",
+      user: "This service is paused on our side for a moment. Your money is safe and nothing was taken from your wallet. Our team has been alerted, please try again a little later.",
     };
   }
   if (AUTH.test(text)) {
     return {
       code: "AUTHENTICATION_FAILED",
-      user: "PayUnit rejected this request. Check that the live API keys are correct and that disbursement is enabled on the merchant account.",
+      user: "This service is paused on our side for a moment. Your money is safe and nothing was taken from your wallet. Our team has been alerted, please try again a little later.",
     };
   }
   if (INVALID_ACCOUNT.test(text)) {
@@ -47,13 +47,13 @@ export function mapRailError(raw: unknown): PublicError {
   if (MERCHANT_FLOAT.test(text)) {
     return {
       code: "INSUFFICIENT_MERCHANT_FLOAT",
-      user: "PayUnit does not have enough disbursement balance to send this payout. Top up the PayUnit merchant wallet, then try again.",
+      user: "Withdrawals are busy right now. Your money is safe and nothing was taken from your wallet. Please try again in a little while.",
     };
   }
   if (APPROVAL.test(text)) {
     return {
       code: "DISBURSEMENT_APPROVAL",
-      user: "PayUnit created the withdrawal but it is waiting for approval in the PayUnit merchant dashboard.",
+      user: "Your withdrawal is being reviewed and usually completes shortly. We'll notify you when it lands.",
     };
   }
   if (INSUFFICIENT_MOMO.test(text)) {
@@ -109,4 +109,17 @@ export function publicPaymentError(raw: unknown) {
   const original = raw instanceof Error ? raw.message : String(raw || "");
   console.error("[lbpay] payment error", { code: mapped.code, original });
   return mapped.user;
+}
+
+/** Problems only LBPay's team can fix (gateway account, keys, float). Customers can't do anything about these. */
+const OPERATOR_CODES = new Set([
+  "PAYUNIT_PRODUCT_NOT_ACTIVE",
+  "AUTHENTICATION_FAILED",
+  "INSUFFICIENT_MERCHANT_FLOAT",
+  "SERVICE_UNAVAILABLE",
+]);
+
+export function operatorIssue(raw: unknown): string | null {
+  const code = mapRailError(raw).code;
+  return OPERATOR_CODES.has(code) ? code : null;
 }

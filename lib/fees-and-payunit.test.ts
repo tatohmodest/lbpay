@@ -120,3 +120,14 @@ test("PayUnit 401 activate-collection is not shown as a generic outage", () => {
   );
   assert.equal(mapped.code, "PAYUNIT_PRODUCT_NOT_ACTIVE");
 });
+
+test("gateway account problems reach customers as a calm message and flag the team", async () => {
+  const { mapRailError, operatorIssue } = await import("./public-error");
+  const raw =
+    "Authentication failed. Please check your credentials or authorisations needed. can't process operation, contact admin to activate collection";
+  const mapped = mapRailError(raw);
+  assert.doesNotMatch(mapped.user, /payunit|merchant|credential/i);
+  assert.match(mapped.user, /nothing was taken/i);
+  assert.ok(operatorIssue(raw));
+  assert.equal(operatorIssue("Your Mobile Money balance is insufficient"), null);
+});

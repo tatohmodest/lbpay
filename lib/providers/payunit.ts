@@ -2,6 +2,7 @@ import { PayunitClient } from "@payunit/nodejs-sdk";
 import { httpsCallbackUrl, payunitGatewayUrl } from "@/lib/site";
 import { cameroonMsisdn } from "@/lib/phone";
 import { publicPaymentError } from "@/lib/public-error";
+import { reportRailProblem } from "@/lib/server/ops-alerts";
 import type { PaymentRail, RailCollectInput, RailDisburseInput, RailResult, RailStatusOptions } from "./types";
 import {
   disbursementAccount,
@@ -127,11 +128,13 @@ export class PayUnitRail implements PaymentRail {
     } catch (error) {
       const message = errorMessage(error, "PayUnit could not start the collection.");
       console.error("[lbpay] payunit collect failed", message);
+      await reportRailProblem(message, "collection");
       return {
         provider: "payunit",
         reference: input.reference,
         status: "failed",
-        message,
+        // Customers get the plain-language version, never the gateway's raw text.
+        message: publicPaymentError(message),
       };
     }
   }
@@ -191,7 +194,7 @@ export class PayUnitRail implements PaymentRail {
           provider: "payunit",
           reference: input.reference,
           status: "failed",
-          message: "PayUnit did not start the withdrawal. Please try again.",
+          message: "The withdrawal could not start. Nothing was taken from your wallet. Please try again.",
           raw: created,
         };
       }
@@ -237,6 +240,7 @@ export class PayUnitRail implements PaymentRail {
       }
 
       const body = unwrapPayunitBody(confirmed);
+      if (body.system_note || body.message) await reportRailProblem(String(body.system_note || body.message), "payout");
       const approvalRequired = Boolean(body.is_approval_required) && body.is_approved !== true;
       const status = approvalRequired
         ? "pending"
@@ -247,7 +251,7 @@ export class PayUnitRail implements PaymentRail {
         providerRef: payToken,
         status: status === "failed" ? "failed" : status === "success" ? "success" : "pending",
         message: approvalRequired
-          ? "PayUnit created the withdrawal but it is waiting for approval in the PayUnit merchant dashboard."
+          ? "Your withdrawal is being reviewed and usually completes shortly. We'll notify you when it lands."
           : status === "failed"
             ? publicPaymentError(String(body.system_note || body.message || "failed"))
             : undefined,
@@ -256,11 +260,13 @@ export class PayUnitRail implements PaymentRail {
     } catch (error) {
       const message = errorMessage(error, "PayUnit could not start the disbursement.");
       console.error("[lbpay] payunit disburse failed", message);
+      await reportRailProblem(message, "payout");
       return {
         provider: "payunit",
         reference: input.reference,
         status: "failed",
-        message,
+        // Customers get the plain-language version, never the gateway's raw text.
+        message: publicPaymentError(message),
       };
     }
   }
