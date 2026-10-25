@@ -1,8 +1,8 @@
 import { payoutsPausedResponse } from "@/lib/server/payout-gate";
 import { NextResponse } from "next/server";
 import { authenticateApiKey, logApi, railForEnv } from "@/lib/server/apikey";
-import { recordLedgerMove, getWallet } from "@/lib/server/db";
-import { payunitReference } from "@/lib/server/crypto";
+import { getWallet } from "@/lib/server/db";
+import { runPayout } from "@/lib/server/payout-flow";
 import { cameroonMsisdn, isCameroonMsisdn } from "@/lib/phone";
 import { momoOutFee } from "@/lib/fees";
 import { assertAmount, assertDailyOutbound } from "@/lib/server/limits";
@@ -43,33 +43,29 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Live payouts need approved developer KYC." }, { status: 403 });
   }
 
-  const reference = payunitReference("PO");
-  const result = await railForEnv(env).disburse({
-    amount,
-    currency: "XAF",
-    network,
-    phone,
-    reference,
-    beneficiaryName: user.name,
-  });
-  if (result.status === "failed") {
-    await logApi(user.id, "POST", "/v1/payouts", 502);
-    return NextResponse.json({ error: result.message || "Your transaction could not be completed. No money has been deducted. Please try again." }, { status: 502 });
-  }
-  const moved = await recordLedgerMove({
+  const done = await runPayout({
+    rail: railForEnv(env),
     userId: user.id,
+    beneficiaryName: user.name,
     amount,
     fee,
-    direction: "debit",
+    network,
+    phone,
     kind: "payout",
-    method: network,
-    counterparty: phone,
-    note: fee ? `API disbursement · ${fee} XAF fee` : "API disbursement",
-    status: result.status === "success" ? "success" : "pending",
-    rail: result.provider,
-    railRef: result.reference || reference,
-    meta: result.providerRef ? { payToken: result.providerRef } : undefined,
+    note: "API disbursement",
+    label: fee ? `API disbursement · ${fee} XAF fee` : "API disbursement",
+    prefix: "PO",
   });
+  if (done.outcome === "insufficient") {
+    await logApi(user.id, "POST", "/v1/payouts", 409);
+    return NextResponse.json({ error: "Balance changed during the request. Retry." }, { status: 409 });
+  }
+  if (done.outcome === "failed") {
+    await logApi(user.id, "POST", "/v1/payouts", 502);
+    return NextResponse.json({ error: done.message || "Your transaction could not be completed. No money has been deducted. Please try again." }, { status: 502 });
+  }
+  const moved = { tx: done.tx };
+  const result = { provider: done.provider };
   await logApi(user.id, "POST", "/v1/payouts", 200);
   return NextResponse.json({
     id: moved.tx.id,

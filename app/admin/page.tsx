@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeftRight, FileCheck, MessageSquare, RefreshCw, Users, Wallet } from "lucide-react";
 import { AppImg } from "@/components/app-img";
 import { AdminHeader, AdminPanel, AdminStat } from "@/components/admin/ui";
@@ -36,6 +36,16 @@ type Overview = {
   people: Array<{ id: string; name: string; lbpayId: string; avatar: string; status: string }>;
   supportUnread?: number;
   payouts?: { on: boolean; changedAt?: string };
+  stuckPayouts?: Array<{
+    id: string;
+    kind: string;
+    amount: number;
+    fee: number;
+    counterparty: string;
+    railRef?: string;
+    createdAt: string;
+    user: { name: string; lbpayId: string } | null;
+  }>;
   refundedPayouts?: Array<{
     id: string;
     kind: string;
@@ -98,6 +108,35 @@ export default function AdminHome() {
       />
 
       <PayoutSwitch state={data?.payouts} owner={Boolean(session.data?.owner)} />
+
+      {scopes.includes("finance") ? <ReconcileNow /> : null}
+
+      {(data?.stuckPayouts || []).length ? (
+        <AdminPanel
+          title="Payouts stuck over 30 minutes"
+          copy="The money is already taken from the wallet. Find each reference on the PayUnit dashboard: if it's paid, mark it success in Transactions; if PayUnit shows it failed, mark it failed and the wallet is refunded."
+        >
+          <div className="overflow-x-auto px-2 pb-2">
+            <table className="w-full min-w-[560px] text-left text-sm">
+              <tbody className="divide-y divide-line">
+                {data!.stuckPayouts!.map((r) => (
+                  <tr key={r.id}>
+                    <td className="py-2 pr-3 text-xs text-muted">{formatDate(r.createdAt)}</td>
+                    <td className="py-2 pr-3 font-semibold">{r.user ? `${r.user.name} @${r.user.lbpayId}` : "Unknown"}</td>
+                    <td className="py-2 pr-3 font-mono text-xs">{r.counterparty}</td>
+                    <td className="py-2 pr-3 text-right font-mono font-bold">{xaf(r.amount)}</td>
+                    <td className="py-2 font-mono text-xs">
+                      <Link href={`/admin/transactions?q=${encodeURIComponent(r.id)}`} className="underline">
+                        {r.railRef || r.id}
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </AdminPanel>
+      ) : null}
 
       {(data?.refundedPayouts || []).length ? (
         <AdminPanel
@@ -375,6 +414,33 @@ export default function AdminHome() {
           ) : null}
         </div>
       </div>
+    </div>
+  );
+}
+
+function ReconcileNow() {
+  const client = useQueryClient();
+  const [state, setState] = useState<"idle" | "busy" | string>("idle");
+  return (
+    <div className="flex flex-wrap items-center gap-3 rounded-[1.25rem] border border-line/80 bg-white px-4 py-3 text-sm">
+      <span className="flex-1 text-muted">
+        Pending payouts are checked with PayUnit when people open the app and every few minutes.
+        {state !== "idle" && state !== "busy" ? <span className="ml-1 font-semibold text-ink">{state}</span> : null}
+      </span>
+      <button
+        type="button"
+        disabled={state === "busy"}
+        onClick={async () => {
+          setState("busy");
+          const res = await fetch("/api/cron/reconcile", { method: "POST" }).catch(() => null);
+          const data = res && res.ok ? ((await res.json()) as { checked: number; settled: number }) : null;
+          setState(data ? `Checked ${data.checked}, settled ${data.settled}.` : "Couldn't check right now.");
+          client.invalidateQueries({ queryKey: ["admin-overview"] });
+        }}
+        className="rounded-full bg-ink px-4 py-2 text-[13px] font-bold text-white disabled:opacity-60"
+      >
+        {state === "busy" ? "Checking…" : "Check pending payouts now"}
+      </button>
     </div>
   );
 }

@@ -97,6 +97,7 @@ export type StoredTx = Transaction & {
     receiveAmount?: number;
     recipientName?: string;
     corridor?: string;
+    lastCheckedAt?: string;
   };
 };
 

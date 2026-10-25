@@ -89,6 +89,7 @@ export function WaitingOnPhone({
   checking,
   onCheck,
   onCancel,
+  cancelLabel,
 }: {
   network: Network;
   amountLabel: string;
@@ -100,6 +101,7 @@ export function WaitingOnPhone({
   checking?: boolean;
   onCheck?: () => void;
   onCancel: () => void;
+  cancelLabel?: string;
 }) {
   const L = useL();
   const pct = Math.max(0, Math.min(1, seconds / total));
@@ -188,7 +190,7 @@ export function WaitingOnPhone({
             onClick={onCancel}
             className="flex h-11 items-center justify-center rounded-2xl text-[14px] font-semibold text-muted transition hover:bg-paper hover:text-ink"
           >
-            {L("Stop waiting", "Arrêter d'attendre")}
+            {cancelLabel ?? L("Stop waiting", "Arrêter d'attendre")}
           </button>
         </div>
       </div>

@@ -198,6 +198,10 @@ export class PayUnitRail implements PaymentRail {
         account_bank: provider,
       });
       const payToken = pickPayToken(created);
+      if (payToken && input.onCreated) {
+        // Save the gateway's id now: if this request dies mid-way, we can still look it up.
+        await input.onCreated(payToken).catch((e) => console.error("[lbpay] save pay token failed", e));
+      }
       if (!payToken) {
         console.error("[lbpay] payunit create disbursement missing pay_token", created);
         return {

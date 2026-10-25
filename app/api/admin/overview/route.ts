@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { adminSnapshot, payoutSwitch, publicUser } from "@/lib/server/db";
 import { buildAdminStats } from "@/lib/server/admin-stats";
+import { reconcileQuickly, stuckPayouts } from "@/lib/server/reconcile";
 import { supportUnreadAdminCount } from "@/lib/server/support";
 import { requireAdmin } from "@/lib/server/guard";
 import { hasAdminScope } from "@/lib/roles";
@@ -8,6 +9,7 @@ import { hasAdminScope } from "@/lib/roles";
 export async function GET() {
   const auth = await requireAdmin();
   if (auth.error || !auth.user) return auth.error!;
+  if (hasAdminScope(auth.user, "finance")) await reconcileQuickly({ limit: 10 }, 5000);
   const snap = await adminSnapshot();
   const stats = buildAdminStats({
     users: snap.users,
@@ -44,6 +46,12 @@ export async function GET() {
       : [],
     supportUnread: canSupport ? await supportUnreadAdminCount() : 0,
     refundedPayouts,
+    stuckPayouts: canFinance
+      ? (await stuckPayouts()).map((t) => ({
+          ...t,
+          user: names.get(t.userId) ? { name: names.get(t.userId)!.name, lbpayId: names.get(t.userId)!.lbpayId } : null,
+        }))
+      : [],
     payouts: await payoutSwitch(),
   });
 }

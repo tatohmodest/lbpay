@@ -113,7 +113,7 @@ export default function WithdrawPage() {
       return;
     }
     setWaiting(null);
-    notify.info(L("Still sending", "Envoi en cours"), L("The withdrawal is still processing. Check history in a minute.", "Le retrait est toujours en cours. Vérifiez l'historique dans une minute."));
+    notify.info(L("Still sending", "Envoi en cours"), L("Still processing. It's already taken from your wallet and comes back automatically if it fails.", "Toujours en cours. Le montant est déjà débité et revient automatiquement en cas d'échec."));
     router.push("/wallet");
   }
 
@@ -204,7 +204,17 @@ export default function WithdrawPage() {
           seconds={waiting.seconds}
           checking={checking}
           onCheck={() => void verifyNow()}
-          onCancel={() => router.push("/wallet")}
+          onCancel={() => {
+            notify.info(
+              L("Still sending in the background", "L'envoi continue"),
+              L(
+                "It's already taken from your wallet. If it fails, it comes back to your wallet automatically.",
+                "Le montant est déjà débité. En cas d'échec, il revient automatiquement dans votre portefeuille.",
+              ),
+            );
+            router.push("/wallet");
+          }}
+          cancelLabel={L("Close, it keeps going", "Fermer, ça continue")}
         />
       ) : (
         <MoneyCard>

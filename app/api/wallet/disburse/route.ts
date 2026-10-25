@@ -1,8 +1,8 @@
 import { payoutsPausedResponse } from "@/lib/server/payout-gate";
 import { NextResponse } from "next/server";
-import { findTxById, getWallet, patchTx, recordLedgerMove, settleRailTx } from "@/lib/server/db";
+import { getWallet } from "@/lib/server/db";
+import { runPayout } from "@/lib/server/payout-flow";
 import { formatXAF } from "@/lib/format";
-import { payunitReference } from "@/lib/server/crypto";
 import { getPaymentRail } from "@/lib/providers";
 import { requireActiveUser } from "@/lib/server/guard";
 import { cameroonMsisdn, detectMobileNetwork, isCameroonMsisdn } from "@/lib/phone";
@@ -61,95 +61,37 @@ export async function POST(request: Request) {
       );
     }
 
-    const rail = getPaymentRail();
-    const reference = payunitReference("DISB");
-    const kind = note.toLowerCase().includes("payout") ? "payout" : "withdraw";
-    const label = fee
-      ? `Disbursement to ${network.toUpperCase()} · ${fee} XAF fee`
-      : `Disbursement to ${network.toUpperCase()}`;
-
-    // Reserve the money first, under the ledger lock. Two withdrawals at once can
-    // no longer both be paid out; the second simply finds the balance already used.
-    let reserved;
-    try {
-      reserved = await recordLedgerMove({
-        userId: user.id,
-        amount,
-        fee,
-        direction: "debit",
-        kind,
-        method: network,
-        counterparty: phone,
-        note: label,
-        status: "pending",
-        rail: "payunit",
-        railRef: reference,
-        meta: { payoutRef: reference },
-      });
-    } catch (reserveError) {
-      const message = reserveError instanceof Error ? reserveError.message : "";
-      if (/insufficient wallet balance/i.test(message)) {
-        return NextResponse.json(
-          { error: "Your balance changed a moment ago. Refresh and try again." },
-          { status: 409 },
-        );
-      }
-      throw reserveError;
+    const done = await runPayout({
+      rail: getPaymentRail(),
+      userId: user.id,
+      beneficiaryName: user.name,
+      amount,
+      fee,
+      network,
+      phone,
+      kind: note.toLowerCase().includes("payout") ? "payout" : "withdraw",
+      note,
+      label: fee ? `Disbursement to ${network.toUpperCase()} · ${fee} XAF fee` : `Disbursement to ${network.toUpperCase()}`,
+      prefix: "DISB",
+    });
+    if (done.outcome === "insufficient") {
+      return NextResponse.json({ error: "Your balance changed a moment ago. Refresh and try again." }, { status: 409 });
     }
-
-    let result;
-    try {
-      result = await rail.disburse({
-        amount,
-        currency: "XAF",
-        network,
-        phone,
-        reference,
-        beneficiaryName: user.name,
-        note,
-      });
-    } catch (railError) {
-      // We can't tell whether the network sent it. Keep it pending: the status check
-      // and the gateway callback settle it (and refund it if it failed).
-      console.error("[lbpay] disburse threw after reserving", reference, railError);
-      return NextResponse.json({
-        ok: true,
-        rail: "payunit",
-        status: "pending",
-        balance: reserved.balance,
-        fee,
-        debitAmount: amount + fee,
-        transactionId: reference,
-        transaction: reserved.tx,
-      });
-    }
-
-    if (result.status === "failed") {
-      // Gateway refused: give the money straight back.
-      await settleRailTx(reference, "failed");
+    if (done.outcome === "failed") {
       return NextResponse.json(
-        { error: result.message || "Your transaction could not be completed. No money has been deducted. Please try again." },
+        { error: done.message || "Your transaction could not be completed. No money has been deducted. Please try again." },
         { status: 502 },
       );
     }
-
-    const railRef = result.reference || reference;
-    await patchTx(reserved.tx.id, {
-      rail: result.provider,
-      railRef,
-      meta: { ...reserved.tx.meta, payoutRef: reference, ...(result.providerRef ? { payToken: result.providerRef } : {}) },
-    });
-    const settled = result.status === "success" ? await settleRailTx(railRef, "success") : null;
-    const tx = await findTxById(reserved.tx.id);
     return NextResponse.json({
       ok: true,
-      rail: result.provider,
-      status: result.status,
-      balance: settled && "balance" in settled ? settled.balance : reserved.balance,
+      rail: done.provider,
+      status: done.status,
+      balance: done.balance,
       fee,
       debitAmount: amount + fee,
-      transactionId: railRef,
-      transaction: tx ?? reserved.tx,
+      transactionId: done.transactionId,
+      transaction: done.tx,
     });
   } catch (error) {
     return NextResponse.json({ error: publicPaymentError(error) }, { status: 500 });

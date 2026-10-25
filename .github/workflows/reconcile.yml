@@ -1,0 +1,22 @@
+# Every 5 minutes, ask LBPay to settle pending payouts with the gateway.
+# Needs the same CRON_SECRET in GitHub (Settings → Secrets → Actions) and in the
+# Cloudflare worker's environment variables. Without it, this job does nothing.
+name: Settle pending payouts
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Settle pending payouts
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then echo "CRON_SECRET not set; skipping."; exit 0; fi
+          curl -fsS -X POST https://lbpay.loopingbinary.com/api/cron/reconcile \
+            -H "x-cron-secret: $CRON_SECRET" --max-time 60

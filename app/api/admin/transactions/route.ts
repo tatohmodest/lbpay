@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { findTxById, findUserById, getWallet, listAllTx, patchTx, recordLedgerMove, writeAudit } from "@/lib/server/db";
+import { findTxById, findUserById, getWallet, listAllTx, patchTx, recordLedgerMove, settleRailTx, writeAudit } from "@/lib/server/db";
 import { requireAdmin } from "@/lib/server/guard";
 
 export async function GET() {
@@ -22,6 +22,24 @@ export async function POST(request: Request) {
     const status = body.status;
     if (!["success", "failed", "pending", "cancelled"].includes(status)) {
       return NextResponse.json({ error: "Invalid status." }, { status: 400 });
+    }
+    // Pending withdrawals/payouts settle through the ledger: "failed" refunds amount + fee, once.
+    if (
+      tx.status === "pending" &&
+      (tx.kind === "withdraw" || tx.kind === "payout") &&
+      (status === "success" || status === "failed" || status === "cancelled")
+    ) {
+      await settleRailTx(tx.railRef || tx.id, status);
+      await patchTx(tx.id, { note: `${tx.note || ""} · admin: ${reason}` });
+      await writeAudit({
+        actorId: auth.user.id,
+        action: "tx.status",
+        targetType: "transaction",
+        targetId: tx.id,
+        note: reason,
+        meta: { status },
+      });
+      return NextResponse.json({ ok: true, tx: await findTxById(tx.id), wallet: await getWallet(tx.userId) });
     }
     const refundAbroad =
       tx.kind === "international" &&

@@ -15,6 +15,8 @@ export type RailDisburseInput = {
   reference: string;
   beneficiaryName?: string;
   note?: string;
+  /** Called as soon as the gateway has created the payout, before it is confirmed. */
+  onCreated?: (payToken: string) => Promise<void>;
 };
 
 export type RailResult = {

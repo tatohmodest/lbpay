@@ -1,3 +1,4 @@
+import { reconcileQuickly } from "@/lib/server/reconcile";
 import { NextResponse } from "next/server";
 import { catchRoute } from "@/lib/server/api";
 import { deleteAccountForUser, findUserById, getWallet, listKeys, listLinks, listTx, publicUser } from "@/lib/server/db";
@@ -14,6 +15,8 @@ export async function GET() {
     if (!session) return NextResponse.json({ session: false });
     const user = await findUserById(session.userId);
     if (!user) return NextResponse.json({ session: false }, { status: 401 });
+    // Settle this person's pending payouts with the gateway before showing the balance.
+    await reconcileQuickly({ userId: user.id, limit: 5 });
     const savings = await listSavings(user.id).catch(() => []);
     const wallet = await getWallet(user.id);
     const transactions = await listTx(user.id);
