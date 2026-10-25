@@ -3,6 +3,7 @@ import { httpsCallbackUrl, payunitGatewayUrl } from "@/lib/site";
 import { cameroonMsisdn } from "@/lib/phone";
 import { publicPaymentError } from "@/lib/public-error";
 import { reportRailProblem } from "@/lib/server/ops-alerts";
+import { payoutSwitch } from "@/lib/server/db";
 import type { PaymentRail, RailCollectInput, RailDisburseInput, RailResult, RailStatusOptions } from "./types";
 import {
   disbursementAccount,
@@ -140,6 +141,15 @@ export class PayUnitRail implements PaymentRail {
   }
 
   async disburse(input: RailDisburseInput): Promise<RailResult> {
+    // Last line of defence: nothing leaves while payouts are switched off in admin.
+    if (!(await payoutSwitch()).on) {
+      return {
+        provider: "payunit",
+        reference: input.reference,
+        status: "failed",
+        message: "Withdrawals are paused for a short safety check. Your money is safe in your LBPay wallet.",
+      };
+    }
     const provider = gateway(input.network);
     if (!provider) {
       return {
@@ -235,16 +245,32 @@ export class PayUnitRail implements PaymentRail {
               raw: { created, confirmError: retryError },
             };
           }
-          throw retryError;
+          // The payout exists on the gateway and we don't know if it went out.
+          // Never call that "failed": a refund here could pay the person twice.
+          console.error("[lbpay] payunit confirm unclear, keeping pending", input.reference, retryError);
+          await reportRailProblem(errorMessage(retryError, "confirm failed"), "payout");
+          return {
+            provider: "payunit",
+            reference: input.reference,
+            providerRef: payToken,
+            status: "pending",
+            message: "Your withdrawal is being processed. This usually takes less than two minutes.",
+            raw: { created, confirmError: String(retryError) },
+          };
         }
       }
 
       const body = unwrapPayunitBody(confirmed);
       if (body.system_note || body.message) await reportRailProblem(String(body.system_note || body.message), "payout");
       const approvalRequired = Boolean(body.is_approval_required) && body.is_approved !== true;
-      const status = approvalRequired
+      let status = approvalRequired
         ? "pending"
         : railStatus(pickStatusRaw(confirmed) || String(body.status || ""));
+      if (status === "failed") {
+        // Only believe "failed" when the gateway's own status lookup agrees.
+        const check = await this.readDisbursementStatus(input.reference, payToken).catch(() => null);
+        if (!check || check.status !== "failed") status = check?.status === "success" ? "success" : "pending";
+      }
       return {
         provider: "payunit",
         reference: pickTransactionId(confirmed, input.reference),

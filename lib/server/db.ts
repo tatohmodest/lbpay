@@ -224,6 +224,8 @@ export type DbShape = {
   supportMessages?: StoredSupportMessage[];
   savings?: StoredSavingsPlan[];
   adminInvites?: AdminInvite[];
+  /** Emergency switches. payoutsOn must be explicitly true for money to leave LBPay. */
+  settings?: { payoutsOn?: boolean; payoutsChangedBy?: string; payoutsChangedAt?: string };
   vapid?: { publicKey: string; privateKey: string };
 };
 
@@ -355,6 +357,7 @@ function withCollections(db: DbShape): DbShape {
     supportMessages: db.supportMessages || [],
     savings: db.savings || [],
     adminInvites: db.adminInvites || [],
+    settings: db.settings || {},
     vapid: db.vapid,
   };
 }
@@ -1670,4 +1673,21 @@ export async function claimAdminInvite(user: StoredUser) {
   await saveDb(db);
   await writeAudit({ actorId: invite.invitedBy, action: "admin.invite.claimed", targetType: "user", targetId: user.id, note: invite.scopes.join(",") });
   return true;
+}
+
+/* ------------------------------------------------------------------ */
+/* Payout switch                                                       */
+/* ------------------------------------------------------------------ */
+
+export async function payoutSwitch() {
+  const db = await getDb();
+  const st = db.settings || {};
+  return { on: st.payoutsOn === true, changedBy: st.payoutsChangedBy, changedAt: st.payoutsChangedAt };
+}
+
+export async function setPayoutsOn(on: boolean, actorId: string) {
+  const db = await getDb();
+  db.settings = { ...(db.settings || {}), payoutsOn: on, payoutsChangedBy: actorId, payoutsChangedAt: new Date().toISOString() };
+  await saveDb(db);
+  await writeAudit({ actorId, action: on ? "payouts.on" : "payouts.off", targetType: "settings", targetId: "payouts" });
 }

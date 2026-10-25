@@ -1,3 +1,4 @@
+import { payoutsPausedResponse } from "@/lib/server/payout-gate";
 import { NextResponse } from "next/server";
 import { authenticateApiKey, logApi, railForEnv } from "@/lib/server/apikey";
 import { recordLedgerMove, getWallet } from "@/lib/server/db";
@@ -10,6 +11,10 @@ export async function POST(request: Request) {
   const auth = await authenticateApiKey(request);
   if (!auth.ok) return auth.error;
   const { user, env } = auth;
+  if (env === "live") {
+    const paused = await payoutsPausedResponse();
+    if (paused) return paused;
+  }
   const body = await request.json().catch(() => ({}));
   const amount = Number(body.amount);
   const phone = cameroonMsisdn(body.phone);

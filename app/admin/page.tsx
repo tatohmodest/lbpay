@@ -7,6 +7,7 @@ import { ArrowLeftRight, FileCheck, MessageSquare, RefreshCw, Users, Wallet } fr
 import { AppImg } from "@/components/app-img";
 import { AdminHeader, AdminPanel, AdminStat } from "@/components/admin/ui";
 import { AdminBars } from "@/components/admin/bars";
+import { PayoutSwitch } from "@/components/admin/payout-switch";
 import { useAdminSession } from "@/components/role-gate";
 import { StatusBadge } from "@/components/ui/badge";
 import { formatDate, formatXAF } from "@/lib/format";
@@ -34,6 +35,17 @@ type Overview = {
   }>;
   people: Array<{ id: string; name: string; lbpayId: string; avatar: string; status: string }>;
   supportUnread?: number;
+  payouts?: { on: boolean; changedAt?: string };
+  refundedPayouts?: Array<{
+    id: string;
+    kind: string;
+    amount: number;
+    fee: number;
+    to: string;
+    railRef?: string;
+    createdAt: string;
+    user: { name: string; lbpayId: string } | null;
+  }>;
 };
 
 const n = (v: number) => v.toLocaleString("fr-FR");
@@ -84,6 +96,40 @@ export default function AdminHome() {
           </button>
         }
       />
+
+      <PayoutSwitch state={data?.payouts} owner={Boolean(session.data?.owner)} />
+
+      {(data?.refundedPayouts || []).length ? (
+        <AdminPanel
+          title="Refunded payouts: check each one"
+          copy="LBPay gave this money back because the payout was marked failed. Look up each reference on the PayUnit dashboard. If PayUnit shows it as paid, that person got the money twice."
+        >
+          <div className="overflow-x-auto px-2 pb-2">
+            <table className="w-full min-w-[560px] text-left text-sm">
+              <thead className="text-[11px] uppercase tracking-wide text-muted">
+                <tr>
+                  <th className="py-2 pr-3 font-semibold">When</th>
+                  <th className="py-2 pr-3 font-semibold">Who</th>
+                  <th className="py-2 pr-3 font-semibold">To</th>
+                  <th className="py-2 pr-3 text-right font-semibold">Refunded</th>
+                  <th className="py-2 font-semibold">Reference</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-line">
+                {data!.refundedPayouts!.map((r) => (
+                  <tr key={r.id}>
+                    <td className="py-2 pr-3 text-xs text-muted">{formatDate(r.createdAt)}</td>
+                    <td className="py-2 pr-3 font-semibold">{r.user ? `${r.user.name} @${r.user.lbpayId}` : "Unknown"}</td>
+                    <td className="py-2 pr-3 font-mono text-xs">{r.to}</td>
+                    <td className="py-2 pr-3 text-right font-mono font-bold">{xaf(r.amount + r.fee)}</td>
+                    <td className="py-2 font-mono text-xs">{r.railRef || r.id}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </AdminPanel>
+      ) : null}
 
       {/* Needs attention */}
       {s && (s.users.pendingKyc > 0 || (data?.supportUnread ?? 0) > 0 || s.health.pending > 0) ? (

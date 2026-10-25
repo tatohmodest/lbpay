@@ -1,3 +1,4 @@
+import { payoutsPausedResponse } from "@/lib/server/payout-gate";
 import { NextResponse } from "next/server";
 import { findTxById, getWallet, patchTx, recordLedgerMove, settleRailTx } from "@/lib/server/db";
 import { formatXAF } from "@/lib/format";
@@ -14,6 +15,9 @@ export async function POST(request: Request) {
   try {
     const auth = await requireActiveUser();
     if (auth.error || !auth.user) return auth.error!;
+    const paused = await payoutsPausedResponse();
+    if (paused) return paused;
+
     const user = auth.user;
     const body = await request.json().catch(() => ({}));
     const amount = Number(body.amount);
