@@ -43,6 +43,15 @@ export function momoOutFee(amount: number) {
   return feeOn(amount, FEE_RATES.withdraw);
 }
 
+/** The most someone can withdraw so that amount + fee still fits in their balance. */
+export function maxWithdrawable(balance: number) {
+  if (!balance || balance <= 0) return 0;
+  let amount = Math.floor(balance / (1 + FEE_RATES.withdraw));
+  while (amount > 0 && amount + momoOutFee(amount) > balance) amount -= 1;
+  while (amount + 1 + momoOutFee(amount + 1) <= balance) amount += 1;
+  return amount;
+}
+
 export function momoOutRate() {
   return FEE_RATES.withdraw;
 }

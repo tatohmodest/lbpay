@@ -4,12 +4,12 @@ const COLLECTION_OFF =
   /activate collection|can't process operation|cannot process operation|collection (is )?not (active|enabled)/i;
 const INSUFFICIENT_MOMO = /your (momo|mobile money|orange money).{0,40}insufficient|insufficient (momo|mobile money)/i;
 const MERCHANT_FLOAT =
-  /insufficient (float|merchant|disbursement|payout|account balance)|not enough (balance|funds|float)|low (float|balance)/i;
+  /insufficient (float|merchant|disbursement|payout|account balance|balance|funds|fund)|not enough (balance|funds|float)|low (float|balance)|solde insuffisant/i;
 const APPROVAL = /approval required|is_approval_required|awaiting approval|not approved/i;
 const DISBURSE_OFF =
   /disbursement (is )?not (active|enabled)|activate disbursement|deposit (service )?not (active|enabled)|can't process (the )?deposit|cannot process (the )?deposit/i;
 const INVALID_ACCOUNT = /invalid (account|phone|msisdn)|account(_| )number|beneficiary/i;
-const INSUFFICIENT_WALLET = /insufficient wallet|insufficient (wallet )?balance/i;
+const INSUFFICIENT_WALLET = /insufficient wallet balance/i;
 const TIMEOUT = /timeout|timed out|etimedout|network.*slow/i;
 const DUPLICATE = /duplicate|already (been )?(submitted|processed|exists)/i;
 const MTN_DOWN = /mtn.*(unavailable|down|offline)|cm_mtnmomo.*(fail|error)/i;

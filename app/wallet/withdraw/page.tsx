@@ -14,9 +14,9 @@ import { useNotify } from "@/lib/notify";
 import { useL } from "@/lib/i18n/use-i18n";
 import { BalancePill, MethodPicker, WaitingOnPhone } from "@/components/money-ui";
 import { cameroonMsisdn, isCameroonMsisdn } from "@/lib/phone";
-import { FEE_RATES, feePercent, feePercentLabel, momoOutFee } from "@/lib/fees";
+import { FEE_RATES, feePercent, feePercentLabel, maxWithdrawable, momoOutFee } from "@/lib/fees";
 import { AmountField } from "@/components/amount-field";
-import { amountIssue, cameroonDay, dailyOutboundCap, outboundKinds } from "@/lib/limits";
+import { amountIssue, cameroonDay, dailyOutboundCap, LIMITS, outboundKinds } from "@/lib/limits";
 import { readPinFail, isPinError } from "@/lib/pin-fail";
 
 async function pollWithdrawStatus(tx: string, onTick: () => void) {
@@ -261,7 +261,19 @@ export default function WithdrawPage() {
             ) : null}
             {value > 0 && debit > balance ? (
               <p className="rounded-2xl bg-[#fdf3f2] px-4 py-3 text-[13px] font-semibold text-danger">
-                {L("Not enough in your wallet. Add money or lower the amount.", "Solde insuffisant. Ajoutez de l'argent ou baissez le montant.")}
+                {L(
+                  `${formatXAF(value)} plus the ${formatXAF(fee)} fee is more than the ${formatXAF(balance)} in your wallet.`,
+                  `${formatXAF(value)} plus ${formatXAF(fee)} de frais dépasse les ${formatXAF(balance)} de votre portefeuille.`,
+                )}
+                {maxWithdrawable(balance) >= LIMITS.withdrawMin ? (
+                  <button
+                    type="button"
+                    onClick={() => setAmount(String(maxWithdrawable(balance)))}
+                    className="mt-2 block font-bold text-ink underline"
+                  >
+                    {L(`Withdraw the most I can: ${formatXAF(maxWithdrawable(balance))}`, `Retirer le maximum : ${formatXAF(maxWithdrawable(balance))}`)}
+                  </button>
+                ) : null}
               </p>
             ) : null}
             <Button type="submit" disabled={!ready} className="h-14 rounded-2xl text-[16px] font-bold">

@@ -131,3 +131,22 @@ test("gateway account problems reach customers as a calm message and flag the te
   assert.ok(operatorIssue(raw));
   assert.equal(operatorIssue("Your Mobile Money balance is insufficient"), null);
 });
+
+test("a gateway 'insufficient balance' is never shown as the customer's wallet", async () => {
+  const { mapRailError, operatorIssue } = await import("./public-error");
+  for (const raw of ["Insufficient balance", "insufficient funds", "Solde insuffisant"]) {
+    assert.equal(mapRailError(raw).code, "INSUFFICIENT_MERCHANT_FLOAT", raw);
+    assert.ok(operatorIssue(raw));
+  }
+  assert.equal(mapRailError("Insufficient wallet balance").code, "INSUFFICIENT_WALLET");
+});
+
+test("withdraw-all leaves room for the fee", async () => {
+  const { maxWithdrawable, momoOutFee } = await import("./fees");
+  for (const balance of [1000, 10_000, 10_250, 33_333, 500_000]) {
+    const max = maxWithdrawable(balance);
+    assert.ok(max + momoOutFee(max) <= balance, `fits ${balance}`);
+    assert.ok(max + 1 + momoOutFee(max + 1) > balance, `is the max for ${balance}`);
+  }
+  assert.equal(maxWithdrawable(10_250), 10_000);
+});
