@@ -4,6 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import {
   ArrowLeftRight,
+  BarChart3,
   FileCheck,
   LayoutDashboard,
   MessageSquare,
@@ -19,6 +20,7 @@ import { useAdminSession } from "@/components/role-gate";
 
 const items: Array<{ href: string; label: string; short?: string; icon: typeof LayoutDashboard; scope?: string }> = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard },
+  { href: "/admin/analytics", label: "Analytics", icon: BarChart3, scope: "finance" },
   { href: "/admin/support", label: "Chat with us", short: "Chats", icon: MessageSquare, scope: "support" },
   { href: "/admin/users", label: "Users", icon: Users, scope: "users" },
   { href: "/admin/kyc", label: "KYC", icon: FileCheck, scope: "kyc" },
@@ -27,7 +29,7 @@ const items: Array<{ href: string; label: string; short?: string; icon: typeof L
   { href: "/admin/audit", label: "Audit", icon: ScrollText, scope: "audit" },
 ];
 
-const MOBILE_ORDER = ["/admin", "/admin/kyc", "/admin/support", "/admin/users", "/admin/transactions", "/admin/wallets", "/admin/audit"];
+const MOBILE_ORDER = ["/admin", "/admin/analytics", "/admin/kyc", "/admin/support", "/admin/users", "/admin/transactions", "/admin/wallets", "/admin/audit"];
 
 export function AdminLayoutClient({ children }: { children: React.ReactNode }) {
   const path = usePathname();

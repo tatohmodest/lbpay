@@ -35,7 +35,7 @@ jobs:
         run: npx tsc --noEmit -p .
 
       - name: Unit tests
-        run: npx --yes tsx@4.19.2 --test lib/*.test.ts
+        run: npm test
 
       - name: Build
         run: npx next build
