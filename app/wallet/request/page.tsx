@@ -53,7 +53,7 @@ export default function RequestPage() {
   const value = Number(amount) || 0;
 
   return (
-    <div className="mx-auto grid max-w-4xl gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-10">
+    <div className="mx-auto grid max-w-4xl grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-10">
       <div className="space-y-5">
         <div className="flex items-center gap-3">
           <Link
