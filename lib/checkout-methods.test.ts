@@ -14,10 +14,10 @@ test("checkout lists LBPay wallet first", () => {
   assert.equal(CHECKOUT_METHODS[0]?.label, "LBPay wallet");
 });
 
-test("wallet checkout has no fee and others take 1.5 percent", () => {
+test("wallet checkout has no fee and others take 2 percent", () => {
   assert.equal(checkoutMethodFee(10_000, "wallet"), 0);
-  assert.equal(checkoutMethodFee(10_000, "mtn"), 150);
-  assert.equal(checkoutMethodFee(10_000, "orange"), 150);
+  assert.equal(checkoutMethodFee(10_000, "mtn"), 200);
+  assert.equal(checkoutMethodFee(10_000, "orange"), 200);
   assert.equal(checkoutFeeBadge("wallet"), "No fee");
   assert.equal(checkoutFeeBadge("mtn"), "Small fee");
 });
