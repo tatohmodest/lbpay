@@ -177,7 +177,6 @@ function HistoryRow({ tx }: { tx: Transaction }) {
           <p className="truncate font-bold">{tx.counterparty}</p>
           <p className="text-xs text-muted">
             {tx.kind.replace("_", " ")} · {formatDate(tx.createdAt)}
-            {tx.fee > 0 ? ` · fee ${formatXAF(tx.fee, { withCurrency: false })}` : ""}
           </p>
           <div className="mt-1">
             <MethodDot method={tx.method} />

@@ -1,6 +1,17 @@
 import type { PaymentMethod, Transaction, TransactionKind, TransactionStatus } from "@/lib/types";
 import { formatXAF, isMoneyOut } from "@/lib/format";
 
+/**
+ * Withdrawals never show their fee: the person sees what lands and what is left
+ * in their wallet. Other outgoing moves show it as a "Platform fee" amount.
+ * Money coming in never shows a fee, so a business only sees what it received.
+ */
+const BALANCE_ONLY_KINDS = new Set<string>(["withdraw", "payout"]);
+
+export function showsPlatformFee(tx: { kind: string; fee?: number }) {
+  return Boolean(tx.fee) && isMoneyOut(tx.kind) && !BALANCE_ONLY_KINDS.has(tx.kind);
+}
+
 export type TxMeta = {
   from?: string;
   to?: string;
@@ -138,7 +149,7 @@ export function receiptText(tx: Transaction) {
     new Date(tx.createdAt).toISOString().slice(0, 19).replace("T", " "),
     `Reference ${tx.id}`,
   ];
-  if (tx.fee) lines.push(`Fee ${formatXAF(tx.fee)}`);
+  if (showsPlatformFee(tx)) lines.push(`Platform fee ${formatXAF(tx.fee)}`);
   if (tx.note) lines.push(tx.note);
   return lines.join("\n");
 }

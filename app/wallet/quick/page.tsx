@@ -15,7 +15,7 @@ import { useQuickTransfer } from "@/lib/hooks/wallet";
 import { useNotify } from "@/lib/notify";
 import { useL } from "@/lib/i18n/use-i18n";
 import { cameroonMsisdn, isCameroonMsisdn } from "@/lib/phone";
-import { directTransferFee, directTransferRate, feePercentLabel } from "@/lib/fees";
+import { directTransferFee } from "@/lib/fees";
 import { AmountField } from "@/components/amount-field";
 import { amountIssue } from "@/lib/limits";
 import { readPinFail, isPinError } from "@/lib/pin-fail";
@@ -80,7 +80,7 @@ export default function QuickTransferPage() {
     { label: L("From", "Depuis"), value: `${fromNetwork === "orange" ? "Orange" : "MTN"} ${fromPhone}` },
     { label: L("To", "Vers"), value: `${toNetwork === "orange" ? "Orange" : "MTN"} ${toPhone}` },
     { label: L("They receive", "Ils reçoivent"), value: formatXAF(value) },
-    ...(fee ? [{ label: L("Deducted", "Frais"), value: formatXAF(fee) }] : []),
+    ...(fee ? [{ label: L("Platform fee", "Frais de service"), value: formatXAF(fee) }] : []),
     { label: L("You pay", "Vous payez"), value: formatXAF(payAmount) },
   ];
 
@@ -271,7 +271,7 @@ export default function QuickTransferPage() {
               receive={value}
               fee={fee}
               receiveLabel={L(`They receive on ${toNetwork === "orange" ? "Orange" : "MTN"}`, `Ils reçoivent sur ${toNetwork === "orange" ? "Orange" : "MTN"}`)}
-              feeLabel={feePercentLabel(directTransferRate(fromNetwork, toNetwork), L("Fee", "Frais"))}
+              feeLabel={L("Platform fee", "Frais de service")}
               pay={payAmount}
               payLabel={L(`You pay from ${fromNetwork === "orange" ? "Orange" : "MTN"}`, `Vous payez depuis ${fromNetwork === "orange" ? "Orange" : "MTN"}`)}
             />

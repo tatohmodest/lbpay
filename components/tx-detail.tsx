@@ -9,7 +9,7 @@ import { copyText } from "@/lib/clipboard";
 import { formatDay, formatTime, formatXAF, isMoneyOut } from "@/lib/format";
 import { payLinkPath } from "@/lib/origin";
 import { useNotify } from "@/lib/notify";
-import { kindTitle, methodLabel, networkLabel, receiptText, statusLabel } from "@/lib/tx";
+import { kindTitle, methodLabel, networkLabel, receiptText, showsPlatformFee, statusLabel } from "@/lib/tx";
 import { cn } from "@/lib/cn";
 import type { Transaction } from "@/lib/types";
 
@@ -33,15 +33,13 @@ export function TxDetail({
     { label: "Method", value: methodLabel(tx.method) },
     { label: "Amount", value: formatXAF(tx.amount) },
   ];
-  if (tx.fee > 0) {
-    rows.push({ label: "Fee", value: formatXAF(tx.fee) });
-    rows.push({ label: outgoing ? "Total out" : "You received", value: formatXAF(outgoing ? net : tx.amount) });
-  }
+  if (showsPlatformFee(tx)) rows.push({ label: "Platform fee", value: formatXAF(tx.fee) });
+  if (outgoing && tx.fee > 0) rows.push({ label: "Total from wallet", value: formatXAF(net) });
   rows.push({ label: "Date", value: formatDay(tx.createdAt) });
   rows.push({ label: "Time", value: formatTime(tx.createdAt) });
   rows.push({ label: "Reference", value: tx.id });
   if (tx.railRef) rows.push({ label: "Rail ref", value: tx.railRef });
-  if (tx.rail) rows.push({ label: "Rail", value: tx.rail === "payunit" ? "PayUnit" : tx.rail });
+  if (tx.rail) rows.push({ label: "Rail", value: tx.rail === "payunit" ? "LBPay" : tx.rail });
   if (tx.meta?.fromNetwork) rows.push({ label: "From network", value: networkLabel(tx.meta.fromNetwork) });
   if (tx.meta?.toNetwork) rows.push({ label: "To network", value: networkLabel(tx.meta.toNetwork) });
   if (tx.meta?.from) rows.push({ label: "From number", value: tx.meta.from });

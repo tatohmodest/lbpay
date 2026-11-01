@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { BadgeCheck, Check, Lock, ShieldCheck } from "lucide-react";
 import { AmountField } from "@/components/amount-field";
 import { AppImg } from "@/components/app-img";
+import { SuccessArt } from "@/components/success-moment";
 import { ConfirmSheet } from "@/components/confirm-sheet";
 import { NetworkMark } from "@/components/network-mark";
 import { WaitingOnPhone } from "@/components/money-ui";
@@ -307,12 +308,7 @@ export function CheckoutPay({
     return (
       <CheckoutShell variant={variant}>
         <CheckoutCard className="text-center">
-          <span className="relative mx-auto grid h-20 w-20 place-items-center">
-            <span className="lb-live-dot absolute inset-0 rounded-full bg-brand-soft" />
-            <span className="lb-check relative grid h-14 w-14 place-items-center rounded-full bg-brand text-white shadow-[0_10px_30px_-8px_rgba(0,179,105,0.7)]">
-              <Check className="h-7 w-7" strokeWidth={3} />
-            </span>
-          </span>
+          <SuccessArt />
           <p className="mt-5 text-[12px] font-semibold uppercase tracking-[0.16em] text-brand-deep">
             {L("Payment complete", "Paiement effectué")}
           </p>
@@ -413,7 +409,7 @@ export function CheckoutPay({
             <dd className="tabular font-semibold text-ink">{formatXAF(value)}</dd>
           </div>
           <div className="flex justify-between gap-3">
-            <dt className="text-muted">{L("Fee", "Frais")}</dt>
+            <dt className="text-muted">{L("Platform fee", "Frais de service")}</dt>
             <dd className={cn("tabular font-semibold", fee ? "text-ink" : "text-brand-deep")}>
               {fee ? formatXAF(fee) : L("Free", "Gratuit")}
             </dd>
@@ -433,7 +429,7 @@ export function CheckoutPay({
             receive={value}
             fee={fee}
             receiveLabel={L(`${merchantName} receives`, `${merchantName} reçoit`)}
-            feeLabel={L("Fee", "Frais")}
+            feeLabel={L("Platform fee", "Frais de service")}
             pay={payAmount}
             payLabel={L("You pay", "Vous payez")}
           />
@@ -461,7 +457,7 @@ export function CheckoutPay({
                 <NetworkMark network={item.id} className="h-9 w-9 rounded-xl text-[9px]" />
                 <span className="text-[13px] font-bold text-ink">{item.id === "wallet" ? "LBPay" : item.label}</span>
                 <span className={cn("text-[11px]", free ? "font-bold text-brand-deep" : "text-muted")}>
-                  {free ? L("Free", "Gratuit") : checkoutFeeBadge(item.id).replace("Charge", L("Fee", "Frais"))}
+                  {free ? L("Free", "Gratuit") : L(checkoutFeeBadge(item.id), "Petits frais")}
                 </span>
                 {selected ? (
                   <span className="absolute -right-1.5 -top-1.5 grid h-5 w-5 place-items-center rounded-full bg-brand text-white">
@@ -585,7 +581,7 @@ export function CheckoutPay({
       details={[
         { label: L("To", "Vers"), value: `@${merchantHandle}` },
         { label: L("They receive", "Ils reçoivent"), value: formatXAF(value) },
-        { label: L("Fee", "Frais"), value: L("Free", "Gratuit") },
+        { label: L("Platform fee", "Frais de service"), value: L("Free", "Gratuit") },
       ]}
       loading={busy}
       error={pinError}

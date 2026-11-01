@@ -14,7 +14,7 @@ import { useNotify } from "@/lib/notify";
 import { useL } from "@/lib/i18n/use-i18n";
 import { BalancePill, MethodPicker, WaitingOnPhone } from "@/components/money-ui";
 import { cameroonMsisdn, isCameroonMsisdn } from "@/lib/phone";
-import { FEE_RATES, depositFee, feePercent, feePercentLabel } from "@/lib/fees";
+import { depositFee } from "@/lib/fees";
 import { AmountField } from "@/components/amount-field";
 import { amountIssue } from "@/lib/limits";
 import { readPinFail, isPinError } from "@/lib/pin-fail";
@@ -27,7 +27,7 @@ export default function DepositPage() {
   const router = useRouter();
   const notify = useNotify();
   const L = useL();
-  const feeHint = L(`${feePercent(FEE_RATES.deposit)}% fee`, `${feePercent(FEE_RATES.deposit)} % de frais`);
+  const feeHint = L("Small fee", "Petits frais");
   const collect = useCollect();
   const [method, setMethod] = useState<PaymentMethod>("mtn");
   const [phone, setPhone] = useState(cameroonMsisdn(state.user.phone));
@@ -51,7 +51,7 @@ export default function DepositPage() {
     { label: L("From", "Depuis"), value: method === "mtn" ? "MTN" : "Orange" },
     { label: L("Number", "Numéro"), value: clean },
     { label: L("Wallet receives", "Le portefeuille reçoit"), value: formatXAF(value) },
-    ...(fee ? [{ label: feePercentLabel(FEE_RATES.deposit, L("Fee", "Frais")), value: formatXAF(fee) }] : []),
+    ...(fee ? [{ label: L("Platform fee", "Frais de service"), value: formatXAF(fee) }] : []),
     { label: L("You pay", "Vous payez"), value: formatXAF(payAmount) },
   ];
 
@@ -244,7 +244,7 @@ export default function DepositPage() {
               fee={fee}
               pay={payAmount}
               receiveLabel={L("Added to your wallet", "Ajouté à votre portefeuille")}
-              feeLabel={feePercentLabel(FEE_RATES.deposit, L("Fee", "Frais"))}
+              feeLabel={L("Platform fee", "Frais de service")}
               payLabel={L(`You pay from ${method === "orange" ? "Orange" : "MTN"}`, `Vous payez depuis ${method === "orange" ? "Orange" : "MTN"}`)}
             />
             <Button type="submit" disabled={!ready} className="h-14 rounded-2xl text-[16px] font-bold">

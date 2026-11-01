@@ -30,6 +30,7 @@ export function AmountField({
   receiveLabel,
   payLabel,
   feeLabel,
+  balanceAfter,
 }: {
   value: string;
   onChange: (value: string) => void;
@@ -41,6 +42,8 @@ export function AmountField({
   receiveLabel?: string;
   payLabel?: string;
   feeLabel?: string;
+  /** Withdrawals: show what stays in the wallet instead of the fee and total. */
+  balanceAfter?: number;
 }) {
   const id = useId();
   const L = useL();
@@ -122,13 +125,20 @@ export function AmountField({
             <dt className="text-muted">{receiveLabel ?? L("They receive", "Ils reçoivent")}</dt>
             <dd className="tabular font-semibold text-ink">{formatXAF(valid ? receive : 0)}</dd>
           </div>
-          <div className="flex justify-between gap-3">
-            <dt className="text-muted">{feeLabel ?? L("Fee", "Frais")}</dt>
-            <dd className={cn("tabular font-semibold", charge ? "text-ink" : "text-brand-deep")}>
-              {!valid ? "—" : charge ? formatXAF(charge) : L("Free", "Gratuit")}
-            </dd>
-          </div>
-          {pay != null ? (
+          {balanceAfter != null ? (
+            <div className="flex justify-between gap-3 border-t border-line pt-2">
+              <dt className="font-bold text-ink">{L("Left in your wallet", "Reste dans votre portefeuille")}</dt>
+              <dd className="tabular text-[16px] font-black text-ink">{valid ? formatXAF(Math.max(0, balanceAfter)) : "—"}</dd>
+            </div>
+          ) : (
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted">{feeLabel ?? L("Platform fee", "Frais de service")}</dt>
+              <dd className={cn("tabular font-semibold", charge ? "text-ink" : "text-brand-deep")}>
+                {!valid ? "—" : charge ? formatXAF(charge) : L("Free", "Gratuit")}
+              </dd>
+            </div>
+          )}
+          {pay != null && balanceAfter == null ? (
             <div className="flex justify-between gap-3 border-t border-line pt-2">
               <dt className="font-bold text-ink">{payLabel ?? L("You pay", "Vous payez")}</dt>
               <dd className="tabular text-[16px] font-black text-ink">{formatXAF(valid ? pay : 0)}</dd>

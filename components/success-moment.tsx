@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useSyncExternalStore } from "react";
-import { Check, Clock3, ShieldCheck } from "lucide-react";
+import { Clock3, ShieldCheck } from "lucide-react";
 import { formatXAF } from "@/lib/format";
 import { cn } from "@/lib/cn";
 import { useL } from "@/lib/i18n/use-i18n";
@@ -88,6 +88,22 @@ function Confetti({ seed }: { seed: number }) {
   );
 }
 
+/** The "it worked" illustration, shared by the in-app moment and the public checkout. */
+export function SuccessArt({ className }: { className?: string }) {
+  const L = useL();
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src="/illustrations/payment-success.webp"
+      alt={L("Payment successful", "Paiement réussi")}
+      width={1536}
+      height={1024}
+      className={cn("lb-check mx-auto h-auto w-full max-w-[17rem] select-none", className)}
+      draggable={false}
+    />
+  );
+}
+
 export function SuccessMomentHost() {
   const moment = useSyncExternalStore(
     subscribe,
@@ -126,22 +142,16 @@ export function SuccessMomentHost() {
         <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-[radial-gradient(60%_100%_at_50%_0%,rgba(0,179,105,0.14),transparent)]" />
         {pending ? null : <Confetti seed={moment.key} />}
 
-        <div className="relative mx-auto grid h-20 w-20 place-items-center">
-          <span
-            className={cn(
-              "absolute inset-0 rounded-full",
-              pending ? "bg-gold-soft" : "lb-live-dot bg-brand-soft",
-            )}
-          />
-          <span
-            className={cn(
-              "lb-check relative grid h-14 w-14 place-items-center rounded-full text-white shadow-[0_10px_30px_-8px_rgba(0,179,105,0.7)]",
-              pending ? "bg-gold" : "bg-brand",
-            )}
-          >
-            {pending ? <Clock3 className="h-7 w-7" /> : <Check className="h-7 w-7" strokeWidth={3} />}
-          </span>
-        </div>
+        {pending ? (
+          <div className="relative mx-auto grid h-20 w-20 place-items-center">
+            <span className="absolute inset-0 rounded-full bg-gold-soft" />
+            <span className="lb-check relative grid h-14 w-14 place-items-center rounded-full bg-gold text-white shadow-[0_10px_30px_-8px_rgba(0,179,105,0.7)]">
+              <Clock3 className="h-7 w-7" />
+            </span>
+          </div>
+        ) : (
+          <SuccessArt className="relative -mt-4" />
+        )}
 
         <h2 id="lb-success-title" className="relative mt-6 text-2xl font-black tracking-tight text-ink">
           {moment.title}

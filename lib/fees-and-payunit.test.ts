@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { depositFee, directTransferFee, FEE_RATES, feePercent, feePercentLabel, momoOutFee } from "./fees";
+import { depositFee, directTransferFee, FEE_RATES, feePercent, momoOutFee } from "./fees";
 import { amountIssue, LIMITS } from "./limits";
 import {
   disbursementAccount,
@@ -35,7 +35,6 @@ test("fee labels preserve one decimal when needed", () => {
   assert.equal(feePercent(FEE_RATES.apiCollection), "2.5");
   assert.equal(feePercent(FEE_RATES.withdraw), "2.5");
   assert.equal(feePercent(FEE_RATES.crossNetwork), "3.5");
-  assert.equal(feePercentLabel(FEE_RATES.withdraw), "Charge (2.5%)");
 });
 
 test("withdrawal minimum is 1000 XAF, not 100", () => {

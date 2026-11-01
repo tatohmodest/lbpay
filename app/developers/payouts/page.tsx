@@ -11,7 +11,6 @@ import { useDisburse, useMe, useTransfer } from "@/lib/hooks/wallet";
 import { useNotify } from "@/lib/notify";
 import { NetworkMark } from "@/components/network-mark";
 import { cameroonMsisdn, isCameroonMsisdn } from "@/lib/phone";
-import { feePercentLabel, FEE_RATES } from "@/lib/fees";
 import { AmountField } from "@/components/amount-field";
 import { amountIssue } from "@/lib/limits";
 import {
@@ -116,7 +115,7 @@ export default function PayoutsPage() {
               kind={destination === "wallet" ? "wallet" : "withdraw"}
               receive={value}
               fee={fee}
-              feeLabel={destination === "wallet" ? "No fee" : feePercentLabel(FEE_RATES.withdraw)}
+              feeLabel={destination === "wallet" ? "No fee" : "Platform fee"}
               pay={destination === "wallet" ? undefined : debit}
             />
             {destination === "wallet" && value > 0 && !amountIssue(value, "wallet") ? (

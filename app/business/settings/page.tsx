@@ -21,7 +21,6 @@ import { ChangeHandle } from "@/components/change-handle-sheet";
 import { NetworkMark } from "@/components/network-mark";
 import { useMe } from "@/lib/hooks/wallet";
 import { businessKindLabel } from "@/lib/kyc";
-import { FEE_RATES, feePercent } from "@/lib/fees";
 import { shopHandlePath, shopHandleUrl } from "@/lib/origin";
 import { useBrowserOrigin } from "@/lib/use-origin";
 import { cn } from "@/lib/cn";
@@ -134,8 +133,8 @@ export default function BusinessSettingsPage() {
             <div className="mt-3 grid grid-cols-3 gap-2">
               {(
                 [
-                  { n: "mtn", t: "MTN MoMo", h: `${feePercent(FEE_RATES.checkout)}% to customer` },
-                  { n: "orange", t: "Orange Money", h: `${feePercent(FEE_RATES.checkout)}% to customer` },
+                  { n: "mtn", t: "MTN MoMo", h: "Customer pays a small fee" },
+                  { n: "orange", t: "Orange Money", h: "Customer pays a small fee" },
                   { n: "wallet", t: "LBPay wallet", h: "Free for both" },
                 ] as const
               ).map((m) => (
@@ -153,7 +152,7 @@ export default function BusinessSettingsPage() {
           <Row
             icon={Wallet}
             title="Where payments land"
-            hint={`Straight into your LBPay balance. Withdraw to MTN or Orange any time (${feePercent(FEE_RATES.withdraw)}%).`}
+            hint="Straight into your LBPay balance. Withdraw to MTN or Orange any time."
             href="/wallet/withdraw"
           />
         </Group>

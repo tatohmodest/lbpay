@@ -1,7 +1,7 @@
 "use client";
 
 import { celebrate } from "@/components/success-moment";
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Field, Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,7 @@ import { useNotify } from "@/lib/notify";
 import { useL } from "@/lib/i18n/use-i18n";
 import { BalancePill, MethodPicker, WaitingOnPhone } from "@/components/money-ui";
 import { cameroonMsisdn, isCameroonMsisdn } from "@/lib/phone";
-import { FEE_RATES, feePercent, feePercentLabel, maxWithdrawable, momoOutFee } from "@/lib/fees";
+import { maxWithdrawable, momoOutFee } from "@/lib/fees";
 import { AmountField } from "@/components/amount-field";
 import { amountIssue, cameroonDay, dailyOutboundCap, LIMITS, outboundKinds } from "@/lib/limits";
 import { readPinFail, isPinError } from "@/lib/pin-fail";
@@ -49,12 +49,15 @@ export default function WithdrawPage() {
   const [pinLockedUntil, setPinLockedUntil] = useState(0);
   const [waiting, setWaiting] = useState<{ tx: string; seconds: number } | null>(null);
   const [checking, setChecking] = useState(false);
+  const leftAtConfirm = useRef(0);
 
   const balance = me.data?.balance ?? state.balance;
   const value = Number(amount) || 0;
   const clean = cameroonMsisdn(phone);
   const fee = momoOutFee(value);
   const debit = value + fee;
+  // The fee is never shown on its own here: people see what lands and what stays.
+  const left = balance - debit;
   const cap = dailyOutboundCap(me.data?.user?.kyc?.personal);
   const usedToday = (me.data?.transactions || [])
     .filter(
@@ -75,24 +78,20 @@ export default function WithdrawPage() {
   const details = [
     { label: L("To", "Vers"), value: `${network === "orange" ? "Orange" : "MTN"} ${clean}` },
     { label: L("They receive", "Ils reçoivent"), value: formatXAF(value) },
-    ...(fee ? [{ label: feePercentLabel(FEE_RATES.withdraw), value: formatXAF(fee) }] : []),
-    { label: L("You pay", "Vous payez"), value: formatXAF(debit) },
+    { label: L("Left in your wallet", "Reste dans votre portefeuille"), value: formatXAF(Math.max(0, left)) },
   ];
 
   const finishSuccess = useCallback(() => {
     setWaiting(null);
-    notify.moneyOut(debit, L(`Withdrew ${formatXAF(value)} to ${clean} on ${network.toUpperCase()}`, `Retrait de ${formatXAF(value)} vers ${clean} sur ${network.toUpperCase()}`));
+    notify.moneyOut(value, L(`Withdrew ${formatXAF(value)} to ${clean} on ${network.toUpperCase()}`, `Retrait de ${formatXAF(value)} vers ${clean} sur ${network.toUpperCase()}`));
     celebrate({
       title: L("Withdrawn!", "Retiré !"),
       amount: value,
       line: L(`to ${clean} on ${network === "orange" ? "Orange Money" : "MTN MoMo"}`, `vers ${clean} sur ${network === "orange" ? "Orange Money" : "MTN MoMo"}`),
-      details: [
-        ...(fee ? [{ label: L("Fee", "Frais"), value: formatXAF(fee) }] : []),
-        { label: L("Total from wallet", "Total débité"), value: formatXAF(debit) },
-      ],
+      details: [{ label: L("Left in your wallet", "Reste dans votre portefeuille"), value: formatXAF(leftAtConfirm.current) }],
     });
     router.push("/wallet");
-  }, [clean, debit, fee, network, notify, router, value, L]);
+  }, [clean, network, notify, router, value, L]);
 
   async function pollPayment(tx: string) {
     const data = await pollWithdrawStatus(tx, () => {
@@ -144,6 +143,8 @@ export default function WithdrawPage() {
   }
 
   async function confirm(pin: string) {
+    // The balance refetches once the money leaves, so remember what was left before that.
+    leftAtConfirm.current = Math.max(0, left);
     setPinError("");
     setPinLockedUntil(0);
     try {
@@ -168,16 +169,13 @@ export default function WithdrawPage() {
         void pollPayment(result.transactionId);
         return;
       }
-      notify.moneyOut(debit, L(`Withdrew ${formatXAF(value)} to ${clean} on ${network.toUpperCase()}`, `Retrait de ${formatXAF(value)} vers ${clean} sur ${network.toUpperCase()}`));
+      notify.moneyOut(value, L(`Withdrew ${formatXAF(value)} to ${clean} on ${network.toUpperCase()}`, `Retrait de ${formatXAF(value)} vers ${clean} sur ${network.toUpperCase()}`));
       setOpen(false);
       celebrate({
         title: L("Withdrawn!", "Retiré !"),
         amount: value,
         line: L(`to ${clean} on ${network === "orange" ? "Orange Money" : "MTN MoMo"}`, `vers ${clean} sur ${network === "orange" ? "Orange Money" : "MTN MoMo"}`),
-        details: [
-          ...(fee ? [{ label: L("Fee", "Frais"), value: formatXAF(fee) }] : []),
-          { label: L("Total from wallet", "Total débité"), value: formatXAF(debit) },
-        ],
+        details: [{ label: L("Left in your wallet", "Reste dans votre portefeuille"), value: formatXAF(leftAtConfirm.current) }],
       });
       router.push("/wallet");
     } catch (err) {
@@ -234,8 +232,8 @@ export default function WithdrawPage() {
               value={network}
               onChange={setNetwork}
               options={[
-                { id: "mtn" as const, network: "mtn", title: "MTN MoMo", hint: L(`${feePercent(FEE_RATES.withdraw)}% fee`, `${feePercent(FEE_RATES.withdraw)} % de frais`) },
-                { id: "orange" as const, network: "orange", title: "Orange Money", hint: L(`${feePercent(FEE_RATES.withdraw)}% fee`, `${feePercent(FEE_RATES.withdraw)} % de frais`) },
+                { id: "mtn" as const, network: "mtn", title: "MTN MoMo", hint: L("Small fee applies", "Petits frais") },
+                { id: "orange" as const, network: "orange", title: "Orange Money", hint: L("Small fee applies", "Petits frais") },
               ]}
             />
             <Field label={L(`${network === "orange" ? "Orange" : "MTN"} number`, `Numéro ${network === "orange" ? "Orange" : "MTN"}`)}>
@@ -255,12 +253,12 @@ export default function WithdrawPage() {
               kind="withdraw"
               label={L("How much?", "Combien ?")}
               receive={value}
-              fee={fee}
               receiveLabel={L(`Lands on ${network === "orange" ? "Orange" : "MTN"}`, `Arrive sur ${network === "orange" ? "Orange" : "MTN"}`)}
-              feeLabel={feePercentLabel(FEE_RATES.withdraw, L("Fee", "Frais"))}
-              pay={debit}
-              payLabel={L("Taken from your wallet", "Débité de votre portefeuille")}
+              balanceAfter={left}
             />
+            <p className="-mt-3 text-[12px] text-muted">
+              {L("A small fee is deducted from your wallet on each withdrawal.", "De petits frais sont déduits de votre portefeuille à chaque retrait.")}
+            </p>
             {overDaily ? (
               <p className="rounded-2xl bg-[#fdf3f2] px-4 py-3 text-[13px] font-semibold text-danger">
                 {L(
@@ -272,8 +270,8 @@ export default function WithdrawPage() {
             {value > 0 && debit > balance ? (
               <p className="rounded-2xl bg-[#fdf3f2] px-4 py-3 text-[13px] font-semibold text-danger">
                 {L(
-                  `${formatXAF(value)} plus the ${formatXAF(fee)} fee is more than the ${formatXAF(balance)} in your wallet.`,
-                  `${formatXAF(value)} plus ${formatXAF(fee)} de frais dépasse les ${formatXAF(balance)} de votre portefeuille.`,
+                  `That's more than you can withdraw from the ${formatXAF(balance)} in your wallet.`,
+                  `C'est plus que ce que vous pouvez retirer des ${formatXAF(balance)} de votre portefeuille.`,
                 )}
                 {maxWithdrawable(balance) >= LIMITS.withdrawMin ? (
                   <button
@@ -296,7 +294,7 @@ export default function WithdrawPage() {
         open={open}
         title={L("Confirm withdrawal", "Confirmer le retrait")}
         subtitle={`${network === "orange" ? "Orange" : "MTN"} ${clean}`}
-        amount={debit}
+        amount={value}
         details={details}
         loading={disburse.isPending}
         error={pinError}

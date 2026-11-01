@@ -272,7 +272,7 @@ function InternationalInner() {
           { label: "Paid on", value: `${rail.label} · ${rail.field === "phone" ? `${country.dial} ${recipient}` : recipient}` },
           { label: "They receive", value: formatLocal(q.receiveAmount, q.currency) },
           { label: "Rate", value: `1 XAF = ${q.rate} ${country.currency}` },
-          { label: "Fee", value: formatXAF(q.fee) },
+          { label: "Platform fee", value: formatXAF(q.fee) },
           { label: "You pay", value: formatXAF(q.total) },
         ]}
         warning="Money leaves your wallet now and shows as pending until the partner confirms delivery."

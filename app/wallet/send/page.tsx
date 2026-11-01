@@ -18,7 +18,7 @@ import { useDisburse, useHandleLookup, useMe, useTransfer } from "@/lib/hooks/wa
 import { useNotify } from "@/lib/notify";
 import { useL } from "@/lib/i18n/use-i18n";
 import { cameroonMsisdn, isCameroonMsisdn } from "@/lib/phone";
-import { feePercent, FEE_RATES, feePercentLabel, momoOutFee } from "@/lib/fees";
+import { momoOutFee } from "@/lib/fees";
 import { AmountField } from "@/components/amount-field";
 import { amountIssue, cameroonDay, dailyOutboundCap, outboundKinds } from "@/lib/limits";
 import { readPinFail, isPinError } from "@/lib/pin-fail";
@@ -114,7 +114,7 @@ function SendInner() {
           { label: L("Network", "Réseau"), value: network === "orange" ? "Orange" : "MTN" },
           { label: L("Phone", "Téléphone"), value: phone },
           { label: L("They receive", "Ils reçoivent"), value: formatXAF(value) },
-          ...(fee ? [{ label: feePercentLabel(FEE_RATES.withdraw), value: formatXAF(fee) }] : []),
+          ...(fee ? [{ label: L("Platform fee", "Frais de service"), value: formatXAF(fee) }] : []),
           { label: L("You pay", "Vous payez"), value: formatXAF(debit) },
         ];
 
@@ -146,7 +146,7 @@ function SendInner() {
           amount: value,
           line: L(`to ${phone} on ${network === "orange" ? "Orange Money" : "MTN MoMo"}`, `à ${phone} sur ${network === "orange" ? "Orange Money" : "MTN MoMo"}`),
           details: [
-            ...(fee ? [{ label: L("Fee", "Frais"), value: formatXAF(fee) }] : []),
+            ...(fee ? [{ label: L("Platform fee", "Frais de service"), value: formatXAF(fee) }] : []),
             { label: L("Total from wallet", "Total débité"), value: formatXAF(debit) },
           ],
           pending,
@@ -207,7 +207,7 @@ function SendInner() {
                   <span className={`text-[10px] ${item.id === "wallet" ? "font-semibold text-brand" : "font-medium text-muted"}`}>
                     {item.id === "wallet"
                       ? L("No fee", "Sans frais")
-                      : L(`Charge ${feePercent(FEE_RATES.withdraw)}%`, `Frais ${feePercent(FEE_RATES.withdraw)} %`)}
+                      : L("Small fee", "Petits frais")}
                   </span>
                 </RailTile>
               ))}
@@ -279,7 +279,7 @@ function SendInner() {
             kind={amountKind}
             receive={value}
             fee={network === "wallet" ? 0 : fee}
-            feeLabel={feePercentLabel(FEE_RATES.withdraw, L("Fee", "Frais"))}
+            feeLabel={L("Platform fee", "Frais de service")}
             pay={network === "wallet" ? undefined : debit}
           />
           <Field label={L("Note (optional)", "Note (facultatif)")}>

@@ -1,4 +1,4 @@
-import { checkoutFee, feePercent, FEE_RATES, momoOutFee } from "@/lib/fees";
+import { checkoutFee, momoOutFee } from "@/lib/fees";
 import type { PaymentMethod } from "@/lib/types";
 
 export const CHECKOUT_METHODS = [
@@ -20,9 +20,10 @@ export function checkoutMethodFee(amount: number, method: PaymentMethod) {
   return method === "wallet" || method === "card" ? 0 : checkoutFee(amount);
 }
 
+/** Badges name the fee, never its rate: people read "X%" as a cut of their money. */
 export function checkoutFeeBadge(method: PaymentMethod) {
   if (method === "wallet") return "No fee";
-  return `Charge ${feePercent(FEE_RATES.checkout)}%`;
+  return "Small fee";
 }
 
 export function payoutDestinationFee(amount: number, destination: PayoutDestinationId) {
@@ -31,5 +32,5 @@ export function payoutDestinationFee(amount: number, destination: PayoutDestinat
 
 export function payoutFeeBadge(destination: PayoutDestinationId) {
   if (destination === "wallet") return "No fee";
-  return `Charge ${feePercent(FEE_RATES.withdraw)}%`;
+  return "Small fee";
 }

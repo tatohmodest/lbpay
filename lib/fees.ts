@@ -70,12 +70,9 @@ export function directTransferRate(from?: MomoNetwork, to?: MomoNetwork) {
   return cross ? FEE_RATES.crossNetwork : FEE_RATES.withdraw;
 }
 
+/** For admin and marketing only. Customer-facing screens show fee amounts, never rates. */
 export function feePercent(rate: number) {
   const percent = rate * 100;
   if (Number.isInteger(percent)) return String(percent);
   return percent.toFixed(2).replace(/\.?0+$/, "");
-}
-
-export function feePercentLabel(rate: number, label = "Charge") {
-  return `${label} (${feePercent(rate)}%)`;
 }
