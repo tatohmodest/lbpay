@@ -58,6 +58,7 @@ function SendInner() {
   );
   const [note, setNote] = useState("");
   const recipientRef = useRef<HTMLDivElement>(null);
+  const leftAtConfirm = useRef(0);
   const recipientInput = useRef<HTMLInputElement>(null);
   const firstRail = useRef(true);
   const railIndex = RAILS.findIndex((r) => r.id === network);
@@ -84,6 +85,8 @@ function SendInner() {
   const phone = network === "wallet" ? "" : cameroonMsisdn(to);
   const fee = network === "wallet" ? 0 : momoOutFee(value);
   const debit = value + fee;
+  // The fee is never shown on its own: people see what lands and what stays.
+  const left = balance - debit;
   const amountKind = network === "wallet" ? "wallet" : "momo";
   const cap = network === "wallet" ? null : dailyOutboundCap(me.data?.user?.kyc?.personal);
   const usedToday = (me.data?.transactions || [])
@@ -108,17 +111,18 @@ function SendInner() {
       ? [
           { label: L("To", "Vers"), value: `@${lookup.data?.user?.lbpayId || to.replace(/^@/, "")}` },
           { label: L("They receive", "Ils reçoivent"), value: formatXAF(value) },
-          { label: L("Charge", "Frais"), value: L("No fee", "Sans frais") },
+          { label: L("Left in your wallet", "Reste dans votre portefeuille"), value: formatXAF(Math.max(0, left)) },
         ]
       : [
           { label: L("Network", "Réseau"), value: network === "orange" ? "Orange" : "MTN" },
           { label: L("Phone", "Téléphone"), value: phone },
           { label: L("They receive", "Ils reçoivent"), value: formatXAF(value) },
-          ...(fee ? [{ label: L("Platform fee", "Frais de service"), value: formatXAF(fee) }] : []),
-          { label: L("You pay", "Vous payez"), value: formatXAF(debit) },
+          { label: L("Left in your wallet", "Reste dans votre portefeuille"), value: formatXAF(Math.max(0, left)) },
         ];
 
   async function confirm(pin: string) {
+    // The balance refetches once the money leaves, so remember what was left before that.
+    leftAtConfirm.current = Math.max(0, left);
     setPinError("");
     setPinLockedUntil(0);
     try {
@@ -132,7 +136,7 @@ function SendInner() {
           line: L(`to ${lookup.data?.user?.name || `@${handle}`}`, `à ${lookup.data?.user?.name || `@${handle}`}`),
           details: [
             { label: L("To", "Vers"), value: `@${handle}` },
-            { label: L("Fee", "Frais"), value: L("Free", "Gratuit") },
+            { label: L("Left in your wallet", "Reste dans votre portefeuille"), value: formatXAF(leftAtConfirm.current) },
           ],
         });
       } else {
@@ -146,12 +150,11 @@ function SendInner() {
           amount: value,
           line: L(`to ${phone} on ${network === "orange" ? "Orange Money" : "MTN MoMo"}`, `à ${phone} sur ${network === "orange" ? "Orange Money" : "MTN MoMo"}`),
           details: [
-            ...(fee ? [{ label: L("Platform fee", "Frais de service"), value: formatXAF(fee) }] : []),
-            { label: L("Total from wallet", "Total débité"), value: formatXAF(debit) },
+            { label: L("Left in your wallet", "Reste dans votre portefeuille"), value: formatXAF(leftAtConfirm.current) },
           ],
           pending,
           note: pending
-            ? L("We'll let you know when it lands. If the network rejects it, the amount and fee come straight back.", "Nous vous préviendrons à l'arrivée. Si le réseau refuse, le montant et les frais vous reviennent aussitôt.")
+            ? L("We'll let you know when it lands. If the network rejects it, the money comes straight back.", "Nous vous préviendrons à l'arrivée. Si le réseau refuse, l'argent vous revient aussitôt.")
             : undefined,
         });
       }
@@ -207,7 +210,7 @@ function SendInner() {
                   <span className={`text-[10px] ${item.id === "wallet" ? "font-semibold text-brand" : "font-medium text-muted"}`}>
                     {item.id === "wallet"
                       ? L("No fee", "Sans frais")
-                      : L("Small fee", "Petits frais")}
+                      : L("Fee applies", "Frais applicables")}
                   </span>
                 </RailTile>
               ))}
@@ -278,9 +281,7 @@ function SendInner() {
             onChange={setAmount}
             kind={amountKind}
             receive={value}
-            fee={network === "wallet" ? 0 : fee}
-            feeLabel={L("Platform fee", "Frais de service")}
-            pay={network === "wallet" ? undefined : debit}
+            balanceAfter={left}
           />
           <Field label={L("Note (optional)", "Note (facultatif)")}>
             <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder={L("Optional", "Facultatif")} />

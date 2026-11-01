@@ -27,7 +27,7 @@ export default function DepositPage() {
   const router = useRouter();
   const notify = useNotify();
   const L = useL();
-  const feeHint = L("Small fee", "Petits frais");
+  const feeHint = L("Fee applies", "Frais applicables");
   const collect = useCollect();
   const [method, setMethod] = useState<PaymentMethod>("mtn");
   const [phone, setPhone] = useState(cameroonMsisdn(state.user.phone));

@@ -23,7 +23,7 @@ export function checkoutMethodFee(amount: number, method: PaymentMethod) {
 /** Badges name the fee, never its rate: people read "X%" as a cut of their money. */
 export function checkoutFeeBadge(method: PaymentMethod) {
   if (method === "wallet") return "No fee";
-  return "Small fee";
+  return "Fee applies";
 }
 
 export function payoutDestinationFee(amount: number, destination: PayoutDestinationId) {
@@ -32,5 +32,5 @@ export function payoutDestinationFee(amount: number, destination: PayoutDestinat
 
 export function payoutFeeBadge(destination: PayoutDestinationId) {
   if (destination === "wallet") return "No fee";
-  return "Small fee";
+  return "Fee applies";
 }

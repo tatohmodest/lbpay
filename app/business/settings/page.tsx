@@ -133,8 +133,8 @@ export default function BusinessSettingsPage() {
             <div className="mt-3 grid grid-cols-3 gap-2">
               {(
                 [
-                  { n: "mtn", t: "MTN MoMo", h: "Customer pays a small fee" },
-                  { n: "orange", t: "Orange Money", h: "Customer pays a small fee" },
+                  { n: "mtn", t: "MTN MoMo", h: "Fee applies" },
+                  { n: "orange", t: "Orange Money", h: "Fee applies" },
                   { n: "wallet", t: "LBPay wallet", h: "Free for both" },
                 ] as const
               ).map((m) => (

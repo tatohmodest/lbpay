@@ -232,8 +232,8 @@ export default function WithdrawPage() {
               value={network}
               onChange={setNetwork}
               options={[
-                { id: "mtn" as const, network: "mtn", title: "MTN MoMo", hint: L("Small fee applies", "Petits frais") },
-                { id: "orange" as const, network: "orange", title: "Orange Money", hint: L("Small fee applies", "Petits frais") },
+                { id: "mtn" as const, network: "mtn", title: "MTN MoMo", hint: L("Fee applies", "Frais applicables") },
+                { id: "orange" as const, network: "orange", title: "Orange Money", hint: L("Fee applies", "Frais applicables") },
               ]}
             />
             <Field label={L(`${network === "orange" ? "Orange" : "MTN"} number`, `Numéro ${network === "orange" ? "Orange" : "MTN"}`)}>
@@ -257,7 +257,7 @@ export default function WithdrawPage() {
               balanceAfter={left}
             />
             <p className="-mt-3 text-[12px] text-muted">
-              {L("A small fee is deducted from your wallet on each withdrawal.", "De petits frais sont déduits de votre portefeuille à chaque retrait.")}
+              {L("A fee applies to each withdrawal.", "Des frais s'appliquent à chaque retrait.")}
             </p>
             {overDaily ? (
               <p className="rounded-2xl bg-[#fdf3f2] px-4 py-3 text-[13px] font-semibold text-danger">

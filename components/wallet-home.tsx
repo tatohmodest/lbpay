@@ -154,7 +154,7 @@ export function buildNudges({
       tone: "ink",
       kicker: L("New", "Nouveau"),
       title: L("Send to Nigeria, Ghana, Senegal and more", "Envoyez au Nigeria, au Ghana, au Sénégal et plus"),
-      copy: L("Small flat fee, delivered to Mobile Money or bank in local currency.", "Petits frais fixes, livré sur Mobile Money ou en banque, en monnaie locale."),
+      copy: L("Fee applies. Delivered to Mobile Money or bank in local currency.", "Frais applicables. Livré sur Mobile Money ou en banque, en monnaie locale."),
       href: "/wallet/international",
       cta: L("Send abroad", "Envoyer"),
     });

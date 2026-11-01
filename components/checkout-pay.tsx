@@ -457,7 +457,7 @@ export function CheckoutPay({
                 <NetworkMark network={item.id} className="h-9 w-9 rounded-xl text-[9px]" />
                 <span className="text-[13px] font-bold text-ink">{item.id === "wallet" ? "LBPay" : item.label}</span>
                 <span className={cn("text-[11px]", free ? "font-bold text-brand-deep" : "text-muted")}>
-                  {free ? L("Free", "Gratuit") : L(checkoutFeeBadge(item.id), "Petits frais")}
+                  {free ? L("Free", "Gratuit") : L(checkoutFeeBadge(item.id), "Frais applicables")}
                 </span>
                 {selected ? (
                   <span className="absolute -right-1.5 -top-1.5 grid h-5 w-5 place-items-center rounded-full bg-brand text-white">
