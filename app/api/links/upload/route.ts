@@ -49,7 +49,7 @@ export async function POST(request: Request) {
     if (type.includes("heic") || type.includes("heif")) {
       return NextResponse.json({ error: "Use a JPG, PNG, or WEBP photo." }, { status: 400 });
     }
-    if (!ALLOWED.has(type) && !type.startsWith("image/")) {
+    if (!ALLOWED.has(type) && (!type.startsWith("image/") || /svg|xml/i.test(type))) {
       return NextResponse.json({ error: "Upload a JPG, PNG, or WEBP photo." }, { status: 400 });
     }
     if (file.size > MAX_KYC_UPLOAD_BYTES) {

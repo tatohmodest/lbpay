@@ -14,6 +14,7 @@ import { shopSlotLimit, shopSlotLimitMessage, shopSlotState, SHOP_LIMITS } from 
 import { isDeletedLinkId, mergeById, mergePaymentLinks, uniqueIds } from "@/lib/server/ledger-merge";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { withLedgerLock } from "@/lib/server/ledger-lock";
+import { serialByKey } from "@/lib/server/serial";
 import { applyRailSettlement } from "@/lib/server/settle-rail";
 import type { BusinessKind } from "@/lib/kyc";
 import type {
@@ -42,6 +43,10 @@ export type StoredUser = {
   pinHash: string | null;
   pinFailCount?: number;
   pinLockedUntil?: number;
+  /** Locks in a row without a correct PIN; each one lasts longer. */
+  pinLockCount?: number;
+  loginFailCount?: number;
+  loginLockedUntil?: number;
   emailVerified: boolean;
   kycStatus: KycState;
   roles: AccountKind[];
@@ -65,7 +70,14 @@ export type StoredOtp = {
   hash: string;
   exp: number;
   attempts: number;
+  /** When codes were sent for this key, so guessing can't be reset by asking for new codes. */
+  sends?: number[];
 };
+
+export const OTP_SENDS_PER_HOUR = 5;
+const HOUR_MS = 60 * 60 * 1000;
+
+export class OtpThrottleError extends Error {}
 
 export type StoredWallet = {
   userId: string;
@@ -754,6 +766,10 @@ export async function getWallet(userId: string) {
 }
 
 export async function refundUndeliveredSpends(userId?: string) {
+  return withLedgerLock(() => refundUndeliveredSpendsUnlocked(userId));
+}
+
+async function refundUndeliveredSpendsUnlocked(userId?: string) {
   const db = await getDb();
   let changed = false;
   const now = new Date().toISOString();
@@ -801,6 +817,16 @@ export async function recordTransfer(params: {
   amount: number;
   note?: string;
 }) {
+  // Locked so two transfers sent at the same moment can't both pass the balance check.
+  return withLedgerLock(() => recordTransferUnlocked(params));
+}
+
+async function recordTransferUnlocked(params: {
+  from: StoredUser;
+  to: StoredUser;
+  amount: number;
+  note?: string;
+}) {
   const db = await getDb();
   const source = db.wallets.find((w) => w.userId === params.from.id);
   const dest = db.wallets.find((w) => w.userId === params.to.id);
@@ -812,7 +838,7 @@ export async function recordTransfer(params: {
   source.balance -= params.amount;
   dest.balance += params.amount;
   const now = new Date().toISOString();
-  const outId = `TXN_${Date.now().toString(36).toUpperCase()}`;
+  const outId = uid("TXN");
   const inId = `${outId}R`;
   const outgoing: StoredTx = {
     id: outId,
@@ -901,7 +927,7 @@ async function recordLedgerMoveUnlocked(params: {
     wallet.balance += params.direction === "credit" ? params.amount : -debitTotal;
   }
   const tx: StoredTx = {
-    id: `TXN_${Date.now().toString(36).toUpperCase()}`,
+    id: uid("TXN"),
     userId: params.userId,
     kind: params.kind,
     amount: params.amount,
@@ -940,11 +966,24 @@ function normalizeOtpKey(email: string) {
   return email.trim().toLowerCase();
 }
 
+function recentSends(otp?: StoredOtp | null) {
+  return (otp?.sends || []).filter((at) => at > Date.now() - HOUR_MS);
+}
+
+/** Throws OtpThrottleError after OTP_SENDS_PER_HOUR codes for one key in an hour. */
 export async function saveOtp(otp: StoredOtp) {
   const email = normalizeOtpKey(otp.email);
   const db = await getDb();
-  db.otps = db.otps.filter((item) => normalizeOtpKey(item.email) !== email && item.exp > Date.now());
-  db.otps.push({ ...otp, email });
+  const previous = db.otps.find((item) => normalizeOtpKey(item.email) === email);
+  const sends = recentSends(previous);
+  if (sends.length >= OTP_SENDS_PER_HOUR) {
+    throw new OtpThrottleError("Too many codes requested. Wait an hour, then try again.");
+  }
+  // Keep expired records while their send history still counts toward the limit.
+  db.otps = db.otps.filter(
+    (item) => normalizeOtpKey(item.email) !== email && (item.exp > Date.now() || recentSends(item).length > 0),
+  );
+  db.otps.push({ ...otp, email, sends: [...sends, Date.now()] });
   await saveDb(db);
 }
 
@@ -952,6 +991,27 @@ export async function takeOtp(email: string) {
   const key = normalizeOtpKey(email);
   const db = await getDb();
   return db.otps.find((item) => normalizeOtpKey(item.email) === key) ?? null;
+}
+
+export type OtpAttempt =
+  | { state: "missing" | "expired" | "locked" | "ok" }
+  | { state: "wrong"; left: number };
+
+/** Check a code once, serialized per key so parallel guesses can't outrun the 5-try limit. */
+export async function attemptOtp(email: string, code: string): Promise<OtpAttempt> {
+  const key = normalizeOtpKey(email);
+  return serialByKey(`otp:${key}`, async () => {
+    const record = await takeOtp(key);
+    if (!record) return { state: "missing" };
+    if (record.exp < Date.now()) return { state: "expired" };
+    if (record.attempts >= 5) return { state: "locked" };
+    if (!(await verifySecret(code, record.hash))) {
+      const updated = await bumpOtpAttempt(key);
+      return { state: "wrong", left: Math.max(0, 5 - (updated?.attempts || 5)) };
+    }
+    await clearOtp(key);
+    return { state: "ok" };
+  });
 }
 
 export async function bumpOtpAttempt(email: string) {
@@ -1026,6 +1086,11 @@ export async function findTxByRailRef(railRef: string) {
 }
 
 export async function patchTx(id: string, patch: Partial<StoredTx>) {
+  // Locked so a patch built from a stale read can't undo a settlement that landed meanwhile.
+  return withLedgerLock(() => patchTxUnlocked(id, patch));
+}
+
+async function patchTxUnlocked(id: string, patch: Partial<StoredTx>) {
   const db = await getDb();
   const tx = db.transactions.find((item) => item.id === id);
   if (!tx) throw new Error("Transaction not found");
@@ -1296,7 +1361,7 @@ export async function buyShopSlotPack(userId: string) {
     wallet.balance -= SHOP_LIMITS.packPrice;
     user.extraLinkPacks = (user.extraLinkPacks || 0) + 1;
     const tx: StoredTx = {
-      id: `TXN_${Date.now().toString(36).toUpperCase()}`,
+      id: uid("TXN"),
       userId,
       kind: "shop_slots",
       amount: SHOP_LIMITS.packPrice,

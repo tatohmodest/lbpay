@@ -2,6 +2,7 @@ import { payoutsPausedResponse } from "@/lib/server/payout-gate";
 import { NextResponse } from "next/server";
 import { authenticateApiKey, logApi, railForEnv } from "@/lib/server/apikey";
 import { getWallet } from "@/lib/server/db";
+import { payunitReference } from "@/lib/server/crypto";
 import { runPayout } from "@/lib/server/payout-flow";
 import { cameroonMsisdn, isCameroonMsisdn } from "@/lib/phone";
 import { momoOutFee } from "@/lib/fees";
@@ -33,6 +34,31 @@ export async function POST(request: Request) {
       { error: limitErr instanceof Error ? limitErr.message : "That amount is not allowed." },
       { status: 400 },
     );
+  }
+  if (env === "sandbox") {
+    // Test payouts are simulated and never take real money from the wallet.
+    const reference = payunitReference("PO");
+    const result = await railForEnv(env).disburse({
+      amount,
+      currency: "XAF",
+      network,
+      phone,
+      reference,
+      beneficiaryName: user.name,
+      note: "API disbursement",
+    });
+    await logApi(user.id, "POST", "/v1/payouts", 200);
+    return NextResponse.json({
+      id: `sbx_${reference}`,
+      object: "payout",
+      amount,
+      fee,
+      phone,
+      network,
+      status: result.status,
+      rail: result.provider,
+      environment: env,
+    });
   }
   const wallet = await getWallet(user.id);
   if (wallet.balance < amount + fee) {

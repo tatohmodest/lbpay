@@ -16,44 +16,52 @@ export async function POST(request: Request) {
     await logApi(user.id, "POST", "/v1/payments", 400);
     return NextResponse.json({ error: "Enter an amount." }, { status: 400 });
   }
-  const method =
-    body.method === "orange"
-      ? "orange"
-      : body.method === "card"
-        ? "card"
-        : body.method === "wallet"
-          ? "wallet"
-          : "mtn";
-  if (method !== "wallet") {
-    try {
-      await assertAmount(amount, "deposit");
-    } catch (limitErr) {
-      await logApi(user.id, "POST", "/v1/payments", 400);
-      return NextResponse.json(
-        { error: limitErr instanceof Error ? limitErr.message : "That amount is not allowed." },
-        { status: 400 },
-      );
-    }
-  } else if (amount < 100) {
+  if (body.method === "wallet") {
+    // Nobody pays here: a wallet payment needs the payer's own sign-in and PIN,
+    // which only the hosted checkout has. Marking it paid would create money.
     await logApi(user.id, "POST", "/v1/payments", 400);
-    return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Wallet payments go through a payment link or the hosted checkout, where the payer confirms with their PIN." },
+      { status: 400 },
+    );
   }
-
+  const method = body.method === "orange" ? "orange" : body.method === "card" ? "card" : "mtn";
+  try {
+    await assertAmount(amount, "deposit");
+  } catch (limitErr) {
+    await logApi(user.id, "POST", "/v1/payments", 400);
+    return NextResponse.json(
+      { error: limitErr instanceof Error ? limitErr.message : "That amount is not allowed." },
+      { status: 400 },
+    );
+  }
   const reference = payunitReference("PAY");
   const rail = railForEnv(env);
-  const result =
-    method === "wallet"
-      ? { status: "success" as const, provider: "internal" as const, reference }
-      : await rail.collect({
-          amount,
-          currency: "XAF",
-          method,
-          customer: body.customer ?? {},
-          reference,
-        });
-
-  // Developers pay 2.5% on Mobile Money and card collections; wallet-to-wallet is free.
-  const fee = method === "wallet" ? 0 : apiCollectionFee(amount);
+  const result = await rail.collect({
+    amount,
+    currency: "XAF",
+    method,
+    customer: body.customer ?? {},
+    reference,
+  });
+  // Developers pay 2.5% on Mobile Money and card collections.
+  const fee = apiCollectionFee(amount);
+  if (env === "sandbox") {
+    // Test money never touches the real wallet.
+    await logApi(user.id, "POST", "/v1/payments", 200);
+    return NextResponse.json({
+      id: `sbx_${reference}`,
+      object: "payment",
+      amount,
+      fee,
+      net: amount - fee,
+      currency: "XAF",
+      status: result.status,
+      rail: result.provider,
+      environment: env,
+      customer: body.customer ?? {},
+    });
+  }
   const moved = await recordLedgerMove({
     userId: user.id,
     amount: amount - fee,

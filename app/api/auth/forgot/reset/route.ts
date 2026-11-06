@@ -29,6 +29,8 @@ export async function POST(request: Request) {
 
     user.passwordHash = await hashSecret(password);
     user.emailVerified = true;
+    user.loginFailCount = 0;
+    user.loginLockedUntil = 0;
     await upsertUser(user);
     await clearPreauth();
     await sendPasswordChangedEmail(user.email, user.name, await getRequestLocale()).catch(() => undefined);

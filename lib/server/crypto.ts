@@ -1,4 +1,4 @@
-import { createHmac, randomBytes, scrypt as scryptCb, timingSafeEqual } from "crypto";
+import { createHmac, randomBytes, randomInt, scrypt as scryptCb, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 
 const scrypt = promisify(scryptCb);
@@ -19,7 +19,7 @@ export async function verifySecret(secret: string, stored: string) {
 }
 
 export function randomOtp() {
-  return String(Math.floor(100000 + Math.random() * 900000));
+  return String(randomInt(100000, 1000000));
 }
 
 export function payunitReference(prefix = "LB") {

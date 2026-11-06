@@ -1,14 +1,6 @@
 import { NextResponse } from "next/server";
 import { catchRoute, jsonError } from "@/lib/server/api";
-import {
-  bumpOtpAttempt,
-  clearOtp,
-  findUserByEmail,
-  findUserById,
-  pinResetOtpKey,
-  takeOtp,
-} from "@/lib/server/db";
-import { verifySecret } from "@/lib/server/crypto";
+import { attemptOtp, findUserByEmail, findUserById, pinResetOtpKey } from "@/lib/server/db";
 import { readPreauth, readSession, setPreauth } from "@/lib/server/session";
 
 export async function POST(request: Request) {
@@ -21,26 +13,20 @@ export async function POST(request: Request) {
     const email = String(body.email || "").trim().toLowerCase();
     const user = userId ? await findUserById(userId) : email ? await findUserByEmail(email) : null;
     const key = pinResetOtpKey(user?.email || email);
-    const record = await takeOtp(key);
-
-    if (!record || !user) {
+    const attempt = user ? await attemptOtp(key, code) : { state: "missing" as const };
+    if (attempt.state === "missing" || !user) {
       return jsonError("No reset code found. Request a new one.");
     }
-    if (record.exp < Date.now()) {
-      await clearOtp(key);
+    if (attempt.state === "expired") {
       return jsonError("That code expired. Request a new one.");
     }
-    if (record.attempts >= 5) {
+    if (attempt.state === "locked") {
       return jsonError("Too many attempts. Request a new code.", 429);
     }
-
-    const ok = await verifySecret(code, record.hash);
-    if (!ok) {
-      await bumpOtpAttempt(key);
+    if (attempt.state === "wrong") {
       return jsonError("Incorrect code.");
     }
 
-    await clearOtp(key);
     await setPreauth(user.id, "pin-reset");
     return NextResponse.json({ ok: true, step: "password", email: user.email });
   } catch (error) {

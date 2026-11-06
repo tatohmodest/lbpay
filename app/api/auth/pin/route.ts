@@ -14,7 +14,7 @@ export async function POST(request: Request) {
 
     const session = await readSession();
     const preauth = await readPreauth();
-    const userId = session?.userId || preauth?.userId;
+    const userId = session?.userId || (preauth?.step === "pin" ? preauth.userId : undefined);
     if (!userId) return jsonError("Sign in first.", 401);
 
     const user = await findUserById(userId);

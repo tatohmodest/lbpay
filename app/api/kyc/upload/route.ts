@@ -22,7 +22,7 @@ export async function POST(request: Request) {
     if (!(file instanceof File)) {
       return NextResponse.json({ error: "Choose a photo to upload." }, { status: 400 });
     }
-    if (!ALLOWED.has(file.type) && !file.type.startsWith("image/")) {
+    if (!ALLOWED.has(file.type) && (!file.type.startsWith("image/") || /svg|xml/i.test(file.type))) {
       return NextResponse.json({ error: "Upload a JPG, PNG, or WEBP photo." }, { status: 400 });
     }
     if (file.size > MAX_KYC_UPLOAD_BYTES) {

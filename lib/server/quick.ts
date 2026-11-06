@@ -1,4 +1,5 @@
 import { findTxByRailRef, patchTx, recordLedgerMove } from "@/lib/server/db";
+import { withLedgerLock } from "@/lib/server/ledger-lock";
 import { getPaymentRail } from "@/lib/providers";
 import { payunitReference } from "@/lib/server/crypto";
 import { publicPaymentError } from "@/lib/public-error";
@@ -17,15 +18,22 @@ export type QuickProgress = {
 };
 
 export async function progressQuickTransfer(collectRef: string): Promise<QuickProgress> {
-  const existing = inflight.get(collectRef);
+  // Key by the row, not the string asked for: the same transfer can be looked up
+  // by its id, rail ref or payout ref, and two runs at once must not both pay out.
+  const row = await findTxByRailRef(collectRef);
+  const key = row?.id || collectRef;
+  const existing = inflight.get(key);
   if (existing) return existing;
-  const run = progressQuickTransferInner(collectRef).finally(() => inflight.delete(collectRef));
-  inflight.set(collectRef, run);
+  const run = progressQuickTransferInner(collectRef).finally(() => inflight.delete(key));
+  inflight.set(key, run);
   return run;
 }
 
 async function failPayout(tx: NonNullable<Awaited<ReturnType<typeof findTxByRailRef>>>, meta: NonNullable<(typeof tx)["meta"]>, payoutRef: string) {
-  if (!meta.refunded) {
+  // Re-read inside the lock: two failure reports must refund once.
+  await withLedgerLock(async () => {
+    const fresh = await findTxByRailRef(tx.id);
+    if (!fresh || fresh.meta?.refunded || fresh.status !== "pending") return false;
     await recordLedgerMove({
       userId: tx.userId,
       amount: tx.amount,
@@ -37,11 +45,12 @@ async function failPayout(tx: NonNullable<Awaited<ReturnType<typeof findTxByRail
       status: "success",
       rail: "internal",
     });
-  }
-  await patchTx(tx.id, {
-    status: "failed",
-    meta: { ...meta, stage: "done", payoutRef, refunded: true },
-    note: `${tx.note || "Quick transfer"} · payout failed, returned to wallet`,
+    await patchTx(tx.id, {
+      status: "failed",
+      meta: { ...fresh.meta, stage: "done", payoutRef, refunded: true },
+      note: `${tx.note || "Quick transfer"} · payout failed, returned to wallet`,
+    });
+    return true;
   });
   return {
     status: "failed" as const,
@@ -135,8 +144,22 @@ async function progressQuickTransferInner(collectRef: string): Promise<QuickProg
     };
   }
 
+  // Claim the payout under the ledger lock, re-reading the row, so only one caller ever sends it.
   const payoutRef = payunitReference("QT");
-  await patchTx(tx.id, { meta: { ...meta, stage: "paying", payoutRef } });
+  const claimed = await withLedgerLock(async () => {
+    const fresh = await findTxByRailRef(tx.id);
+    if (!fresh || fresh.status !== "pending" || fresh.meta?.payoutRef) return false;
+    await patchTx(tx.id, { meta: { ...fresh.meta, stage: "paying", payoutRef } });
+    return true;
+  });
+  if (!claimed) {
+    return {
+      status: "pending",
+      stage: "paying",
+      transactionId: collectId,
+      message: "We are sending the money now. This usually takes less than two minutes.",
+    };
+  }
 
   try {
     const payout = await rail.disburse({

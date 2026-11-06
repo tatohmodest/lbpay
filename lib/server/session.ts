@@ -75,6 +75,7 @@ export async function readPreauth() {
   const value = unsignValue(raw, secret());
   if (!value) return null;
   const parsed = JSON.parse(value) as { userId: string; step: string; exp: number };
+  if (typeof parsed.step !== "string" || typeof parsed.exp !== "number") return null;
   if (parsed.exp < Date.now()) return null;
   return parsed;
 }
@@ -90,9 +91,13 @@ export async function readSession() {
   if (!raw) return null;
   const value = unsignValue(raw, secret());
   if (!value) return null;
-  const parsed = JSON.parse(value) as SessionPayload;
+  const parsed = JSON.parse(value) as SessionPayload & { step?: unknown; scope?: unknown };
+  // All three cookies share one signing key, so a half-finished sign-in
+  // (password done, PIN not yet) or an admin step token must never pass as a session.
+  if (parsed.step !== undefined || parsed.scope !== undefined) return null;
+  if (typeof parsed.userId !== "string" || typeof parsed.exp !== "number") return null;
   if (parsed.exp < Date.now()) return null;
-  return parsed;
+  return { userId: parsed.userId, exp: parsed.exp };
 }
 
 export async function createAdminSession(userId: string, maxAgeSec = 8 * 60 * 60) {
@@ -115,6 +120,7 @@ export async function readAdminSession() {
   const value = unsignValue(raw, secret());
   if (!value) return null;
   const parsed = JSON.parse(value) as { userId: string; exp: number; scope?: string };
+  if (parsed.scope !== "admin" || typeof parsed.exp !== "number") return null;
   if (parsed.exp < Date.now()) return null;
   return parsed;
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies, headers } from "next/headers";
 import { MailSendError } from "@/lib/server/mail";
+import { OtpThrottleError } from "@/lib/server/db";
 import { DEFAULT_LOCALE, LOCALE_COOKIE, LOCALE_HEADER, isLocale, localeFromAcceptLanguage, type Locale } from "@/lib/i18n/locale";
 import { translate } from "@/lib/i18n/messages";
 
@@ -21,6 +22,9 @@ async function routeLocale(): Promise<Locale> {
 }
 
 export async function catchRoute(scope: string, err: unknown) {
+  if (err instanceof OtpThrottleError) {
+    return NextResponse.json({ error: err.message }, { status: 429 });
+  }
   console.error(`[lbpay] ${scope} failed`, err);
   const locale = await routeLocale();
   if (err instanceof MailSendError || /email|smtp|mail/i.test(err instanceof Error ? err.message : String(err || ""))) {

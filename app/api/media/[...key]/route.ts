@@ -27,9 +27,15 @@ export async function GET(_request: Request, ctx: { params: Promise<{ key: strin
   });
   if (!file?.body) return NextResponse.json({ error: "Not found." }, { status: 404 });
 
+  // Only raster images are served inline. Anything else (an SVG with a script in it)
+  // is downloaded instead and can never run on the LBPay domain.
+  const stored = (file.headers.get("content-type") || "image/jpeg").toLowerCase();
+  const safe = /^image\/(jpeg|jpg|png|webp|gif|avif|heic|heif)\b/.test(stored);
   return new Response(file.body, {
     headers: {
-      "content-type": file.headers.get("content-type") || "image/jpeg",
+      "content-type": safe ? stored : "application/octet-stream",
+      ...(safe ? {} : { "content-disposition": "attachment" }),
+      "content-security-policy": "default-src 'none'; sandbox",
       "cache-control": isKyc ? "private, no-store" : "public, max-age=86400, s-maxage=604800, immutable",
       "x-content-type-options": "nosniff",
     },

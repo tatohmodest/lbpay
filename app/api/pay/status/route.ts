@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { railKindOf } from "@/lib/server/rail-kind";
 import { findTxByRailRef, settleRailTx } from "@/lib/server/db";
 import { getPaymentRail } from "@/lib/providers";
 import { publicPaymentError } from "@/lib/public-error";
@@ -21,6 +22,10 @@ export async function GET(request: Request) {
       });
     }
 
+    if (existing && railKindOf(existing) !== "collect") {
+      // Checkout only ever checks payments in, never payouts.
+      return NextResponse.json({ ok: true, status: "pending", transactionId: tx });
+    }
     const rail = getPaymentRail();
     const result = rail.getStatus
       ? await rail.getStatus(existing?.railRef || tx, { kind: "collect" })

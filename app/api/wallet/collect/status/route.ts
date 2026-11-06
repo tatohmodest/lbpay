@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { findTxByRailRef, settleRailTx } from "@/lib/server/db";
 import { getPaymentRail } from "@/lib/providers";
 import { requireActiveUser } from "@/lib/server/guard";
+import { railKindOf } from "@/lib/server/rail-kind";
 import { publicPaymentError } from "@/lib/public-error";
 
 export async function GET(request: Request) {
@@ -24,6 +25,10 @@ export async function GET(request: Request) {
       });
     }
 
+    if (existing && (existing.userId !== auth.user.id || railKindOf(existing) !== "collect")) {
+      // Only your own deposits are checked here; payouts have their own check.
+      return NextResponse.json({ ok: true, status: existing.userId === auth.user.id ? existing.status : "pending", transactionId: tx });
+    }
     const rail = getPaymentRail();
     let result = rail.getStatus
       ? await rail.getStatus(existing?.railRef || tx, { kind: "collect" })

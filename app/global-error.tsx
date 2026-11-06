@@ -1,11 +1,19 @@
 "use client";
 
+import { useEffect } from "react";
+import { isChunkError, reloadOnceForChunk } from "@/lib/chunk-reload";
+
 export default function GlobalError({
+  error,
   retry,
 }: {
   error: Error & { digest?: string };
   retry: () => void;
 }) {
+  useEffect(() => {
+    reloadOnceForChunk(error);
+  }, [error]);
+
   return (
     <html lang="en">
       <body style={{ margin: 0, background: "#f3f7f4", color: "#0c1913", fontFamily: "ui-sans-serif, system-ui, sans-serif" }}>
@@ -30,7 +38,7 @@ export default function GlobalError({
             </p>
             <button
               type="button"
-              onClick={() => retry()}
+              onClick={() => (isChunkError(error) ? window.location.reload() : retry())}
               style={{
                 marginTop: 24,
                 width: "100%",

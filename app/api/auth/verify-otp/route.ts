@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { catchRoute, jsonError } from "@/lib/server/api";
-import { bumpOtpAttempt, claimAdminInvite, clearOtp, findUserByEmail, takeOtp, upsertUser } from "@/lib/server/db";
-import { verifySecret } from "@/lib/server/crypto";
+import { attemptOtp, claimAdminInvite, findUserByEmail, upsertUser } from "@/lib/server/db";
 import { setPreauth } from "@/lib/server/session";
 import { isBootstrapAdmin } from "@/lib/roles";
 
@@ -10,23 +9,18 @@ export async function POST(request: Request) {
     const body = await request.json().catch(() => ({}));
     const email = String(body.email || "").trim().toLowerCase();
     const code = String(body.otp || "").trim();
-    const record = await takeOtp(email);
     const user = await findUserByEmail(email);
-
-    if (!record || !user) {
+    const attempt = user ? await attemptOtp(email, code) : { state: "missing" as const };
+    if (attempt.state === "missing" || !user) {
       return jsonError("No verification code found. Request a new one.");
     }
-    if (record.exp < Date.now()) {
-      await clearOtp(email);
+    if (attempt.state === "expired") {
       return jsonError("That code expired. Request a new one.");
     }
-    if (record.attempts >= 5) {
+    if (attempt.state === "locked") {
       return jsonError("Too many attempts. Request a new code.", 429);
     }
-
-    const ok = await verifySecret(code, record.hash);
-    if (!ok) {
-      await bumpOtpAttempt(email);
+    if (attempt.state === "wrong") {
       return jsonError("Incorrect code.");
     }
 
@@ -37,7 +31,6 @@ export async function POST(request: Request) {
     // Email is now proven, so a pending admin invite for it can be used.
     await claimAdminInvite(user);
     await upsertUser(user);
-    await clearOtp(email);
     await setPreauth(user.id, user.pinHash ? "pin" : "pin-setup");
     return NextResponse.json({
       ok: true,

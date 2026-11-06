@@ -3,8 +3,8 @@ import { findTxByRailRef, settleRailTx, writeAudit } from "@/lib/server/db";
 import { progressQuickTransfer } from "@/lib/server/quick";
 import { getPaymentRail } from "@/lib/providers";
 import { unwrapPayunitNotify } from "@/lib/providers/payunit-parse";
+import { railKindOf } from "@/lib/server/rail-kind";
 
-const PAYOUT_KINDS = new Set(["withdraw", "payout", "international", "send"]);
 
 /**
  * Gateway callback. Anyone on the internet can POST here, so the body is only a
@@ -31,7 +31,7 @@ export async function POST(request: Request) {
   if (!rail.getStatus) return NextResponse.json({ received: true });
   const verified = await rail
     .getStatus(existing.railRef || reference, {
-      kind: PAYOUT_KINDS.has(existing.kind) ? "disburse" : "collect",
+      kind: railKindOf(existing) || "collect",
       payToken: existing.meta?.payToken,
     })
     .catch(() => null);

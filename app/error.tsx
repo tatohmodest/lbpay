@@ -1,13 +1,20 @@
 "use client";
 
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { isChunkError, reloadOnceForChunk } from "@/lib/chunk-reload";
 
 export default function ErrorPage({
+  error,
   retry,
 }: {
   error: Error & { digest?: string };
   retry: () => void;
 }) {
+  useEffect(() => {
+    reloadOnceForChunk(error);
+  }, [error]);
+
   return (
     <div className="grid min-h-[60vh] place-items-center px-6 text-center">
       <div className="w-full max-w-sm rounded-[2rem] bg-white p-8 shadow-[0_24px_80px_rgba(7,20,15,0.12)]">
@@ -16,7 +23,7 @@ export default function ErrorPage({
         <p className="mt-2 text-sm leading-6 text-muted">
           Try again. Your money is still on the ledger.
         </p>
-        <Button className="mt-6 w-full" onClick={() => retry()}>
+        <Button className="mt-6 w-full" onClick={() => (isChunkError(error) ? window.location.reload() : retry())}>
           Try again
         </Button>
       </div>

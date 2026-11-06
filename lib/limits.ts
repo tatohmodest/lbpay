@@ -22,6 +22,8 @@ export function limitsFor(kind: LimitKind) {
 export function amountIssue(amount: number, kind: LimitKind) {
   const { min, max } = limitsFor(kind);
   if (!amount) return "";
+  // XAF has no cents; "1e9", 0.5 or Infinity must never reach the ledger.
+  if (!Number.isFinite(amount) || !Number.isInteger(amount)) return "Enter a whole amount in XAF.";
   if (amount < min) {
     if (kind === "withdraw") return `Withdrawal amount must be at least ${formatXAF(min)}.`;
     if (kind === "momo") return `Minimum transfer amount is ${formatXAF(min)}.`;

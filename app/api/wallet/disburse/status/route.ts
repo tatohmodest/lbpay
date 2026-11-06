@@ -3,6 +3,7 @@ import { findTxByRailRef, settleRailTx } from "@/lib/server/db";
 import { getPaymentRail } from "@/lib/providers";
 import { requireActiveUser } from "@/lib/server/guard";
 import { publicPaymentError } from "@/lib/public-error";
+import { railKindOf } from "@/lib/server/rail-kind";
 
 export async function GET(request: Request) {
   try {
@@ -30,6 +31,9 @@ export async function GET(request: Request) {
       });
     }
 
+    if (railKindOf(existing) !== "disburse") {
+      return NextResponse.json({ ok: true, status: existing.status, transactionId: existing.railRef || txId });
+    }
     const rail = getPaymentRail();
     let result = rail.getStatus
       ? await rail.getStatus(existing?.railRef || txId, {

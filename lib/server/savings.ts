@@ -244,7 +244,8 @@ export async function withdrawFromPlan(
     const wallet = db.wallets.find((w) => w.userId === userId);
     if (!wallet) throw new Error("Wallet missing");
     const value = amount === "all" ? plan.balance : Math.round(amount);
-    if (value < 0 || (value === 0 && !close)) throw new Error("Enter an amount to move back.");
+    // NaN would slip past every comparison below and poison both balances.
+    if (!Number.isFinite(value) || value < 0 || (value === 0 && !close)) throw new Error("Enter an amount to move back.");
     if (value > plan.balance) throw new Error("That is more than the pot holds.");
 
     const now = new Date().toISOString();
@@ -322,6 +323,8 @@ export async function updatePlanSettings(
 
     if (patch.target !== undefined) {
       const target = patch.target ? Math.round(Number(patch.target)) : null;
+      // A goal of NaN would quietly switch off the early-stop fee.
+      if (target !== null && (!Number.isFinite(target) || target <= 0)) throw new Error("Enter a goal in XAF.");
       // Objective is immutable: Once set, users cannot lower or cancel their goal!
       if (plan.target !== null && plan.target > 0) {
         if (target === null || target < plan.target) {

@@ -21,7 +21,7 @@ export async function POST(request: Request) {
   const amount = Number(body.amount);
   const direction = body.direction === "debit" ? "debit" : "credit";
   const reason = String(body.reason || "").trim();
-  if (!amount || amount < 1) return NextResponse.json({ error: "Enter an amount." }, { status: 400 });
+  if (!Number.isInteger(amount) || amount < 1) return NextResponse.json({ error: "Enter a whole amount." }, { status: 400 });
   if (!reason) return NextResponse.json({ error: "A reason is required." }, { status: 400 });
 
   const moved = await recordLedgerMove({
