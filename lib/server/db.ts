@@ -255,6 +255,15 @@ const TMP_FILE = path.join("/tmp", "lbpay.json");
 let filePath = LOCAL_FILE;
 let cache: DbShape | null = null;
 let seeding: Promise<void> | null = null;
+/** Newest updated_at (ms) of the remote rows the cache was built from. */
+let cacheStamp = 0;
+let lastStampCheck = 0;
+let reading: Promise<DbShape> | null = null;
+let savedStamp = 0;
+/** The cache snapshot each getDb() copy was made from, to tell what a request really changed. */
+const origins = new WeakMap<DbShape, DbShape>();
+/** Reads within this window reuse the cache without asking Supabase if anything changed. */
+const READ_TTL_MS = 400;
 
 function candidateFiles() {
   if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) {
@@ -524,11 +533,41 @@ async function persistAccount(user: StoredUser, wallet?: StoredWallet) {
   }
 }
 
-async function persistAllAccounts(db: DbShape) {
-  for (const user of db.users) {
-    const wallet = db.wallets.find((item) => item.userId === user.id);
-    await persistAccount(user, wallet);
-  }
+function accountSnapshot(db: DbShape | null, user: StoredUser) {
+  if (!db) return "";
+  const email = user.email.trim().toLowerCase();
+  const stored = db.users.find((item) => item.email.trim().toLowerCase() === email);
+  if (!stored) return "";
+  const wallet = db.wallets.find((item) => item.userId === stored.id);
+  return JSON.stringify([normalizeUser(stored), wallet?.balance ?? null]);
+}
+
+/** Write only the accounts this save changed, all at once. It used to rewrite every account, one by one. */
+async function persistChangedAccounts(db: DbShape, base: DbShape | null) {
+  const changed = db.users.filter((user) => !base || accountSnapshot(db, user) !== accountSnapshot(base, user));
+  await Promise.all(
+    changed.map((user) =>
+      persistAccount(
+        user,
+        db.wallets.find((item) => item.userId === user.id),
+      ),
+    ),
+  );
+}
+
+/** Newest updated_at across the ledger and account rows: one tiny query instead of re-downloading everything. */
+async function remoteStamp(): Promise<number | null> {
+  const sb = supabaseAdmin();
+  if (!sb) return null;
+  const [ledger, accounts] = await Promise.all([
+    sb.from("app_ledger").select("updated_at").eq("id", "lbpay").maybeSingle(),
+    sb.from("app_ledger").select("updated_at").like("id", "user:%").order("updated_at", { ascending: false }).limit(1),
+  ]);
+  if (ledger.error || accounts.error) return null;
+  const times = [ledger.data?.updated_at, accounts.data?.[0]?.updated_at]
+    .map((value) => (value ? Date.parse(String(value)) : 0))
+    .filter((value) => Number.isFinite(value));
+  return times.length ? Math.max(...times) : 0;
 }
 
 async function saveRemote(db: DbShape) {
@@ -541,22 +580,41 @@ async function saveRemote(db: DbShape) {
       return false;
     }
   }
+  const updatedAt = new Date().toISOString();
   const { error } = await sb.from("app_ledger").upsert({
     id: "lbpay",
     data: db,
-    updated_at: new Date().toISOString(),
+    updated_at: updatedAt,
   });
   if (error) {
     console.error("[lbpay] could not save the ledger to Supabase", error.message);
     return false;
   }
+  savedStamp = Date.parse(updatedAt);
   return true;
 }
 
 async function readDb(): Promise<DbShape> {
   if (cache && !remoteConfigured()) return cache;
+  if (cache && Date.now() - lastStampCheck < READ_TTL_MS) return cache;
+  // One read at a time: a page that asks ten questions shouldn't start ten downloads.
+  if (!reading) reading = readDbFresh().finally(() => (reading = null));
+  return reading;
+}
+
+async function readDbFresh(): Promise<DbShape> {
+  const stamp = cache ? await remoteStamp() : null;
+  if (cache && stamp !== null && stamp === cacheStamp) {
+    lastStampCheck = Date.now();
+    return cache;
+  }
+  const checkedAt = Date.now();
   let loaded: DbShape | null = null;
-  const remote = await loadRemote();
+  const [latest, remote, accountRows] = await Promise.all([
+    stamp !== null ? Promise.resolve(stamp) : remoteStamp(),
+    loadRemote(),
+    loadAccountRows(),
+  ]);
   if (remote) loaded = remote;
   if (!loaded) {
     for (const file of candidateFiles()) {
@@ -571,8 +629,11 @@ async function readDb(): Promise<DbShape> {
     }
   }
   if (!loaded) loaded = await empty();
-  loaded = applyAccounts(loaded, await loadAccountRows());
+  loaded = applyAccounts(loaded, accountRows);
   cache = loaded;
+  // A failed Supabase read must never be trusted as the ledger: force a fresh read next time.
+  cacheStamp = remoteConfigured() && !remote ? -1 : (latest ?? 0);
+  lastStampCheck = remoteConfigured() && !remote ? 0 : checkedAt;
   if (!remoteConfigured() && !remote) {
     try {
       await writeFileSafe(cache);
@@ -600,24 +661,83 @@ async function writeFileSafe(db: DbShape) {
   throw lastError instanceof Error ? lastError : new Error("Could not save account data.");
 }
 
-async function writeDb(db: DbShape) {
-  const remote = remoteConfigured() ? await loadRemote() : null;
-  const merged = remote ? mergeLedgers(remote, db) : db;
-  cache = merged;
-  await persistAllAccounts(merged);
-  const remoteOk = await saveRemote(merged);
-  if (remoteConfigured() && !remoteOk) {
-    throw new Error("Could not save the account. Try again.");
-  }
-  if (!remoteConfigured()) {
-    await writeFileSafe(merged);
-  }
+/**
+ * A request saves its whole copy, including rows it never touched. If another save
+ * landed meanwhile, those untouched rows are stale: keep the newer saved version
+ * so an unrelated save can't put back an old balance or un-settle a payout.
+ */
+export function keepNewerUntouched(db: DbShape, origin: DbShape, base: DbShape): DbShape {
+  const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+  const originWallets = new Map(origin.wallets.map((w) => [w.userId, w]));
+  const baseWallets = new Map(base.wallets.map((w) => [w.userId, w]));
+  const originTx = new Map(origin.transactions.map((tx) => [tx.id, tx]));
+  const baseTx = new Map(base.transactions.map((tx) => [tx.id, tx]));
+  const originUsers = new Map(origin.users.map((u) => [u.id, u]));
+  const baseUsers = new Map(base.users.map((u) => [u.id, u]));
+  return {
+    ...db,
+    wallets: db.wallets.map((w) => {
+      const before = originWallets.get(w.userId);
+      const newer = baseWallets.get(w.userId);
+      return before && newer && before.balance === w.balance ? newer : w;
+    }),
+    transactions: db.transactions.map((tx) => {
+      const before = originTx.get(tx.id);
+      const newer = baseTx.get(tx.id);
+      return before && newer && same(before, tx) ? newer : tx;
+    }),
+    users: db.users.map((u) => {
+      const before = originUsers.get(u.id);
+      const newer = baseUsers.get(u.id);
+      return before && newer && same(before, u) ? newer : u;
+    }),
+  };
 }
 
+async function writeDb(db: DbShape) {
+  // One save at a time in this process, each building on the one before.
+  return serialByKey("ledger-write", () => writeDbNow(db));
+}
+
+async function writeDbNow(db: DbShape) {
+  if (!remoteConfigured()) {
+    cache = db;
+    await writeFileSafe(db);
+    return;
+  }
+  // If nobody else wrote since our cache was built, merge onto the cache instead of downloading it again.
+  const stamp = await remoteStamp();
+  const base = cache && stamp !== null && stamp === cacheStamp ? cache : await loadRemote();
+  const origin = origins.get(db);
+  const own = base && origin && origin !== base ? keepNewerUntouched(db, origin, base) : db;
+  const merged = base ? mergeLedgers(base, own) : db;
+  try {
+    await persistChangedAccounts(merged, base);
+    const remoteOk = await saveRemote(merged);
+    if (!remoteOk) throw new Error("Could not save the account. Try again.");
+  } catch (error) {
+    // Unknown what landed: rebuild from Supabase on the next read.
+    cache = null;
+    cacheStamp = 0;
+    lastStampCheck = 0;
+    throw error;
+  }
+  cache = merged;
+  cacheStamp = savedStamp;
+  lastStampCheck = Date.now();
+}
+
+/**
+ * Callers change what they get and then save it, so each gets its own copy:
+ * a request that fails halfway must not leave half a change in the shared cache.
+ */
 export async function getDb() {
   if (!seeding) seeding = readDb().then(() => undefined);
   await seeding;
-  return readDb();
+  const snapshot = await readDb();
+  const copy = structuredClone(snapshot);
+  origins.set(copy, snapshot);
+  return copy;
 }
 
 export async function saveDb(db: DbShape) {
@@ -710,6 +830,7 @@ export async function findUserById(id: string) {
   if (!user && !remoteConfigured()) {
     cache = null;
     seeding = null;
+    cacheStamp = 0;
     const fresh = await getDb();
     user = fresh.users.find((u) => u.id === id) ?? null;
   }

@@ -24,7 +24,7 @@ async function pollQuickStatus(
   tx: string,
   onTick: (stage?: "collecting" | "paying") => void,
 ) {
-  for (let i = 0; i < 30; i += 1) {
+  for (let i = 0; i < 48; i += 1) {
     onTick();
     try {
       const res = await fetch(`/api/wallet/quick/status?tx=${encodeURIComponent(tx)}`);
@@ -39,7 +39,7 @@ async function pollQuickStatus(
     } catch {
       /* keep polling */
     }
-    await new Promise((resolve) => setTimeout(resolve, 4000));
+    await new Promise((resolve) => setTimeout(resolve, 2500));
   }
   return { status: "pending" as const, stage: "collecting" as const };
 }

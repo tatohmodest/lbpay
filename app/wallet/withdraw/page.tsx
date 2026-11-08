@@ -20,7 +20,7 @@ import { amountIssue, cameroonDay, dailyOutboundCap, LIMITS, outboundKinds } fro
 import { readPinFail, isPinError } from "@/lib/pin-fail";
 
 async function pollWithdrawStatus(tx: string, onTick: () => void) {
-  for (let i = 0; i < 30; i += 1) {
+  for (let i = 0; i < 48; i += 1) {
     onTick();
     try {
       const res = await fetch(`/api/wallet/disburse/status?tx=${encodeURIComponent(tx)}`);
@@ -29,7 +29,7 @@ async function pollWithdrawStatus(tx: string, onTick: () => void) {
     } catch {
       /* keep polling */
     }
-    await new Promise((resolve) => setTimeout(resolve, 4000));
+    await new Promise((resolve) => setTimeout(resolve, 2500));
   }
   return { status: "pending" as const };
 }

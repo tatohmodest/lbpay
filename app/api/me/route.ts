@@ -16,16 +16,18 @@ export async function GET() {
     const user = await findUserById(session.userId);
     if (!user) return NextResponse.json({ session: false }, { status: 401 });
     // Settle this person's pending payouts with the gateway before showing the balance.
-    await reconcileQuickly({ userId: user.id, limit: 5 });
-    const savings = await listSavings(user.id).catch(() => []);
-    const wallet = await getWallet(user.id);
-    const transactions = await listTx(user.id);
-    const keys = await listKeys(user.id);
-    const links = await listLinks(user.id);
-    const adminStep = isAdmin(user)
-      ? shouldSkipAdminOtp(user) || Boolean((await readAdminSession())?.userId === user.id)
-      : false;
-    const supportUnread = await supportUnreadForUser(user.id);
+    await reconcileQuickly({ userId: user.id, limit: 5 }, 2500);
+    // Independent reads: run them together instead of one after another.
+    const [savings, wallet, transactions, keys, links, adminSession, supportUnread] = await Promise.all([
+      listSavings(user.id).catch(() => []),
+      getWallet(user.id),
+      listTx(user.id),
+      listKeys(user.id),
+      listLinks(user.id),
+      isAdmin(user) && !shouldSkipAdminOtp(user) ? readAdminSession() : Promise.resolve(null),
+      supportUnreadForUser(user.id),
+    ]);
+    const adminStep = isAdmin(user) ? shouldSkipAdminOtp(user) || adminSession?.userId === user.id : false;
     return NextResponse.json({
       session: true,
       user: publicUser(user),

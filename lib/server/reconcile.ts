@@ -1,10 +1,13 @@
-import { listAllTx, patchTx, settleRailTx, type StoredTx } from "@/lib/server/db";
+import { listAllTx, settleRailTx, type StoredTx } from "@/lib/server/db";
 import { getPaymentRail } from "@/lib/providers";
 import { progressQuickTransfer } from "@/lib/server/quick";
 
 const PAYOUT_KINDS = new Set(["withdraw", "payout", "international"]);
 const MIN_AGE_MS = 45_000;
 const STUCK_MS = 30 * 60_000;
+/** Page loads call this constantly; ask the gateway about one payout at most every 30 s. */
+const RECHECK_MS = 30_000;
+const lastAsked = new Map<string, number>();
 
 export type StuckPayout = Pick<StoredTx, "id" | "userId" | "kind" | "amount" | "fee" | "counterparty" | "railRef" | "createdAt">;
 
@@ -20,7 +23,8 @@ export async function reconcilePayouts(opts: { userId?: string; limit?: number }
       t.status === "pending" &&
       (PAYOUT_KINDS.has(t.kind) || t.kind === "cross_network") &&
       (!opts.userId || t.userId === opts.userId) &&
-      now - +new Date(t.createdAt) >= MIN_AGE_MS,
+      now - +new Date(t.createdAt) >= MIN_AGE_MS &&
+      now - (lastAsked.get(t.id) || 0) >= RECHECK_MS,
   );
   const batch = pending.slice(0, opts.limit ?? 20);
   let settled = 0;
@@ -31,26 +35,26 @@ export async function reconcilePayouts(opts: { userId?: string; limit?: number }
     return { checked: 0, settled: 0 };
   }
 
-  for (const tx of batch) {
+  for (const tx of batch) lastAsked.set(tx.id, now);
+  // Ask about every payout at once; one slow answer no longer delays the rest.
+  await Promise.all(batch.map(async (tx) => {
     const ref = tx.railRef || tx.meta?.payoutRef || tx.id;
     try {
       if (tx.kind === "cross_network") {
         const r = await progressQuickTransfer(ref);
         if (r.status !== "pending") settled += 1;
-        continue;
+        return;
       }
-      if (!rail.getStatus) break;
+      if (!rail?.getStatus) return;
       const status = await rail.getStatus(ref, { kind: "disburse", payToken: tx.meta?.payToken });
       if (status.status === "success" || status.status === "failed") {
         await settleRailTx(ref, status.status);
         settled += 1;
-      } else {
-        await patchTx(tx.id, { meta: { ...(tx.meta || {}), lastCheckedAt: new Date().toISOString() } });
       }
     } catch (error) {
       console.error("[lbpay] reconcile failed for", tx.id, error);
     }
-  }
+  }));
   return { checked: batch.length, settled };
 }
 

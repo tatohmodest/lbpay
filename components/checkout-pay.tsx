@@ -30,7 +30,7 @@ import { mediaSrc } from "@/lib/media";
 type Method = PaymentMethod;
 
 async function pollStatus(tx: string) {
-  for (let i = 0; i < 30; i += 1) {
+  for (let i = 0; i < 48; i += 1) {
     try {
       const res = await fetch(`/api/pay/status?tx=${encodeURIComponent(tx)}`);
       const data = (await res.json()) as { status?: string; error?: string; message?: string };
@@ -38,7 +38,7 @@ async function pollStatus(tx: string) {
     } catch {
       /* keep polling */
     }
-    await new Promise((resolve) => setTimeout(resolve, 4000));
+    await new Promise((resolve) => setTimeout(resolve, 2500));
   }
   return { status: "pending" as const };
 }

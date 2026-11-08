@@ -90,7 +90,7 @@ export default function DepositPage() {
         } catch {
           /* keep polling */
         }
-        await new Promise((resolve) => setTimeout(resolve, 4000));
+        await new Promise((resolve) => setTimeout(resolve, 2500));
       }
       setWaiting(null);
       notify.info(
