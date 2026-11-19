@@ -62,9 +62,12 @@ function UsersInner() {
         if (!res.ok) throw new Error(data.error || "Failed");
         return data;
       }),
-    onSuccess: () => {
+    onSuccess: (_data, vars) => {
       client.invalidateQueries({ queryKey: ["admin-users"] });
-      notify.success("Updated", "User record saved.");
+      client.invalidateQueries({ queryKey: ["admin-wallets"] });
+      client.invalidateQueries({ queryKey: ["admin-tx"] });
+      client.invalidateQueries({ queryKey: ["admin-overview"] });
+      notify.success(vars.action === "delete" ? "User deleted" : "Updated", vars.action === "delete" ? "The account and its data were removed." : "User record saved.");
     },
     onError: (err: Error) => notify.error("Failed", err.message),
   });
@@ -192,6 +195,30 @@ function UsersInner() {
                 >
                   {user.status === "frozen" ? "Unfreeze" : "Freeze"}
                 </Button>
+                {!user.owner && user.id !== users.data?.viewer?.id ? (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    className="border-red-200 bg-red-50 text-red-700 hover:bg-red-100"
+                    onClick={() => {
+                      const reason = window.prompt(`Why are you deleting ${user.name}'s account?`);
+                      if (reason === null) return;
+                      if (!reason.trim()) {
+                        notify.error("Reason required", "Enter a reason to continue.");
+                        return;
+                      }
+                      if (
+                        window.confirm(
+                          `Permanently remove ${user.name} (@${user.lbpayId}) and their account data? This is blocked while their wallet has money or transactions are pending.`,
+                        )
+                      ) {
+                        mutate.mutate({ userId: user.id, action: "delete", reason: reason.trim() });
+                      }
+                    }}
+                  >
+                    Delete user
+                  </Button>
+                ) : null}
                 {(user.owner ? (["business", "developer"] as const) : (["business", "developer", "admin"] as const)).map((role) => (
                   <Button
                     key={role}

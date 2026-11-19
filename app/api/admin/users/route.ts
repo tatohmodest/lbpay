@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { adminSnapshot, grantRole, listUsers, publicUser, revokeRole, upsertUser, writeAudit } from "@/lib/server/db";
+import { adminSnapshot, deleteAccountForUser, grantRole, listUsers, publicUser, revokeRole, upsertUser, writeAudit } from "@/lib/server/db";
 import { ADMIN_SCOPES, adminScopesFor, isAdminOwner, type AdminScope } from "@/lib/roles";
 import { requireAdmin } from "@/lib/server/guard";
 import type { AccountKind } from "@/lib/types";
@@ -40,7 +40,44 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Only an owner can change an owner's account." }, { status: 403 });
   }
 
-  if (body.action === "freeze") {
+  if (body.action === "delete") {
+    if (target.id === auth.user.id) {
+      return NextResponse.json({ error: "You cannot delete your own account from admin." }, { status: 400 });
+    }
+    const reason = String(body.reason || "").trim().slice(0, 500);
+    if (!reason) return NextResponse.json({ error: "A reason is required to delete an account." }, { status: 400 });
+    const snap = await adminSnapshot();
+    const balance = snap.balances.get(target.id) ?? 0;
+    if (balance !== 0) {
+      return NextResponse.json(
+        { error: "This account still has money in its wallet. Resolve the balance before deleting it." },
+        { status: 409 },
+      );
+    }
+    if (snap.transactions.some((tx) => tx.userId === target.id && tx.status === "pending")) {
+      return NextResponse.json(
+        { error: "This account has a pending transaction. Settle it before deleting the account." },
+        { status: 409 },
+      );
+    }
+    let deleted;
+    try {
+      deleted = await deleteAccountForUser(target.id, { requireEmptyWallet: true });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Could not delete the account.";
+      return NextResponse.json({ error: message }, { status: 409 });
+    }
+    if (!deleted) return NextResponse.json({ error: "User not found." }, { status: 404 });
+    await writeAudit({
+      actorId: auth.user.id,
+      action: "user.delete",
+      targetType: "user",
+      targetId: target.id,
+      note: reason,
+      meta: { lbpayId: target.lbpayId, balance },
+    });
+    return NextResponse.json({ ok: true, deletedUserId: target.id });
+  } else if (body.action === "freeze") {
     target.status = "frozen";
     await upsertUser(target);
     await writeAudit({ actorId: auth.user.id, action: "user.freeze", targetType: "user", targetId: target.id });

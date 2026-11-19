@@ -15,6 +15,7 @@ export default function AdminWalletsPage() {
   const [amount, setAmount] = useState("");
   const [reason, setReason] = useState("");
   const [q, setQ] = useState("");
+  const [onlyWithMoney, setOnlyWithMoney] = useState(false);
   const wallets = useQuery({
     queryKey: ["admin-wallets"],
     queryFn: async () => (await fetch("/api/admin/wallets")).json(),
@@ -43,13 +44,20 @@ export default function AdminWalletsPage() {
       user: { id: string; name: string; lbpayId: string; status: string; avatar: string };
     }>;
     const needle = q.trim().toLowerCase();
-    if (!needle) return list;
-    return list.filter((row) => `${row.user.name} ${row.user.lbpayId}`.toLowerCase().includes(needle));
-  }, [wallets.data, q]);
+    return list.filter((row) =>
+      (!onlyWithMoney || row.balance > 0) &&
+      (!needle || `${row.user.name} ${row.user.lbpayId}`.toLowerCase().includes(needle)),
+    );
+  }, [wallets.data, q, onlyWithMoney]);
+  const fundedWallets = ((wallets.data?.wallets || []) as Array<{ balance: number }>).filter((row) => row.balance > 0);
+  const totalFunds = fundedWallets.reduce((sum, row) => sum + row.balance, 0);
 
   return (
     <div className="space-y-4">
       <AdminHeader title="Wallets" copy="Credit or debit any wallet. This writes an adjustment on the ledger." />
+      <p className="rounded-2xl bg-brand-soft px-4 py-3 text-sm font-semibold text-brand-deep">
+        {fundedWallets.length} {fundedWallets.length === 1 ? "person has" : "people have"} money in their wallet · {formatXAF(totalFunds)}
+      </p>
       <div className="grid gap-3 md:grid-cols-3">
         <Field label="Amount (XAF)">
           <Input className="font-mono" value={amount} onChange={(e) => setAmount(e.target.value)} />
@@ -61,6 +69,16 @@ export default function AdminWalletsPage() {
           <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Name or ID" />
         </Field>
       </div>
+      <button
+        type="button"
+        aria-pressed={onlyWithMoney}
+        onClick={() => setOnlyWithMoney((value) => !value)}
+        className={`rounded-full px-3.5 py-1.5 text-[13px] font-bold transition ${
+          onlyWithMoney ? "bg-ink text-white" : "bg-white text-muted ring-1 ring-line hover:text-ink"
+        }`}
+      >
+        {onlyWithMoney ? "Showing wallets with money" : "Show only wallets with money"}
+      </button>
       <AdminPanel>
         {rows.length === 0 ? (
           <p className="px-4 py-8 text-center text-sm text-muted">None</p>

@@ -11,7 +11,14 @@ import { isSafeProductImageUrl } from "@/lib/product-image";
 import { PRODUCT_DESCRIPTION_MAX } from "@/lib/shop";
 import { cloudinaryPublicId } from "@/lib/server/cloudinary";
 import { shopSlotLimit, shopSlotLimitMessage, shopSlotState, SHOP_LIMITS } from "@/lib/shop-limits";
-import { isDeletedLinkId, mergeById, mergePaymentLinks, uniqueIds } from "@/lib/server/ledger-merge";
+import {
+  isDeletedLinkId,
+  mergeById,
+  mergePaymentLinks,
+  mergeTransactions,
+  uniqueIds,
+  withoutDeletedUsers,
+} from "@/lib/server/ledger-merge";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { withLedgerLock } from "@/lib/server/ledger-lock";
 import { serialByKey } from "@/lib/server/serial";
@@ -226,6 +233,8 @@ export type DbShape = {
   otps: StoredOtp[];
   wallets: StoredWallet[];
   transactions: StoredTx[];
+  deletedTransactionIds?: string[];
+  deletedUserIds?: string[];
   kyc: KycApplication[];
   keys: StoredApiKey[];
   audit: AuditEntry[];
@@ -285,7 +294,7 @@ function accountRowId(email: string) {
 function mergeLedgers(base: DbShape, next: DbShape): DbShape {
   const users = new Map<string, StoredUser>();
   for (const user of [...(base.users || []), ...(next.users || [])]) {
-    const key = user.email.trim().toLowerCase();
+    const key = user.id;
     const prev = users.get(key);
     users.set(key, prev ? mergePrivileges(prev, user) : normalizeUser(user));
   }
@@ -294,27 +303,35 @@ function mergeLedgers(base: DbShape, next: DbShape): DbShape {
     wallets.set(wallet.userId, wallet);
   }
   const deletedLinkIds = uniqueIds([base.deletedLinkIds, next.deletedLinkIds]);
+  const deletedTransactionIds = uniqueIds([base.deletedTransactionIds, next.deletedTransactionIds]);
+  const deletedUserIds = uniqueIds([base.deletedUserIds, next.deletedUserIds]);
+  const deletedUsers = new Set(deletedUserIds);
   return {
     ...next,
     users: [...users.values()].map(normalizeUser),
-    wallets: [...wallets.values()],
-    transactions: mergeById(base.transactions, next.transactions),
-    kyc: mergeById(base.kyc, next.kyc),
-    keys: mergeById(base.keys, next.keys),
+    wallets: [...wallets.values()].filter((wallet) => !deletedUsers.has(wallet.userId)),
+    transactions: withoutDeletedUsers(
+      mergeTransactions(base.transactions, next.transactions, deletedTransactionIds),
+      deletedUserIds,
+    ),
+    deletedTransactionIds,
+    deletedUserIds,
+    kyc: withoutDeletedUsers(mergeById(base.kyc, next.kyc), deletedUserIds),
+    keys: withoutDeletedUsers(mergeById(base.keys, next.keys), deletedUserIds),
     audit: mergeById(base.audit, next.audit),
-    webhooks: mergeById(base.webhooks, next.webhooks),
-    links: mergePaymentLinks(base.links, next.links, deletedLinkIds),
+    webhooks: withoutDeletedUsers(mergeById(base.webhooks, next.webhooks), deletedUserIds),
+    links: withoutDeletedUsers(mergePaymentLinks(base.links, next.links, deletedLinkIds), deletedUserIds),
     deletedLinkIds,
-    logs: mergeById(base.logs, next.logs),
+    logs: withoutDeletedUsers(mergeById(base.logs, next.logs), deletedUserIds),
     pushSubscriptions: [
       ...new Map(
         [...(base.pushSubscriptions || []), ...(next.pushSubscriptions || [])].map((item) => [item.endpoint, item]),
       ).values(),
-    ],
-    reviews: mergeById(base.reviews, next.reviews),
-    supportThreads: mergeById(base.supportThreads, next.supportThreads),
-    supportMessages: mergeById(base.supportMessages, next.supportMessages),
-    savings: mergeById(base.savings, next.savings),
+    ].filter((item) => !deletedUsers.has(item.userId)),
+    reviews: withoutDeletedUsers(mergeById(base.reviews, next.reviews), deletedUserIds),
+    supportThreads: withoutDeletedUsers(mergeById(base.supportThreads, next.supportThreads), deletedUserIds),
+    supportMessages: mergeById(base.supportMessages, next.supportMessages).filter((item) => !deletedUsers.has(item.authorId)),
+    savings: withoutDeletedUsers(mergeById(base.savings, next.savings), deletedUserIds),
     otps: next.otps || [],
     vapid: next.vapid || base.vapid,
   };
@@ -348,6 +365,8 @@ async function empty(): Promise<DbShape> {
     otps: [],
     wallets: [],
     transactions: [],
+    deletedTransactionIds: [],
+    deletedUserIds: [],
     kyc: [],
     keys: [],
     audit: [],
@@ -369,6 +388,8 @@ function withCollections(db: DbShape): DbShape {
     otps: db.otps || [],
     wallets: db.wallets || [],
     transactions: db.transactions || [],
+    deletedTransactionIds: db.deletedTransactionIds || [],
+    deletedUserIds: db.deletedUserIds || [],
     kyc: db.kyc || [],
     keys: db.keys || [],
     audit: db.audit || [],
@@ -470,6 +491,7 @@ function mergePrivileges(base: StoredUser, next: StoredUser): StoredUser {
 function applyAccounts(db: DbShape, rows: AccountRow[]): DbShape {
   const next = { ...db, users: [...db.users], wallets: [...db.wallets] };
   for (const row of rows) {
+    if ((next.deletedUserIds || []).includes(row.user.id)) continue;
     const user = normalizeUser(row.user);
     const idx = next.users.findIndex(
       (item) => item.id === user.id || item.email.toLowerCase() === user.email.toLowerCase(),
@@ -549,6 +571,9 @@ function accountSnapshot(db: DbShape | null, user: StoredUser) {
 /** Write only the accounts this save changed, all at once. It used to rewrite every account, one by one. */
 async function persistChangedAccounts(db: DbShape, base: DbShape | null) {
   const changed = db.users.filter((user) => !base || accountSnapshot(db, user) !== accountSnapshot(base, user));
+  const removedEmails = (base?.users || [])
+    .filter((user) => !db.users.some((next) => next.id === user.id && next.email === user.email))
+    .map((user) => accountRowId(user.email));
   await Promise.all(
     changed.map((user) =>
       persistAccount(
@@ -557,6 +582,16 @@ async function persistChangedAccounts(db: DbShape, base: DbShape | null) {
       ),
     ),
   );
+  const sb = supabaseAdmin();
+  if (sb) {
+    for (const id of removedEmails) {
+      const { error } = await sb.from("app_ledger").delete().eq("id", id);
+      if (error) {
+        console.error("[lbpay] could not remove deleted account record", error.message);
+        throw new Error("Could not fully remove the saved account. Try again.");
+      }
+    }
+  }
 }
 
 /** Newest updated_at across the ledger and account rows: one tiny query instead of re-downloading everything. */
@@ -1197,6 +1232,19 @@ export async function findTxById(id: string) {
   return db.transactions.find((tx) => tx.id === id) ?? null;
 }
 
+export async function deleteTx(id: string) {
+  return withLedgerLock(async () => {
+    const db = await getDb();
+    const tx = db.transactions.find((item) => item.id === id);
+    if (!tx) return null;
+    if (tx.status === "pending") throw new Error("Settle this transaction before deleting it.");
+    db.transactions = db.transactions.filter((item) => item.id !== id);
+    db.deletedTransactionIds = uniqueIds([db.deletedTransactionIds, [id]]);
+    await saveDb(db);
+    return tx;
+  });
+}
+
 export async function findTxByRailRef(railRef: string) {
   const db = await getDb();
   return (
@@ -1634,28 +1682,42 @@ export function anonymizeUserForDeletion(user: StoredUser): StoredUser {
   return normalizeUser(cleaned);
 }
 
-export async function deleteAccountForUser(userId: string) {
-  const db = await getDb();
-  const idx = db.users.findIndex((item) => item.id === userId);
-  if (idx === -1) return null;
+export async function deleteAccountForUser(userId: string, options: { requireEmptyWallet?: boolean } = {}) {
+  return withLedgerLock(async () => {
+    const db = await getDb();
+    const idx = db.users.findIndex((item) => item.id === userId);
+    if (idx === -1) return null;
+    if (options.requireEmptyWallet) {
+      if ((db.wallets.find((item) => item.userId === userId)?.balance ?? 0) !== 0) {
+        throw new Error("This account still has money in its wallet. Resolve the balance before deleting it.");
+      }
+      if (db.transactions.some((item) => item.userId === userId && item.status === "pending")) {
+        throw new Error("This account has a pending transaction. Settle it before deleting the account.");
+      }
+    }
 
-  const user = db.users[idx];
-  const deleted = anonymizeUserForDeletion(user);
-  db.users[idx] = deleted;
-  db.wallets = db.wallets.filter((item) => item.userId !== userId);
-  db.transactions = db.transactions.filter((item) => item.userId !== userId);
-  db.keys = db.keys.filter((item) => item.userId !== userId);
-  db.webhooks = db.webhooks.filter((item) => item.userId !== userId);
-  db.links = db.links.filter((item) => item.userId !== userId);
-  db.savings = (db.savings || []).filter((item) => item.userId !== userId);
-  db.reviews = (db.reviews || []).filter((item) => item.userId !== userId);
-  db.pushSubscriptions = (db.pushSubscriptions || []).filter((item) => item.userId !== userId);
-  db.supportThreads = (db.supportThreads || []).filter((item) => item.userId !== userId);
-  db.supportMessages = (db.supportMessages || []).filter((item) => item.authorId !== userId);
-  db.logs = db.logs.filter((item) => item.userId !== userId);
+    const user = db.users[idx];
+    const deleted = anonymizeUserForDeletion(user);
+    const transactionIds = db.transactions.filter((item) => item.userId === userId).map((item) => item.id);
+    db.users[idx] = deleted;
+    db.wallets = db.wallets.filter((item) => item.userId !== userId);
+    db.transactions = db.transactions.filter((item) => item.userId !== userId);
+    db.deletedTransactionIds = uniqueIds([db.deletedTransactionIds, transactionIds]);
+    db.deletedUserIds = uniqueIds([db.deletedUserIds, [userId]]);
+    db.kyc = db.kyc.filter((item) => item.userId !== userId);
+    db.keys = db.keys.filter((item) => item.userId !== userId);
+    db.webhooks = db.webhooks.filter((item) => item.userId !== userId);
+    db.links = db.links.filter((item) => item.userId !== userId);
+    db.savings = (db.savings || []).filter((item) => item.userId !== userId);
+    db.reviews = (db.reviews || []).filter((item) => item.userId !== userId);
+    db.pushSubscriptions = (db.pushSubscriptions || []).filter((item) => item.userId !== userId);
+    db.supportThreads = (db.supportThreads || []).filter((item) => item.userId !== userId);
+    db.supportMessages = (db.supportMessages || []).filter((item) => item.authorId !== userId);
+    db.logs = db.logs.filter((item) => item.userId !== userId);
 
-  await saveDb(db);
-  return deleted;
+    await saveDb(db);
+    return deleted;
+  });
 }
 
 export async function revokeRole(user: StoredUser, role: AccountKind) {

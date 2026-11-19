@@ -34,9 +34,15 @@ function AdminTxInner() {
         if (!res.ok) throw new Error(data.error || "Failed");
         return data;
       }),
-    onSuccess: () => {
+    onSuccess: (_data, vars) => {
       client.invalidateQueries({ queryKey: ["admin-tx"] });
-      notify.success("Transaction updated", "The ledger change is recorded in audit.");
+      client.invalidateQueries({ queryKey: ["admin-overview"] });
+      notify.success(
+        vars.action === "delete" ? "Transaction deleted" : "Transaction updated",
+        vars.action === "delete"
+          ? "The transaction record was removed. Wallet balances were not changed; the action is recorded in audit."
+          : "The ledger change is recorded in audit.",
+      );
     },
     onError: (err: Error) => notify.error("Failed", err.message),
   });
@@ -50,14 +56,20 @@ function AdminTxInner() {
       counterparty: string;
       createdAt: string;
       note?: string;
+      user?: { name: string; lbpayId: string } | null;
+      counterpartyUser?: { name: string; lbpayId: string } | null;
     }>;
     const needle = q.trim().toLowerCase();
-    return list.filter((tx) => `${tx.id} ${tx.counterparty} ${tx.note || ""} ${tx.kind}`.toLowerCase().includes(needle));
+    return list.filter((tx) =>
+      `${tx.id} ${tx.counterparty} ${tx.note || ""} ${tx.kind} ${tx.user?.name || ""} ${tx.user?.lbpayId || ""} ${tx.counterpartyUser?.name || ""} ${tx.counterpartyUser?.lbpayId || ""}`
+        .toLowerCase()
+        .includes(needle),
+    );
   }, [txs.data, q]);
 
   return (
     <div className="space-y-4">
-      <AdminHeader title="Transactions" copy="Reverse, cancel, or mark status. Every action needs a reason." />
+      <AdminHeader title="Transactions" copy="Review who sent and received money, fix transaction status, or remove a settled record. Every action needs a reason." />
       <div className="grid gap-3 md:grid-cols-2">
         <Field label="Search">
           <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="ID, name, or kind" />
@@ -77,6 +89,10 @@ function AdminTxInner() {
                   <p className="font-mono text-[11px] text-muted">{tx.id}</p>
                   <p className="truncate font-bold">
                     {kindTitle(tx.kind)} · {tx.counterparty}
+                  </p>
+                  <p className="text-xs font-semibold text-ink">
+                    {tx.user ? `${tx.user.name} (@${tx.user.lbpayId})` : "Unknown account"}
+                    {tx.counterpartyUser ? ` → ${tx.counterpartyUser.name} (@${tx.counterpartyUser.lbpayId})` : ""}
                   </p>
                   <p className="text-xs text-muted">{formatDate(tx.createdAt)}</p>
                 </div>
@@ -99,6 +115,28 @@ function AdminTxInner() {
                     Mark {status === "success" ? "paid" : status}
                   </Button>
                 ))}
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="border-red-200 bg-red-50 text-red-700 hover:bg-red-100"
+                  disabled={tx.status === "pending" || mutate.isPending}
+                  title={tx.status === "pending" ? "Settle before deleting" : "Delete this transaction record without changing balances"}
+                  onClick={() => {
+                    if (!reason.trim()) {
+                      notify.error("Reason required", "Enter a reason before deleting a transaction.");
+                      return;
+                    }
+                    if (
+                      window.confirm(
+                        `Delete transaction ${tx.id}? This only removes the record; it will not change wallet balances.`,
+                      )
+                    ) {
+                      mutate.mutate({ id: tx.id, action: "delete", reason: reason.trim() });
+                    }
+                  }}
+                >
+                  Delete record
+                </Button>
               </div>
             </div>
           ))

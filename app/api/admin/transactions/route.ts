@@ -1,12 +1,24 @@
 import { NextResponse } from "next/server";
-import { findTxById, findUserById, getWallet, listAllTx, patchTx, recordLedgerMove, settleRailTx, writeAudit } from "@/lib/server/db";
+import { adminSnapshot, deleteTx, findTxById, findUserById, getWallet, patchTx, recordLedgerMove, settleRailTx, writeAudit } from "@/lib/server/db";
 import { requireAdmin } from "@/lib/server/guard";
 
 export async function GET() {
   const auth = await requireAdmin("finance");
   if (auth.error || !auth.user) return auth.error!;
-  const transactions = await listAllTx();
-  return NextResponse.json({ transactions });
+  const snap = await adminSnapshot();
+  const transactions = snap.transactions;
+  const users = snap.users;
+  const byId = new Map(users.map((user) => [user.id, user] as const));
+  const rows = transactions.map((tx) => ({
+    ...tx,
+    user: byId.get(tx.userId)
+      ? { name: byId.get(tx.userId)!.name, lbpayId: byId.get(tx.userId)!.lbpayId }
+      : null,
+    counterpartyUser: tx.counterpartyId && byId.get(tx.counterpartyId)
+      ? { name: byId.get(tx.counterpartyId)!.name, lbpayId: byId.get(tx.counterpartyId)!.lbpayId }
+      : null,
+  }));
+  return NextResponse.json({ transactions: rows });
 }
 
 export async function POST(request: Request) {
@@ -109,6 +121,26 @@ export async function POST(request: Request) {
       targetId: tx.id,
       note: reason,
     });
+  } else if (body.action === "delete") {
+    if (tx.status === "pending") {
+      return NextResponse.json({ error: "Settle this transaction before deleting it." }, { status: 409 });
+    }
+    try {
+      const deleted = await deleteTx(tx.id);
+      if (!deleted) return NextResponse.json({ error: "Transaction not found." }, { status: 404 });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Could not delete the transaction.";
+      return NextResponse.json({ error: message }, { status: 409 });
+    }
+    await writeAudit({
+      actorId: auth.user.id,
+      action: "tx.delete",
+      targetType: "transaction",
+      targetId: tx.id,
+      note: reason,
+      meta: { userId: tx.userId, kind: tx.kind, amount: tx.amount, status: tx.status },
+    });
+    return NextResponse.json({ ok: true, deletedId: tx.id, walletUnchanged: true });
   } else {
     return NextResponse.json({ error: "Unknown action." }, { status: 400 });
   }

@@ -16,6 +16,20 @@ export function mergeById<T extends { id: string }>(base: T[] = [], next: T[] = 
   return [...map.values()];
 }
 
+export function mergeTransactions<T extends { id: string }>(
+  base: T[] = [],
+  next: T[] = [],
+  deletedIds: string[] = [],
+): T[] {
+  const deleted = new Set(deletedIds);
+  return mergeById(base, next).filter((item) => !deleted.has(item.id));
+}
+
+export function withoutDeletedUsers<T extends { userId: string }>(rows: T[], deletedIds: string[]): T[] {
+  const deleted = new Set(deletedIds);
+  return rows.filter((item) => !deleted.has(item.userId));
+}
+
 export function isDeletedLinkId(deletedIds: string[] | undefined, idOrSlug: string): boolean {
   const needle = String(idOrSlug || "").trim();
   if (!needle) return false;
