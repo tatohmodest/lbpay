@@ -62,17 +62,21 @@ export async function POST(request: Request) {
 
   await writeAudit({
     actorId: auth.user.id,
-    action: `kyc.${decision}`,
+    action: `${app.track === "badge" ? "badge" : "kyc"}.${decision}`,
     targetType: "kyc",
     targetId: app.id,
-    note: `${app.track} · ${reviewed.user.lbpayId}`,
+    note: `${app.track === "badge" ? "verified badge" : app.track} · ${reviewed.user.lbpayId}`,
   });
   void pushAccount(
     reviewed.user.id,
-    decision === "approved" ? "KYC approved" : "KYC update",
     decision === "approved"
-      ? `Your ${app.track} verification is approved.`
-      : `Your ${app.track} verification was not approved: ${note}`,
+      ? app.track === "badge" ? "Verified badge approved" : "KYC approved"
+      : app.track === "badge" ? "Verified badge update" : "KYC update",
+    decision === "approved"
+      ? app.track === "badge" ? "Your verified badge is approved." : `Your ${app.track} verification is approved.`
+      : app.track === "badge"
+        ? `Your verified badge request was not approved: ${note}`
+        : `Your ${app.track} verification was not approved: ${note}`,
     app.track === "business" ? "/business" : app.track === "developer" ? "/developers" : "/wallet/profile",
   );
   return NextResponse.json({

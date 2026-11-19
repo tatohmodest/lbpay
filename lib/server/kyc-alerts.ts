@@ -9,6 +9,7 @@ const TRACK: Record<string, string> = {
   personal: "Identity",
   business: "Business",
   developer: "Developer",
+  badge: "Verified badge",
 };
 
 /**
@@ -29,6 +30,7 @@ export async function alertNewKyc(app: KycApplication, user: StoredUser) {
       `Email: ${user.email}`,
       `Check: ${track}`,
       app.businessName ? `Business: ${app.businessName}` : "",
+      app.track === "badge" && app.note ? `Reason: ${app.note}` : "",
       app.documents ? "Photos: front, back and holding ID attached" : "",
     ].filter(Boolean);
 

@@ -4,8 +4,10 @@ import { useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
+import { BadgeCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Field, Input, Textarea } from "@/components/ui/input";
 import { LEGAL_NOTE } from "@/lib/flags";
 import { useApp } from "@/lib/store";
 import { useMe } from "@/lib/hooks/wallet";
@@ -25,6 +27,33 @@ export default function ProfilePage() {
   const queryClient = useQueryClient();
   const user = me.data?.user;
   const roles = user?.roles || state.user.roles || ["personal"];
+  const [badgeReason, setBadgeReason] = useState("");
+  const [badgeSubmitting, setBadgeSubmitting] = useState(false);
+  const verifiedBadge = user?.verifiedBadge || "unverified";
+
+  async function applyForBadge(e: React.FormEvent) {
+    e.preventDefault();
+    setBadgeSubmitting(true);
+    try {
+      const res = await fetch("/api/kyc", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ track: "badge", note: badgeReason }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        notify.error("Could not apply", data.error || "Please try again.");
+        return;
+      }
+      setBadgeReason("");
+      await queryClient.invalidateQueries({ queryKey: ["me"] });
+      notify.success("Request sent", "The LBPay team will review your verified badge request.");
+    } catch {
+      notify.error("Could not apply", "Check your connection and try again.");
+    } finally {
+      setBadgeSubmitting(false);
+    }
+  }
 
   return (
     <div className="mx-auto max-w-xl">
@@ -33,7 +62,13 @@ export default function ProfilePage() {
           src={me.data?.user?.avatar || state.user.avatar}
           name={me.data?.user?.name || state.user.name}
         />
-        <h1 className="mt-4 text-2xl font-black">{state.user.name}</h1>
+        <h1 className="mt-4 flex items-center justify-center gap-1.5 text-2xl font-black">
+          {user?.name || state.user.name}
+          {verifiedBadge === "verified" ? (
+            <BadgeCheck className="h-5 w-5 shrink-0 text-brand" aria-label="Verified badge" />
+          ) : null}
+        </h1>
+        <DisplayNameEditor key={user?.name || state.user.name} name={user?.name || state.user.name} />
         <div className="mt-1 flex flex-wrap items-center justify-center gap-2">
           <CopyHandle handle={me.data?.user?.lbpayId || state.user.lbpayId} className="text-brand hover:text-brand-dark" />
           <ChangeHandle name={user?.name || state.user.name} current={me.data?.user?.lbpayId || state.user.lbpayId} />
@@ -60,6 +95,38 @@ export default function ProfilePage() {
                   : "Verify account"}
             </Link>
           )}
+          <div className="mt-4 border-t border-line pt-4">
+            <p className="text-sm font-semibold text-ink">Verified badge</p>
+            <p className="mt-1 text-xs leading-5 text-muted">
+              Apply for a public badge that appears beside your name. The LBPay team reviews each request.
+            </p>
+            {verifiedBadge === "verified" ? (
+              <p className="mt-3 inline-flex items-center gap-1.5 text-sm font-bold text-brand">
+                <BadgeCheck className="h-4 w-4" /> Your badge is active
+              </p>
+            ) : verifiedBadge === "pending" ? (
+              <p className="mt-3 text-sm font-semibold text-muted">Your request is being reviewed.</p>
+            ) : (
+              <form className="mt-3 space-y-3" onSubmit={applyForBadge}>
+                {verifiedBadge === "rejected" ? (
+                  <p className="text-xs text-danger">Your previous request was not approved. You can apply again.</p>
+                ) : null}
+                <Field label="Why should we verify your profile?" hint="At least 20 characters. Do not include private identity numbers.">
+                  <Textarea
+                    value={badgeReason}
+                    onChange={(e) => setBadgeReason(e.target.value)}
+                    minLength={20}
+                    maxLength={500}
+                    required
+                    placeholder="Tell us what people know you or your work by."
+                  />
+                </Field>
+                <Button type="submit" className="w-full" disabled={badgeSubmitting || badgeReason.trim().length < 20}>
+                  {badgeSubmitting ? "Sending…" : "Apply for verified badge"}
+                </Button>
+              </form>
+            )}
+          </div>
         </div>
         {user?.status === "frozen" ? (
           <p className="mt-4 rounded-xl bg-red-50 p-3 text-sm font-semibold text-danger">
@@ -153,6 +220,54 @@ export default function ProfilePage() {
       <ReviewForm />
       <p className="mt-4 text-xs text-muted">{LEGAL_NOTE}</p>
     </div>
+  );
+}
+
+function DisplayNameEditor({ name }: { name: string }) {
+  const notify = useNotify();
+  const queryClient = useQueryClient();
+  const [nameDraft, setNameDraft] = useState(name);
+  const [saving, setSaving] = useState(false);
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const res = await fetch("/api/me/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: nameDraft }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        notify.error("Could not update name", data.error || "Please try again.");
+        return;
+      }
+      await queryClient.invalidateQueries({ queryKey: ["me"] });
+      notify.success("Name updated", "Your display name has been saved.");
+    } catch {
+      notify.error("Could not update name", "Check your connection and try again.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <form className="mx-auto mt-4 max-w-sm text-left" onSubmit={save}>
+      <Field label="Display name" hint="This name is shown to people who pay you.">
+        <Input
+          value={nameDraft}
+          onChange={(e) => setNameDraft(e.target.value)}
+          minLength={2}
+          maxLength={80}
+          required
+          autoComplete="name"
+        />
+      </Field>
+      <Button type="submit" variant="secondary" className="mt-2 w-full" disabled={saving || nameDraft.trim() === name}>
+        {saving ? "Saving…" : "Save name"}
+      </Button>
+    </form>
   );
 }
 

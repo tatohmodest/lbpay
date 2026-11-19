@@ -18,9 +18,8 @@ export default function WalletQrPage() {
       handle={handle}
       name={user?.businessName || user?.name || state.user.name}
       avatar={user?.avatar || state.user.avatar}
-      verified={user?.kyc?.personal === "verified"}
+      verified={user?.kyc?.personal === "verified" || user?.verifiedBadge === "verified"}
       payUrl={handle && origin ? payHandleUrl(handle, origin) : ""}
     />
   );
 }
-

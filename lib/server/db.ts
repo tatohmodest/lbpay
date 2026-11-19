@@ -22,6 +22,7 @@ import type {
   AccountStatus,
   ApiLog,
   KycState,
+  KycApplicationTrack,
   KycTrack,
   PaymentLink,
   PaymentMethod,
@@ -49,6 +50,7 @@ export type StoredUser = {
   loginLockedUntil?: number;
   emailVerified: boolean;
   kycStatus: KycState;
+  verifiedBadge?: KycState;
   roles: AccountKind[];
   status: AccountStatus;
   kyc: Record<KycTrack, KycState>;
@@ -118,7 +120,7 @@ export type StoredSavingsPlan = SavingsPlan & { userId: string };
 export type KycApplication = {
   id: string;
   userId: string;
-  track: KycTrack;
+  track: KycApplicationTrack;
   status: "pending" | "approved" | "rejected";
   legalName: string;
   idNumber: string;
@@ -336,6 +338,7 @@ function normalizeUser(user: StoredUser): StoredUser {
     status: user.status ?? "active",
     kyc,
     kycStatus: kyc.personal,
+    verifiedBadge: user.verifiedBadge ?? "unverified",
   };
 }
 
@@ -458,6 +461,7 @@ function mergePrivileges(base: StoredUser, next: StoredUser): StoredUser {
     ...(decided ? { adminScopes: decided.adminScopes, rolesUpdatedAt: decided.rolesUpdatedAt } : {}),
     kyc,
     kycStatus: kyc.personal,
+    verifiedBadge: pickKycState(older.verifiedBadge, newer.verifiedBadge),
     businessName: newer.businessName || older.businessName,
     businessKind: newer.businessKind || older.businessKind,
   };
@@ -1298,18 +1302,23 @@ export async function reviewKycApplication(input: {
 
   user.kyc = { ...defaultKyc(), ...user.kyc };
   if (input.decision === "approved") {
-    user.kyc = { ...user.kyc, [reviewed.track]: "verified" };
-    if (reviewed.track === "personal") user.kycStatus = "verified";
-    if (reviewed.track === "business") {
-      if (!user.roles.includes("business")) user.roles.push("business");
-      user.businessName = reviewed.businessName || user.businessName;
-      user.businessKind = reviewed.businessKind || user.businessKind;
-    }
-    if (reviewed.track === "developer" && !user.roles.includes("developer")) {
-      user.roles.push("developer");
+    if (reviewed.track === "badge") {
+      user.verifiedBadge = "verified";
+    } else {
+      user.kyc = { ...user.kyc, [reviewed.track]: "verified" };
+      if (reviewed.track === "personal") user.kycStatus = "verified";
+      if (reviewed.track === "business") {
+        if (!user.roles.includes("business")) user.roles.push("business");
+        user.businessName = reviewed.businessName || user.businessName;
+        user.businessKind = reviewed.businessKind || user.businessKind;
+      }
+      if (reviewed.track === "developer" && !user.roles.includes("developer")) {
+        user.roles.push("developer");
+      }
     }
   } else {
-    user.kyc = { ...user.kyc, [reviewed.track]: "rejected" };
+    if (reviewed.track === "badge") user.verifiedBadge = "rejected";
+    else user.kyc = { ...user.kyc, [reviewed.track]: "rejected" };
   }
   user = normalizeUser(user);
 
@@ -1615,6 +1624,7 @@ export function anonymizeUserForDeletion(user: StoredUser): StoredUser {
     pinHash: null,
     emailVerified: false,
     kycStatus: "unverified",
+    verifiedBadge: "unverified",
     roles: ["personal"],
     status: "frozen",
     kyc: defaultKyc(),
@@ -1666,6 +1676,7 @@ export function publicUser(user: StoredUser) {
     phone: normalized.phone,
     avatar: normalized.avatar,
     kycStatus: normalized.kyc.personal,
+    verifiedBadge: normalized.verifiedBadge ?? "unverified",
     emailVerified: normalized.emailVerified,
     pinSet: Boolean(normalized.pinHash),
     roles: normalized.roles,

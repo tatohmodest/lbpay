@@ -64,6 +64,7 @@ export function SessionGuard({ children }: { children: React.ReactNode }) {
         phone: me.data.user.phone,
         avatar: me.data.user.avatar,
         kycStatus: me.data.user.kycStatus as UserProfile["kycStatus"],
+        verifiedBadge: me.data.user.verifiedBadge,
         roles: me.data.user.roles || ["personal"],
         status: me.data.user.status === "frozen" ? "frozen" : "active",
         kyc: (me.data.user.kyc as UserProfile["kyc"]) || {

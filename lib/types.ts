@@ -73,6 +73,7 @@ export type AccountKind = "personal" | "business" | "developer" | "admin";
 export type AccountStatus = "active" | "frozen";
 export type KycTrack = "personal" | "business" | "developer";
 export type KycState = "unverified" | "pending" | "verified" | "rejected";
+export type KycApplicationTrack = KycTrack | "badge";
 
 export type UserProfile = {
   id: string;
@@ -82,6 +83,7 @@ export type UserProfile = {
   phone: string;
   avatar: string;
   kycStatus: KycState;
+  verifiedBadge: KycState;
   roles: AccountKind[];
   status: AccountStatus;
   kyc: Record<KycTrack, KycState>;

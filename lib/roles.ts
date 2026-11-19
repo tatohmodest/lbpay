@@ -65,6 +65,7 @@ export function emptyProfile(): UserProfile {
     phone: "",
     avatar: DEFAULT_AVATAR,
     kycStatus: "unverified",
+    verifiedBadge: "unverified",
     roles: ["personal"],
     status: "active",
     kyc: defaultKyc(),

@@ -4,7 +4,11 @@ import { requireActiveUser } from "@/lib/server/guard";
 import { isOurCloudinaryUrl } from "@/lib/server/cloudinary";
 import { alertNewKyc } from "@/lib/server/kyc-alerts";
 import { isBusinessKind, kycDocsComplete, type KycDocuments, type KycDocumentType } from "@/lib/kyc";
-import type { KycTrack } from "@/lib/types";
+import type { KycApplicationTrack } from "@/lib/types";
+
+function isKycApplicationTrack(value: unknown): value is KycApplicationTrack {
+  return typeof value === "string" && ["personal", "business", "developer", "badge"].includes(value);
+}
 
 export async function GET() {
   const auth = await requireActiveUser();
@@ -15,15 +19,22 @@ export async function GET() {
 export async function POST(request: Request) {
   const auth = await requireActiveUser();
   if (auth.error || !auth.user) return auth.error!;
-  const body = await request.json().catch(() => ({}));
-  const track = (body.track === "business" || body.track === "developer" ? body.track : "personal") as KycTrack;
+  const parsed: unknown = await request.json().catch(() => ({}));
+  const body = parsed && typeof parsed === "object" ? parsed as Record<string, unknown> : {};
+  if (!isKycApplicationTrack(body.track)) {
+    return NextResponse.json({ error: "Choose a valid verification type." }, { status: 400 });
+  }
+  const track = body.track;
   let legalName = String(body.legalName || auth.user.name).trim();
   let idNumber = String(body.idNumber || "").trim();
   let documentType: KycDocumentType = body.documentType === "passport" ? "passport" : "national_id";
   const documents = body.documents as Partial<KycDocuments> | undefined;
 
-  if (auth.user.kyc[track] === "verified") {
+  if (track !== "badge" && auth.user.kyc[track] === "verified") {
     return NextResponse.json({ error: "This verification is already approved." }, { status: 409 });
+  }
+  if (track === "badge" && auth.user.verifiedBadge === "verified") {
+    return NextResponse.json({ error: "Your verified badge is already approved." }, { status: 409 });
   }
 
   const existing = (await listKycForUser(auth.user.id)).find(
@@ -46,7 +57,11 @@ export async function POST(request: Request) {
   const website = String(body.website || "").trim();
   const note = String(body.note || "").trim();
 
-  if (track === "business") {
+  if (track === "badge") {
+    if (note.length < 20) {
+      return NextResponse.json({ error: "Tell us a little more about why you are requesting a badge." }, { status: 400 });
+    }
+  } else if (track === "business") {
     if (!businessKind) {
       return NextResponse.json({ error: "Choose small business or branded business." }, { status: 400 });
     }
@@ -93,8 +108,8 @@ export async function POST(request: Request) {
   const app = await createKyc({
     userId: auth.user.id,
     track,
-    legalName,
-    idNumber,
+    legalName: track === "badge" ? auth.user.name : legalName,
+    idNumber: track === "badge" ? "" : idNumber,
     phone: String(body.phone || auth.user.phone),
     businessName: track === "business" ? businessName : "",
     businessKind: track === "business" ? businessKind : undefined,
@@ -105,7 +120,8 @@ export async function POST(request: Request) {
     note,
   });
 
-  auth.user.kyc = { ...auth.user.kyc, [track]: "pending" };
+  if (track === "badge") auth.user.verifiedBadge = "pending";
+  else auth.user.kyc = { ...auth.user.kyc, [track]: "pending" };
   if (track === "personal") auth.user.kycStatus = "pending";
   if (track === "business") {
     auth.user.businessName = businessName || auth.user.businessName || "";

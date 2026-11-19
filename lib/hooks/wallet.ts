@@ -15,6 +15,7 @@ export type MeResponse = {
     phone: string;
     avatar: string;
     kycStatus: string;
+    verifiedBadge: "unverified" | "pending" | "verified" | "rejected";
     emailVerified: boolean;
     pinSet: boolean;
     roles: Array<"personal" | "business" | "developer" | "admin">;

@@ -32,7 +32,13 @@ type KycApp = {
     idBackUrl?: string;
     selfieUrl?: string;
   };
-  user?: { name: string; lbpayId: string; email: string; kyc?: Record<string, string> };
+  user?: {
+    name: string;
+    lbpayId: string;
+    email: string;
+    kyc?: Record<string, string>;
+    verifiedBadge?: string;
+  };
 };
 
 const REASONS = [
@@ -97,7 +103,7 @@ export default function AdminKycPage() {
     <div className="space-y-4">
       <AdminHeader
         title="KYC review"
-        copy="Open each photo, check the name and number match, then approve or say what to fix."
+        copy="Review identity and business checks, or approve verified badge requests. Reject with a clear reason."
       />
 
       <div className="flex flex-wrap gap-1.5">
@@ -162,7 +168,9 @@ function KycCard({
 }) {
   const [rejecting, setRejecting] = useState(false);
   const [reason, setReason] = useState("");
-  const trackVerified = app.user?.kyc?.[app.track] === "verified";
+  const trackVerified = app.track === "badge"
+    ? app.user?.verifiedBadge === "verified"
+    : app.user?.kyc?.[app.track] === "verified";
   // An approved application whose access went missing can be repaired.
   const needsRestore = app.status === "approved" && app.user?.kyc && !trackVerified;
 
@@ -217,6 +225,8 @@ function KycCard({
           <p className="mt-3 text-sm text-muted">
             {app.track === "business"
               ? "Business checks use the personal ID already approved for this person."
+              : app.track === "badge"
+                ? "This person is requesting a public verified badge."
               : "No identity photos on this application."}
           </p>
         )}
