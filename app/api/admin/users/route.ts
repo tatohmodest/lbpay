@@ -1,5 +1,15 @@
 import { NextResponse } from "next/server";
-import { adminSnapshot, deleteAccountForUser, grantRole, listUsers, publicUser, revokeRole, upsertUser, writeAudit } from "@/lib/server/db";
+import {
+  adminSnapshot,
+  deleteAccountForUser,
+  grantRole,
+  listUsers,
+  publicUser,
+  purgeAnonymizedAccounts,
+  revokeRole,
+  upsertUser,
+  writeAudit,
+} from "@/lib/server/db";
 import { ADMIN_SCOPES, adminScopesFor, isAdminOwner, type AdminScope } from "@/lib/roles";
 import { requireAdmin } from "@/lib/server/guard";
 import type { AccountKind } from "@/lib/types";
@@ -8,6 +18,7 @@ import { pushAccount } from "@/lib/server/push";
 export async function GET() {
   const auth = await requireAdmin("users");
   if (auth.error || !auth.user) return auth.error!;
+  await purgeAnonymizedAccounts();
   const snap = await adminSnapshot();
   const rows = snap.users
     .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))
@@ -74,7 +85,7 @@ export async function POST(request: Request) {
       targetType: "user",
       targetId: target.id,
       note: reason,
-      meta: { lbpayId: target.lbpayId, balance },
+      meta: { balance },
     });
     return NextResponse.json({ ok: true, deletedUserId: target.id });
   } else if (body.action === "freeze") {

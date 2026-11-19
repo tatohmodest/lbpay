@@ -304,11 +304,19 @@ function mergeLedgers(base: DbShape, next: DbShape): DbShape {
   }
   const deletedLinkIds = uniqueIds([base.deletedLinkIds, next.deletedLinkIds]);
   const deletedTransactionIds = uniqueIds([base.deletedTransactionIds, next.deletedTransactionIds]);
-  const deletedUserIds = uniqueIds([base.deletedUserIds, next.deletedUserIds]);
+  const deletedUserIds = uniqueIds([
+    base.deletedUserIds,
+    next.deletedUserIds,
+    [...(base.users || []), ...(next.users || [])]
+      .filter((user) => user.passwordHash === `deleted:${user.id}`)
+      .map((user) => user.id),
+  ]);
   const deletedUsers = new Set(deletedUserIds);
   return {
     ...next,
-    users: [...users.values()].map(normalizeUser),
+    users: [...users.values()]
+      .filter((user) => !deletedUsers.has(user.id))
+      .map(normalizeUser),
     wallets: [...wallets.values()].filter((wallet) => !deletedUsers.has(wallet.userId)),
     transactions: withoutDeletedUsers(
       mergeTransactions(base.transactions, next.transactions, deletedTransactionIds),
@@ -383,13 +391,19 @@ async function empty(): Promise<DbShape> {
 }
 
 function withCollections(db: DbShape): DbShape {
+  const deletedUserIds = uniqueIds([
+    db.deletedUserIds,
+    (db.users || [])
+      .filter((user) => user.passwordHash === `deleted:${user.id}`)
+      .map((user) => user.id),
+  ]);
   return {
     users: (db.users || []).map(normalizeUser),
     otps: db.otps || [],
     wallets: db.wallets || [],
     transactions: db.transactions || [],
     deletedTransactionIds: db.deletedTransactionIds || [],
-    deletedUserIds: db.deletedUserIds || [],
+    deletedUserIds,
     kyc: db.kyc || [],
     keys: db.keys || [],
     audit: db.audit || [],
@@ -571,9 +585,7 @@ function accountSnapshot(db: DbShape | null, user: StoredUser) {
 /** Write only the accounts this save changed, all at once. It used to rewrite every account, one by one. */
 async function persistChangedAccounts(db: DbShape, base: DbShape | null) {
   const changed = db.users.filter((user) => !base || accountSnapshot(db, user) !== accountSnapshot(base, user));
-  const removedEmails = (base?.users || [])
-    .filter((user) => !db.users.some((next) => next.id === user.id && next.email === user.email))
-    .map((user) => accountRowId(user.email));
+  const removedUsers = (base?.users || []).filter((user) => !db.users.some((next) => next.id === user.id));
   await Promise.all(
     changed.map((user) =>
       persistAccount(
@@ -584,11 +596,26 @@ async function persistChangedAccounts(db: DbShape, base: DbShape | null) {
   );
   const sb = supabaseAdmin();
   if (sb) {
-    for (const id of removedEmails) {
-      const { error } = await sb.from("app_ledger").delete().eq("id", id);
-      if (error) {
-        console.error("[lbpay] could not remove deleted account record", error.message);
+    for (const user of removedUsers) {
+      const accountId = accountRowId(user.email);
+      const { error: accountError } = await sb.from("app_ledger").delete().eq("id", accountId);
+      if (accountError) {
+        console.error("[lbpay] could not remove deleted account record", accountError.message);
         throw new Error("Could not fully remove the saved account. Try again.");
+      }
+      for (const handle of [user.lbpayId, ...(user.previousHandles || [])]) {
+        const handleId = handleRowId(handle);
+        const { data, error: readError } = await sb.from("app_ledger").select("data").eq("id", handleId).maybeSingle();
+        if (readError) {
+          console.error("[lbpay] could not check deleted account handle", readError.message);
+          throw new Error("Could not fully remove the saved account. Try again.");
+        }
+        if ((data?.data as { userId?: string } | undefined)?.userId !== user.id) continue;
+        const { error: deleteError } = await sb.from("app_ledger").delete().eq("id", handleId);
+        if (deleteError) {
+          console.error("[lbpay] could not release deleted account handle", deleteError.message);
+          throw new Error("Could not fully remove the saved account. Try again.");
+        }
       }
     }
   }
@@ -787,9 +814,9 @@ export async function findUserByEmail(email: string) {
   const needle = email.trim().toLowerCase();
   const db = await getDb();
   const user = db.users.find((u) => u.email.toLowerCase() === needle);
-  if (user) return normalizeUser(user);
+  if (user && !isDeletedUser(user, db.deletedUserIds)) return normalizeUser(user);
   const stored = await loadAccount(needle);
-  if (!stored?.user) return null;
+  if (!stored?.user || isDeletedUser(stored.user, db.deletedUserIds)) return null;
   if (cache) cache = applyAccounts(cache, [stored]);
   return normalizeUser(stored.user);
 }
@@ -802,7 +829,7 @@ export async function findUserByHandle(handle: string) {
     db.users.find((u) => u.lbpayId.toLowerCase() === id) ??
     db.users.find((u) => u.previousHandles?.includes(id)) ??
     null;
-  return user ? normalizeUser(user) : null;
+  return user && !isDeletedUser(user, db.deletedUserIds) ? normalizeUser(user) : null;
 }
 
 export const HANDLE_CHANGE_COOLDOWN_DAYS = 30;
@@ -865,25 +892,25 @@ export async function nextAvailableHandle(desired: string, exceptUserId?: string
 
 export async function findUserById(id: string) {
   const db = await getDb();
-  let user = db.users.find((u) => u.id === id) ?? null;
+  let user = db.users.find((u) => u.id === id && !isDeletedUser(u, db.deletedUserIds)) ?? null;
   if (!user && !remoteConfigured()) {
     cache = null;
     seeding = null;
     cacheStamp = 0;
     const fresh = await getDb();
-    user = fresh.users.find((u) => u.id === id) ?? null;
+    user = fresh.users.find((u) => u.id === id && !isDeletedUser(u, fresh.deletedUserIds)) ?? null;
   }
   if (user) return normalizeUser(user);
   const rows = await loadAccountRows();
   const row = rows.find((item) => item.user.id === id);
-  if (!row?.user) return null;
+  if (!row?.user || isDeletedUser(row.user, db.deletedUserIds)) return null;
   if (cache) cache = applyAccounts(cache, [row]);
   return normalizeUser(row.user);
 }
 
 export async function listUsers() {
   const db = await getDb();
-  return db.users.map(normalizeUser);
+  return db.users.filter((user) => !isDeletedUser(user, db.deletedUserIds)).map(normalizeUser);
 }
 
 export async function upsertUser(user: StoredUser) {
@@ -1682,6 +1709,17 @@ export function anonymizeUserForDeletion(user: StoredUser): StoredUser {
   return normalizeUser(cleaned);
 }
 
+function isDeletedUser(user: StoredUser, deletedUserIds: string[] = []) {
+  return deletedUserIds.includes(user.id) || user.passwordHash === `deleted:${user.id}`;
+}
+
+export async function purgeAnonymizedAccounts() {
+  const db = await getDb();
+  const ids = db.users.filter((user) => isDeletedUser(user, db.deletedUserIds)).map((user) => user.id);
+  for (const id of ids) await deleteAccountForUser(id);
+  return ids.length;
+}
+
 export async function deleteAccountForUser(userId: string, options: { requireEmptyWallet?: boolean } = {}) {
   return withLedgerLock(async () => {
     const db = await getDb();
@@ -1697,9 +1735,8 @@ export async function deleteAccountForUser(userId: string, options: { requireEmp
     }
 
     const user = db.users[idx];
-    const deleted = anonymizeUserForDeletion(user);
     const transactionIds = db.transactions.filter((item) => item.userId === userId).map((item) => item.id);
-    db.users[idx] = deleted;
+    db.users.splice(idx, 1);
     db.wallets = db.wallets.filter((item) => item.userId !== userId);
     db.transactions = db.transactions.filter((item) => item.userId !== userId);
     db.deletedTransactionIds = uniqueIds([db.deletedTransactionIds, transactionIds]);
@@ -1716,7 +1753,7 @@ export async function deleteAccountForUser(userId: string, options: { requireEmp
     db.logs = db.logs.filter((item) => item.userId !== userId);
 
     await saveDb(db);
-    return deleted;
+    return user;
   });
 }
 
@@ -1884,7 +1921,7 @@ export async function listPublicReviews(): Promise<PublicReview[]> {
 export async function adminSnapshot() {
   const db = await getDb();
   return {
-    users: db.users.map(normalizeUser),
+    users: db.users.filter((user) => !isDeletedUser(user, db.deletedUserIds)).map(normalizeUser),
     balances: new Map(db.wallets.map((w) => [w.userId, w.balance] as const)),
     transactions: [...db.transactions].sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt)),
     kyc: db.kyc,
