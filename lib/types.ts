@@ -109,6 +109,12 @@ export type TransactionMeta = {
   receiveAmount?: number;
   recipientName?: string;
   corridor?: string;
+  source?: "api" | "checkout";
+  grossAmount?: number;
+  customerName?: string;
+  customerEmail?: string;
+  customerPhone?: string;
+  webhookDeliveredAt?: string;
 };
 
 export type Transaction = {
@@ -185,11 +191,34 @@ export type ApiLog = {
   createdAt: string;
 };
 
+export type WebhookEventType =
+  | "payment.succeeded"
+  | "payment.failed"
+  | "payout.succeeded"
+  | "payout.failed"
+  | "webhook.test";
+
 export type WebhookEndpoint = {
   id: string;
   url: string;
   events: string[];
   status: "active" | "disabled";
+  secret?: string;
+  createdAt?: string;
+};
+
+export type WebhookDelivery = {
+  id: string;
+  webhookId: string;
+  url: string;
+  event: string;
+  txId?: string;
+  status: number;
+  ok: boolean;
+  durationMs: number;
+  error?: string;
+  responsePreview?: string;
+  createdAt: string;
 };
 
 export type Payout = {

@@ -14,6 +14,7 @@ import { cameroonMsisdn, isCameroonMsisdn } from "@/lib/phone";
 import { assertAmount } from "@/lib/server/limits";
 import { publicPaymentError } from "@/lib/public-error";
 import { verifyUserPin } from "@/lib/server/pin";
+import { dispatchWebhooksForTx } from "@/lib/server/webhooks";
 import type { PaymentMethod } from "@/lib/types";
 
 export async function resolveCheckoutTarget(input: { handle?: string; slug?: string }) {
@@ -97,6 +98,18 @@ export async function startCheckoutPayment(input: {
         note: link?.title || `Paid @${merchant.lbpayId}`,
       });
       if (link) await recordLinkPayment(link.slug, amount);
+      await dispatchWebhooksForTx({
+        ...moved.incoming,
+        kind: "collection",
+        meta: {
+          source: "checkout",
+          linkSlug: link?.slug,
+          handle: merchant.lbpayId,
+          from: `@${payer.lbpayId}`,
+          customerName: payer.name,
+          customerEmail: payer.email,
+        },
+      }).catch((err) => console.error("[lbpay] checkout wallet webhook failed", err));
       return {
         ok: true as const,
         status: "success" as const,
@@ -175,7 +188,15 @@ export async function startCheckoutPayment(input: {
       status: result.status === "success" ? "success" : "pending",
       rail: result.provider,
       railRef: result.reference,
-      meta: { linkSlug: link?.slug, handle: merchant.lbpayId, from: phone || undefined },
+      meta: {
+        source: "checkout",
+        linkSlug: link?.slug,
+        handle: merchant.lbpayId,
+        from: phone || undefined,
+        customerPhone: phone || undefined,
+        customerName: input.payer?.name || undefined,
+        customerEmail: input.payer?.email || undefined,
+      },
     });
 
     if (moved.tx.status === "success" && link) {

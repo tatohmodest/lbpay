@@ -1,6 +1,6 @@
 import { mkdir, readFile, writeFile } from "fs/promises";
 import path from "path";
-import { verifySecret } from "./crypto";
+import { randomToken, verifySecret } from "./crypto";
 import { defaultKyc, isBootstrapAdmin } from "@/lib/roles";
 import { uid } from "@/lib/format";
 import { handleBase, isReservedHandle, normalizeHandle, numberedHandle } from "@/lib/handle";
@@ -37,6 +37,7 @@ import type {
   Transaction,
   TransactionKind,
   TransactionStatus,
+  WebhookDelivery,
   WebhookEndpoint,
 } from "@/lib/types";
 
@@ -119,6 +120,12 @@ export type StoredTx = Transaction & {
     recipientName?: string;
     corridor?: string;
     lastCheckedAt?: string;
+    source?: "api" | "checkout";
+    grossAmount?: number;
+    customerName?: string;
+    customerEmail?: string;
+    customerPhone?: string;
+    webhookDeliveredAt?: string;
   };
 };
 
@@ -174,7 +181,8 @@ export type AuditEntry = {
   meta?: Record<string, unknown>;
 };
 
-export type StoredWebhook = WebhookEndpoint & { userId: string };
+export type StoredWebhook = WebhookEndpoint & { userId: string; secret?: string; createdAt?: string };
+export type StoredWebhookDelivery = WebhookDelivery & { userId: string };
 export type StoredLink = PaymentLink & { userId: string };
 export type StoredLog = ApiLog & { userId: string };
 
@@ -239,6 +247,8 @@ export type DbShape = {
   keys: StoredApiKey[];
   audit: AuditEntry[];
   webhooks: StoredWebhook[];
+  deletedWebhookIds?: string[];
+  webhookDeliveries?: StoredWebhookDelivery[];
   links: StoredLink[];
   deletedLinkIds?: string[];
   logs: StoredLog[];
@@ -303,6 +313,8 @@ function mergeLedgers(base: DbShape, next: DbShape): DbShape {
     wallets.set(wallet.userId, wallet);
   }
   const deletedLinkIds = uniqueIds([base.deletedLinkIds, next.deletedLinkIds]);
+  const deletedWebhookIds = uniqueIds([base.deletedWebhookIds, next.deletedWebhookIds]);
+  const deletedWebhooks = new Set(deletedWebhookIds);
   const deletedTransactionIds = uniqueIds([base.deletedTransactionIds, next.deletedTransactionIds]);
   const deletedUserIds = uniqueIds([
     base.deletedUserIds,
@@ -327,7 +339,17 @@ function mergeLedgers(base: DbShape, next: DbShape): DbShape {
     kyc: withoutDeletedUsers(mergeById(base.kyc, next.kyc), deletedUserIds),
     keys: withoutDeletedUsers(mergeById(base.keys, next.keys), deletedUserIds),
     audit: mergeById(base.audit, next.audit),
-    webhooks: withoutDeletedUsers(mergeById(base.webhooks, next.webhooks), deletedUserIds),
+    webhooks: withoutDeletedUsers(
+      mergeById(base.webhooks, next.webhooks).filter((hook) => !deletedWebhooks.has(hook.id)),
+      deletedUserIds,
+    ),
+    deletedWebhookIds,
+    webhookDeliveries: withoutDeletedUsers(
+      mergeById(base.webhookDeliveries, next.webhookDeliveries),
+      deletedUserIds,
+    )
+      .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))
+      .slice(0, 200),
     links: withoutDeletedUsers(mergePaymentLinks(base.links, next.links, deletedLinkIds), deletedUserIds),
     deletedLinkIds,
     logs: withoutDeletedUsers(mergeById(base.logs, next.logs), deletedUserIds),
@@ -379,6 +401,8 @@ async function empty(): Promise<DbShape> {
     keys: [],
     audit: [],
     webhooks: [],
+    deletedWebhookIds: [],
+    webhookDeliveries: [],
     links: [],
     deletedLinkIds: [],
     logs: [],
@@ -408,6 +432,8 @@ function withCollections(db: DbShape): DbShape {
     keys: db.keys || [],
     audit: db.audit || [],
     webhooks: db.webhooks || [],
+    deletedWebhookIds: db.deletedWebhookIds || [],
+    webhookDeliveries: db.webhookDeliveries || [],
     links: db.links || [],
     deletedLinkIds: db.deletedLinkIds || [],
     logs: db.logs || [],
@@ -1075,7 +1101,11 @@ export async function recordLedgerMove(params: {
   fee?: number;
   meta?: StoredTx["meta"];
 }) {
-  return withLedgerLock(() => recordLedgerMoveUnlocked(params));
+  const result = await withLedgerLock(() => recordLedgerMoveUnlocked(params));
+  if (result.isNew && result.tx.status !== "pending" && (result.tx.kind === "collection" || result.tx.kind === "payout")) {
+    await emitWebhooks((mod) => mod.dispatchWebhooksForTx(result.tx));
+  }
+  return { tx: result.tx, balance: result.balance };
 }
 
 async function recordLedgerMoveUnlocked(params: {
@@ -1096,7 +1126,7 @@ async function recordLedgerMoveUnlocked(params: {
     const existing = await findTxByRailRef(params.railRef);
     if (existing && existing.userId === params.userId && existing.kind === params.kind) {
       const wallet = (await getDb()).wallets.find((w) => w.userId === params.userId);
-      return { tx: existing, balance: wallet?.balance ?? 0 };
+      return { tx: existing, balance: wallet?.balance ?? 0, isNew: false as const };
     }
   }
   const db = await getDb();
@@ -1134,7 +1164,7 @@ async function recordLedgerMoveUnlocked(params: {
   db.transactions.unshift(tx);
   await saveDb(db);
   if (status !== "pending") await emitPush((mod) => mod.pushForTransaction(tx));
-  return { tx, balance: wallet.balance };
+  return { tx, balance: wallet.balance, isNew: true as const };
 }
 
 export function resetOtpKey(email: string) {
@@ -1218,7 +1248,15 @@ export async function clearOtp(email: string) {
 }
 
 export async function settleRailTx(railRef: string, status: TransactionStatus) {
-  return withLedgerLock(() => settleRailTxUnlocked(railRef, status));
+  const result = await withLedgerLock(() => settleRailTxUnlocked(railRef, status));
+  if (
+    result.ok &&
+    !("noop" in result && result.noop) &&
+    (result.tx.kind === "collection" || result.tx.kind === "payout")
+  ) {
+    await emitWebhooks((mod) => mod.dispatchWebhooksForTx(result.tx));
+  }
+  return result;
 }
 
 async function settleRailTxUnlocked(railRef: string, status: TransactionStatus) {
@@ -1655,16 +1693,66 @@ export async function recordLinkPayment(slug: string | undefined, amount: number
   await saveDb(db);
 }
 
+export function issueWebhookSecret() {
+  return `whsec_${randomToken(24)}`;
+}
+
 export async function listWebhooks(userId: string) {
   const db = await getDb();
-  return db.webhooks.filter((item) => item.userId === userId);
+  const deleted = new Set(db.deletedWebhookIds || []);
+  let backfilled = false;
+  const hooks = db.webhooks.filter((item) => item.userId === userId && !deleted.has(item.id));
+  for (const hook of hooks) {
+    if (!hook.secret) {
+      hook.secret = issueWebhookSecret();
+      backfilled = true;
+    }
+  }
+  if (backfilled) await saveDb(db);
+  return hooks;
+}
+
+export async function findWebhookById(userId: string, id: string) {
+  const hooks = await listWebhooks(userId);
+  return hooks.find((item) => item.id === id) ?? null;
 }
 
 export async function addWebhook(hook: StoredWebhook) {
   const db = await getDb();
-  db.webhooks.unshift(hook);
+  const stored: StoredWebhook = {
+    ...hook,
+    secret: hook.secret || issueWebhookSecret(),
+    createdAt: hook.createdAt || new Date().toISOString(),
+  };
+  db.webhooks.unshift(stored);
   await saveDb(db);
-  return hook;
+  return stored;
+}
+
+export async function deleteWebhook(userId: string, id: string) {
+  const db = await getDb();
+  const targetId = String(id || "").trim();
+  const idx = db.webhooks.findIndex((item) => item.id === targetId && item.userId === userId);
+  if (idx === -1) return null;
+  const [removed] = db.webhooks.splice(idx, 1);
+  db.deletedWebhookIds = uniqueIds([db.deletedWebhookIds, [targetId]]);
+  await saveDb(db);
+  return removed;
+}
+
+export async function recordWebhookDelivery(delivery: StoredWebhookDelivery) {
+  const db = await getDb();
+  db.webhookDeliveries = [delivery, ...(db.webhookDeliveries || [])].slice(0, 200);
+  await saveDb(db);
+  return delivery;
+}
+
+export async function listWebhookDeliveries(userId: string, limit = 30) {
+  const db = await getDb();
+  return (db.webhookDeliveries || [])
+    .filter((item) => item.userId === userId)
+    .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))
+    .slice(0, limit);
 }
 
 export async function addLog(log: StoredLog) {
@@ -1744,6 +1832,7 @@ export async function deleteAccountForUser(userId: string, options: { requireEmp
     db.kyc = db.kyc.filter((item) => item.userId !== userId);
     db.keys = db.keys.filter((item) => item.userId !== userId);
     db.webhooks = db.webhooks.filter((item) => item.userId !== userId);
+    db.webhookDeliveries = (db.webhookDeliveries || []).filter((item) => item.userId !== userId);
     db.links = db.links.filter((item) => item.userId !== userId);
     db.savings = (db.savings || []).filter((item) => item.userId !== userId);
     db.reviews = (db.reviews || []).filter((item) => item.userId !== userId);
@@ -1805,6 +1894,15 @@ async function emitPush(run: (mod: typeof import("./push")) => Promise<unknown>)
     await run(mod);
   } catch (error) {
     console.error("[lbpay] push failed", error);
+  }
+}
+
+async function emitWebhooks(run: (mod: typeof import("./webhooks")) => Promise<unknown>) {
+  try {
+    const mod = await import("./webhooks");
+    await run(mod);
+  } catch (error) {
+    console.error("[lbpay] webhook dispatch failed", error);
   }
 }
 

@@ -15,6 +15,8 @@ export const DOC_GROUPS: DocGroup[] = [
     items: [
       { id: "ledger", title: "Wallet vs disbursement" },
       { id: "payments", title: "Payments" },
+      { id: "payment-status", title: "Payment status" },
+      { id: "webhooks", title: "Webhooks" },
       { id: "payouts", title: "Payouts" },
       { id: "payment-links", title: "Payment links" },
       { id: "balance", title: "Balance" },

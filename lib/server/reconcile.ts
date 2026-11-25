@@ -3,7 +3,9 @@ import { getPaymentRail } from "@/lib/providers";
 import { progressQuickTransfer } from "@/lib/server/quick";
 
 const PAYOUT_KINDS = new Set(["withdraw", "payout", "international"]);
+const COLLECT_KINDS = new Set(["deposit", "collection"]);
 const MIN_AGE_MS = 45_000;
+const MAX_COLLECT_AGE_MS = 24 * 60 * 60_000;
 const STUCK_MS = 30 * 60_000;
 /** Page loads call this constantly; ask the gateway about one payout at most every 30 s. */
 const RECHECK_MS = 30_000;
@@ -18,14 +20,16 @@ export type StuckPayout = Pick<StoredTx, "id" | "userId" | "kind" | "amount" | "
  */
 export async function reconcilePayouts(opts: { userId?: string; limit?: number } = {}) {
   const now = Date.now();
-  const pending = (await listAllTx()).filter(
-    (t) =>
-      t.status === "pending" &&
-      (PAYOUT_KINDS.has(t.kind) || t.kind === "cross_network") &&
-      (!opts.userId || t.userId === opts.userId) &&
-      now - +new Date(t.createdAt) >= MIN_AGE_MS &&
-      now - (lastAsked.get(t.id) || 0) >= RECHECK_MS,
-  );
+  const pending = (await listAllTx()).filter((t) => {
+    if (t.status !== "pending") return false;
+    if (opts.userId && t.userId !== opts.userId) return false;
+    const age = now - +new Date(t.createdAt);
+    if (age < MIN_AGE_MS) return false;
+    if (now - (lastAsked.get(t.id) || 0) < RECHECK_MS) return false;
+    if (PAYOUT_KINDS.has(t.kind) || t.kind === "cross_network") return true;
+    if (COLLECT_KINDS.has(t.kind) && t.rail === "payunit" && age <= MAX_COLLECT_AGE_MS) return true;
+    return false;
+  });
   const batch = pending.slice(0, opts.limit ?? 20);
   let settled = 0;
   let rail: ReturnType<typeof getPaymentRail> | null = null;
@@ -46,7 +50,11 @@ export async function reconcilePayouts(opts: { userId?: string; limit?: number }
         return;
       }
       if (!rail?.getStatus) return;
-      const status = await rail.getStatus(ref, { kind: "disburse", payToken: tx.meta?.payToken });
+      const isCollect = COLLECT_KINDS.has(tx.kind);
+      const status = await rail.getStatus(ref, {
+        kind: isCollect ? "collect" : "disburse",
+        payToken: tx.meta?.payToken,
+      });
       if (status.status === "success" || status.status === "failed") {
         await settleRailTx(ref, status.status);
         settled += 1;

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { adminSnapshot, deleteTx, findTxById, findUserById, getWallet, patchTx, recordLedgerMove, settleRailTx, writeAudit } from "@/lib/server/db";
 import { requireAdmin } from "@/lib/server/guard";
+import { dispatchWebhooksForTx } from "@/lib/server/webhooks";
 
 export async function GET() {
   const auth = await requireAdmin("finance");
@@ -27,6 +28,36 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => ({}));
   const tx = await findTxById(String(body.id || ""));
   if (!tx) return NextResponse.json({ error: "Transaction not found." }, { status: 404 });
+
+  if (body.action === "resend_webhook") {
+    if (tx.status === "pending") {
+      return NextResponse.json({ error: "Settle this transaction before sending a webhook." }, { status: 409 });
+    }
+    const dispatched = await dispatchWebhooksForTx(tx, { force: true });
+    if (!dispatched.eventType) {
+      return NextResponse.json({ error: "This transaction kind does not emit developer webhooks." }, { status: 400 });
+    }
+    if (!dispatched.matched) {
+      return NextResponse.json({ error: "Merchant has no active webhook subscribed to this event." }, { status: 400 });
+    }
+    await writeAudit({
+      actorId: auth.user.id,
+      action: "tx.webhook.resend",
+      targetType: "transaction",
+      targetId: tx.id,
+      note: String(body.reason || "Admin webhook replay").trim(),
+      meta: { event: dispatched.eventType, matched: dispatched.matched, delivered: dispatched.sent },
+    });
+    return NextResponse.json({
+      ok: dispatched.sent > 0,
+      tx,
+      event: dispatched.eventType,
+      matched: dispatched.matched,
+      delivered: dispatched.sent,
+      deliveries: dispatched.deliveries,
+    });
+  }
+
   const reason = String(body.reason || "").trim();
   if (!reason) return NextResponse.json({ error: "A reason is required for every fix." }, { status: 400 });
 
@@ -35,10 +66,10 @@ export async function POST(request: Request) {
     if (!["success", "failed", "pending", "cancelled"].includes(status)) {
       return NextResponse.json({ error: "Invalid status." }, { status: 400 });
     }
-    // Pending withdrawals/payouts settle through the ledger: "failed" refunds amount + fee, once.
+    // Pending collections/deposits/withdrawals/payouts settle through the ledger and trigger webhooks.
     if (
       tx.status === "pending" &&
-      (tx.kind === "withdraw" || tx.kind === "payout") &&
+      (tx.kind === "withdraw" || tx.kind === "payout" || tx.kind === "collection" || tx.kind === "deposit") &&
       (status === "success" || status === "failed" || status === "cancelled")
     ) {
       await settleRailTx(tx.railRef || tx.id, status);

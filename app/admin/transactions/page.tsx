@@ -34,9 +34,20 @@ function AdminTxInner() {
         if (!res.ok) throw new Error(data.error || "Failed");
         return data;
       }),
-    onSuccess: (_data, vars) => {
+    onSuccess: (data, vars) => {
       client.invalidateQueries({ queryKey: ["admin-tx"] });
       client.invalidateQueries({ queryKey: ["admin-overview"] });
+      if (vars.action === "resend_webhook") {
+        if (data?.delivered > 0) {
+          notify.success(
+            "Webhook sent",
+            `Delivered ${data.event} (${data.delivered}/${data.matched} endpoints returned 2xx).`,
+          );
+        } else {
+          notify.error("Webhook endpoint failed", data?.deliveries?.[0]?.error || "Endpoint did not return 2xx.");
+        }
+        return;
+      }
       notify.success(
         vars.action === "delete" ? "Transaction deleted" : "Transaction updated",
         vars.action === "delete"
@@ -102,6 +113,16 @@ function AdminTxInner() {
                 </div>
               </div>
               <div className="mt-3 flex flex-wrap gap-2">
+                {(tx.kind === "collection" || tx.kind === "payout" || tx.kind === "receive") && tx.status !== "pending" ? (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    disabled={mutate.isPending}
+                    onClick={() => mutate.mutate({ id: tx.id, action: "resend_webhook", reason: reason || "Admin webhook replay" })}
+                  >
+                    Resend webhook
+                  </Button>
+                ) : null}
                 <Button size="sm" variant="secondary" onClick={() => mutate.mutate({ id: tx.id, action: "reverse", reason })}>
                   Reverse
                 </Button>

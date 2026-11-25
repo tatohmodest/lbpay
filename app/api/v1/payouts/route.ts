@@ -1,12 +1,35 @@
 import { payoutsPausedResponse } from "@/lib/server/payout-gate";
 import { NextResponse } from "next/server";
 import { authenticateApiKey, logApi, railForEnv } from "@/lib/server/apikey";
-import { getWallet } from "@/lib/server/db";
+import { getWallet, listTx, type StoredTx } from "@/lib/server/db";
 import { payunitReference } from "@/lib/server/crypto";
 import { runPayout } from "@/lib/server/payout-flow";
 import { cameroonMsisdn, isCameroonMsisdn } from "@/lib/phone";
 import { momoOutFee } from "@/lib/fees";
 import { assertAmount, assertDailyOutbound } from "@/lib/server/limits";
+import { dispatchWebhooksForTx, formatApiPayout } from "@/lib/server/webhooks";
+
+export async function GET(request: Request) {
+  const auth = await authenticateApiKey(request);
+  if (!auth.ok) return auth.error;
+  const { user, env } = auth;
+
+  const url = new URL(request.url);
+  const rawLimit = Number(url.searchParams.get("limit") || 20);
+  const limit = Math.min(100, Math.max(1, Number.isFinite(rawLimit) ? Math.floor(rawLimit) : 20));
+
+  const rows = (await listTx(user.id))
+    .filter((tx) => tx.kind === "payout")
+    .slice(0, limit)
+    .map((tx) => formatApiPayout(tx, env));
+
+  await logApi(user.id, "GET", "/v1/payouts", 200);
+  return NextResponse.json({
+    object: "list",
+    data: rows,
+    environment: env,
+  });
+}
 
 export async function POST(request: Request) {
   const auth = await authenticateApiKey(request);
@@ -47,9 +70,30 @@ export async function POST(request: Request) {
       beneficiaryName: user.name,
       note: "API disbursement",
     });
+    const sbxId = `sbx_${reference}`;
+    const sbxTx: StoredTx = {
+      id: sbxId,
+      userId: user.id,
+      kind: "payout",
+      amount,
+      fee,
+      status: result.status === "failed" ? "failed" : result.status,
+      method: network,
+      counterparty: phone,
+      note: "API disbursement",
+      createdAt: new Date().toISOString(),
+      rail: "sandbox",
+      railRef: reference,
+      meta: { to: phone, toNetwork: network },
+    };
+    if (sbxTx.status !== "pending") {
+      await dispatchWebhooksForTx(sbxTx, { env: "sandbox" }).catch((err) =>
+        console.error("[lbpay] sandbox payout webhook failed", err),
+      );
+    }
     await logApi(user.id, "POST", "/v1/payouts", 200);
     return NextResponse.json({
-      id: `sbx_${reference}`,
+      id: sbxId,
       object: "payout",
       amount,
       fee,

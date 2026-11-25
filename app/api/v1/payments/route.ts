@@ -1,9 +1,37 @@
 import { NextResponse } from "next/server";
 import { authenticateApiKey, logApi, railForEnv } from "@/lib/server/apikey";
-import { recordLedgerMove } from "@/lib/server/db";
+import { listTx, recordLedgerMove, type StoredTx } from "@/lib/server/db";
 import { payunitReference } from "@/lib/server/crypto";
 import { assertAmount } from "@/lib/server/limits";
 import { apiCollectionFee } from "@/lib/fees";
+import { dispatchWebhooksForTx, formatApiPayment } from "@/lib/server/webhooks";
+
+export async function GET(request: Request) {
+  const auth = await authenticateApiKey(request);
+  if (!auth.ok) return auth.error;
+  const { user, env } = auth;
+
+  const url = new URL(request.url);
+  const rawLimit = Number(url.searchParams.get("limit") || 20);
+  const limit = Math.min(100, Math.max(1, Number.isFinite(rawLimit) ? Math.floor(rawLimit) : 20));
+  const statusFilter = url.searchParams.get("status")?.trim();
+
+  const rows = (await listTx(user.id))
+    .filter(
+      (tx) =>
+        (tx.kind === "collection" || (tx.kind === "receive" && Boolean(tx.meta?.handle || tx.meta?.linkSlug))) &&
+        (!statusFilter || tx.status === statusFilter),
+    )
+    .slice(0, limit)
+    .map((tx) => formatApiPayment(tx, env));
+
+  await logApi(user.id, "GET", "/v1/payments", 200);
+  return NextResponse.json({
+    object: "list",
+    data: rows,
+    environment: env,
+  });
+}
 
 export async function POST(request: Request) {
   const auth = await authenticateApiKey(request);
@@ -46,22 +74,47 @@ export async function POST(request: Request) {
   });
   // Developers pay 2.5% on Mobile Money and card collections.
   const fee = apiCollectionFee(amount);
+  const customerPhone = body.customer?.phone ? String(body.customer.phone) : undefined;
+  const customerName = body.customer?.name ? String(body.customer.name) : undefined;
+  const customerEmail = body.customer?.email ? String(body.customer.email) : undefined;
+
   if (env === "sandbox") {
-    // Test money never touches the real wallet.
+    // Test money never touches the real wallet, but still fires sandbox webhooks so developers can test.
+    const sbxId = `sbx_${reference}`;
+    const sbxTx: StoredTx = {
+      id: sbxId,
+      userId: user.id,
+      kind: "collection",
+      amount: amount - fee,
+      fee,
+      status: result.status === "failed" ? "failed" : result.status,
+      method,
+      counterparty: customerPhone || customerName || "Sandbox customer",
+      note: body.description || "API collection",
+      createdAt: new Date().toISOString(),
+      rail: "sandbox",
+      railRef: reference,
+      meta: {
+        source: "api",
+        grossAmount: amount,
+        customerPhone,
+        customerName,
+        customerEmail,
+      },
+    };
+    if (sbxTx.status !== "pending") {
+      await dispatchWebhooksForTx(sbxTx, { env: "sandbox" }).catch((err) =>
+        console.error("[lbpay] sandbox payment webhook failed", err),
+      );
+    }
     await logApi(user.id, "POST", "/v1/payments", 200);
     return NextResponse.json({
-      id: `sbx_${reference}`,
-      object: "payment",
-      amount,
-      fee,
-      net: amount - fee,
-      currency: "XAF",
-      status: result.status,
+      ...formatApiPayment(sbxTx, "sandbox"),
       rail: result.provider,
-      environment: env,
       customer: body.customer ?? {},
     });
   }
+
   const moved = await recordLedgerMove({
     userId: user.id,
     amount: amount - fee,
@@ -69,24 +122,24 @@ export async function POST(request: Request) {
     direction: "credit",
     kind: "collection",
     method,
-    counterparty: body.customer?.phone || body.customer?.name || "API customer",
+    counterparty: customerPhone || customerName || "API customer",
     note: body.description || "API collection",
     status: result.status === "failed" ? "failed" : result.status,
     rail: result.provider,
     railRef: reference,
+    meta: {
+      source: "api",
+      grossAmount: amount,
+      customerPhone,
+      customerName,
+      customerEmail,
+    },
   });
 
   await logApi(user.id, "POST", "/v1/payments", 200);
   return NextResponse.json({
-    id: moved.tx.id,
-    object: "payment",
-    amount,
-    fee,
-    net: amount - fee,
-    currency: "XAF",
-    status: moved.tx.status,
+    ...formatApiPayment(moved.tx, env),
     rail: result.provider,
-    environment: env,
     customer: body.customer ?? {},
   });
 }

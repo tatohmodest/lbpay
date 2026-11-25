@@ -21,6 +21,7 @@ export const metadata = productMetadata(
 
 const endpoints = [
   { method: "POST", path: "/v1/payments", what: "Collect from MTN, Orange or wallet" },
+  { method: "GET", path: "/v1/payments/:id", what: "Check payment status by transaction ID" },
   { method: "POST", path: "/v1/payouts", what: "Send to any Mobile Money number" },
   { method: "POST", path: "/v1/payment-links", what: "Create a hosted payment page" },
   { method: "GET", path: "/v1/balance", what: "Read your available balance" },
@@ -29,7 +30,7 @@ const endpoints = [
 const features = [
   { icon: FlaskConical, title: "Free sandbox", copy: "Test keys work the moment you apply and never touch real money." },
   { icon: KeyRound, title: "Secret keys, stored hashed", copy: "Bearer authentication. We keep only a hash of your secret." },
-  { icon: Webhook, title: "Webhooks", copy: "Register endpoints for payment.succeeded and payment.failed. Event delivery is rolling out." },
+  { icon: Webhook, title: "Signed webhooks", copy: "HMAC-SHA256 POST events for payment.succeeded, payment.failed, and payouts, with instant replay." },
   { icon: ScrollText, title: "Request logs", copy: "See every call your app made, with status, in your console." },
   { icon: Link2, title: "Hosted payment links", copy: "No checkout to build. Create a link and send customers there." },
   { icon: Send, title: "Payouts", copy: "Pay suppliers, staff or customers straight to Mobile Money." },

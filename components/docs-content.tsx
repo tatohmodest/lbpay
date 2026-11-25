@@ -164,6 +164,97 @@ export function DocsContent({
           <CodeTabs examples={PAYMENT_EXAMPLES} />
         </Section>
 
+        <Section id="payment-status" title="Check payment status">
+          <p>
+            <code>GET /api/v1/payments/:id</code> returns the current status of any collection on
+            your account by its LBPay transaction ID (<code>TXN_...</code>) or gateway reference.
+            If a live payment is still <code>pending</code>, LBPay automatically re-verifies with
+            the mobile money network before returning.
+          </p>
+          <CodeBlock
+            label="GET /api/v1/payments/:id"
+            code={`curl https://lbpay.loopingbinary.com/api/v1/payments/TXN_t60oaw75ox \\
+  -H "Authorization: Bearer sk_live_YOUR_SECRET"`}
+          />
+          <p>
+            You can also list recent collections with <code>GET /api/v1/payments?limit=20</code>, or
+            check a payout with <code>GET /api/v1/payouts/:id</code>.
+          </p>
+        </Section>
+
+        <Section id="webhooks" title="Webhooks">
+          <p>
+            Register an HTTPS URL in the Developer Portal (<code>/developers/webhooks</code>) or via{" "}
+            <code>POST /api/v1/webhooks</code>. LBPay sends a signed <code>POST</code> request
+            whenever a collection or API payout settles:
+          </p>
+          <ul className="list-disc space-y-1 pl-5">
+            <li>
+              <code>payment.succeeded</code> — a collection (API payment, payment link, or QR
+              checkout) succeeded and credited your wallet.
+            </li>
+            <li>
+              <code>payment.failed</code> — a collection failed, expired, or was cancelled.
+            </li>
+            <li>
+              <code>payout.succeeded</code> / <code>payout.failed</code> — an API disbursement
+              completed or failed.
+            </li>
+          </ul>
+          <CodeBlock
+            label="Webhook JSON payload"
+            code={`{
+  "id": "evt_TXN_t60oaw75ox_payment_succeeded",
+  "object": "event",
+  "type": "payment.succeeded",
+  "createdAt": "2026-11-25T11:30:00.000Z",
+  "environment": "live",
+  "data": {
+    "id": "TXN_t60oaw75ox",
+    "object": "payment",
+    "amount": 100,
+    "fee": 2,
+    "net": 100,
+    "currency": "XAF",
+    "status": "success",
+    "method": "mtn",
+    "reference": "MT12345678AB",
+    "rail": "payunit",
+    "environment": "live",
+    "description": "Collection",
+    "linkSlug": null,
+    "customer": { "phone": "670112233" },
+    "createdAt": "2026-11-25T11:29:10.000Z"
+  }
+}`}
+          />
+          <p>
+            Every request includes <code>X-LBPay-Event</code>, <code>X-LBPay-Event-Id</code>,{" "}
+            <code>X-LBPay-Timestamp</code>, and <code>X-LBPay-Signature</code> (
+            <code>t=...,v1=...</code>) signed with your endpoint’s <code>whsec_...</code> secret
+            using HMAC-SHA256 over <code>{`\${timestamp}.\${rawBody}`}</code>:
+          </p>
+          <CodeBlock
+            label="Verify signature (Node.js)"
+            code={`import crypto from "node:crypto";
+
+function verifyLbpayWebhook(rawBody, sigHeader, secret) {
+  const parts = Object.fromEntries(sigHeader.split(",").map((p) => p.split("=")));
+  const expected = crypto
+    .createHmac("sha256", secret)
+    .update(\`\${parts.t}.\${rawBody}\`)
+    .digest("hex");
+  return crypto.timingSafeEqual(Buffer.from(parts.v1 || ""), Buffer.from(expected));
+}`}
+          />
+          <Callout>
+            Need to replay an event? Call{" "}
+            <code>POST /api/v1/payments/:id/resend</code> or use the Resend tool in{" "}
+            <code>/developers/webhooks</code>. Webhook delivery requires no extra personal or
+            business KYC once your Developer Portal access is approved.
+          </Callout>
+        </Section>
+
         <Section id="payouts" title="Create a payout">
           <p>
             <code>POST /api/v1/payouts</code> sends XAF to a Cameroon phone on MTN or Orange. The
