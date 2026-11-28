@@ -84,3 +84,27 @@ export async function alertPayoutApproval(input: { reference: string; payToken?:
     console.error("[lbpay] approval alert failed", error);
   }
 }
+
+/** A payout LBPay is holding for review: tell the team to approve or reject it in admin. Never throws. */
+export async function alertPayoutReview(input: { txId: string; amount: number; phone: string; reason: string }) {
+  try {
+    const amount = `${input.amount.toLocaleString("en-US")} XAF`;
+    const emails = [...new Set([CONTACT_EMAIL, ...bootstrapAdminEmails()].map((e) => e.toLowerCase()))];
+    const staff = (await listUsers()).filter((u) => u.status !== "frozen" && hasAdminScope(u, "finance"));
+    await Promise.allSettled([
+      ...emails.map((to) =>
+        sendSupportNotice({
+          to,
+          title: `Review a ${amount} withdrawal`,
+          intro: `LBPay is holding a withdrawal of ${amount} to ${input.phone} for review. Nothing has been sent to PayUnit yet.`,
+          body: `Why it was held: ${input.reason}.\n\nThe money is reserved from the customer's wallet. Open admin to approve it (it goes to PayUnit then) or reject it (the wallet is refunded).\n\nTransaction: ${input.txId}`,
+          href: `${SITE_URL}/admin`,
+          cta: "Review in admin",
+        }),
+      ),
+      ...staff.map((s) => pushAccount(s.id, "Withdrawal to review", `${amount} to ${input.phone}: ${input.reason}.`, "/admin")),
+    ]);
+  } catch (error) {
+    console.error("[lbpay] review alert failed", error);
+  }
+}

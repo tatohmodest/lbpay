@@ -154,12 +154,25 @@ export default function WithdrawPage() {
         network,
         pin,
         note: "Wallet withdrawal",
-      })) as { status?: string; transactionId?: string; message?: string };
+      })) as { status?: string; transactionId?: string; message?: string; review?: boolean };
       if (result.status === "failed") {
         setPinError(
           result.message ||
             L("Your transaction could not be completed. No money has been deducted. Please try again.", "L'opération n'a pas abouti. Aucun montant n'a été débité. Réessayez."),
         );
+        return;
+      }
+      if (result.status === "pending" && result.review) {
+        // Held for a person to check: no point waiting on the phone screen.
+        setOpen(false);
+        notify.info(
+          L("Withdrawal being checked", "Retrait en vérification"),
+          L(
+            "Our team checks this withdrawal before it is sent, usually within minutes during the day. Your money is safe; if it is not approved it comes straight back.",
+            "Notre équipe vérifie ce retrait avant l'envoi, en général en quelques minutes en journée. Votre argent est en sécurité ; s'il n'est pas approuvé, il revient aussitôt.",
+          ),
+        );
+        router.push("/wallet");
         return;
       }
       if (result.status === "pending" && result.transactionId) {

@@ -92,6 +92,9 @@ export async function POST(request: Request) {
       debitAmount: amount + fee,
       transactionId: done.transactionId,
       transaction: done.tx,
+      ...(done.tx.meta?.heldForReview
+        ? { review: true, message: "Your withdrawal is being checked by our team before it is sent. This usually takes a few minutes during the day. Your money is safe, and if it is not approved it comes straight back to your wallet." }
+        : {}),
     });
   } catch (error) {
     return NextResponse.json({ error: publicPaymentError(error) }, { status: 500 });

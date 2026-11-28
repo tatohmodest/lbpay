@@ -104,6 +104,12 @@ export type StoredTx = Transaction & {
   meta?: {
     /** PayUnit holds the payout until it is approved on the PayUnit dashboard. */
     awaitingApproval?: boolean;
+    /** LBPay held this payout for a person to review before it reaches the gateway. */
+    heldForReview?: boolean;
+    reviewReason?: string;
+    reviewedBy?: string;
+    reviewedAt?: string;
+    beneficiaryName?: string;
     from?: string;
     to?: string;
     fromNetwork?: "mtn" | "orange";

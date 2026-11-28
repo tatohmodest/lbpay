@@ -45,6 +45,8 @@ type Overview = {
     railRef?: string;
     createdAt: string;
     awaitingApproval?: boolean;
+    heldForReview?: boolean;
+    reviewReason?: string;
     user: { name: string; lbpayId: string } | null;
   }>;
   refundedPayouts?: Array<{
@@ -115,7 +117,7 @@ export default function AdminHome() {
       {(data?.stuckPayouts || []).length ? (
         <AdminPanel
           title="Payouts waiting or stuck"
-          copy="The money is already taken from the wallet. “Approve on PayUnit” means PayUnit is holding it until you approve it in the PayUnit dashboard (Disbursements); LBPay picks up the result by itself. For the others, find the reference on PayUnit: if it's paid, mark it success in Transactions; if PayUnit shows it failed, mark it failed and the wallet is refunded."
+          copy="The money is already taken from the wallet. “Review” means LBPay held it before PayUnit saw it: approve sends it to PayUnit, reject refunds the wallet. “Approve on PayUnit” means PayUnit is holding it until you approve it in the PayUnit dashboard (Disbursements); LBPay picks up the result by itself. For the others, find the reference on PayUnit: if it's paid, mark it success in Transactions; if PayUnit shows it failed, mark it failed and the wallet is refunded."
         >
           <div className="overflow-x-auto px-2 pb-2">
             <table className="w-full min-w-[560px] text-left text-sm">
@@ -127,7 +129,9 @@ export default function AdminHome() {
                     <td className="py-2 pr-3 font-mono text-xs">{r.counterparty}</td>
                     <td className="py-2 pr-3 text-right font-mono font-bold">{xaf(r.amount)}</td>
                     <td className="py-2 pr-3 text-xs font-semibold">
-                      {r.awaitingApproval ? (
+                      {r.heldForReview ? (
+                        <ReviewPayout txId={r.id} reason={r.reviewReason} />
+                      ) : r.awaitingApproval ? (
                         <span className="rounded-full bg-amber-100 px-2 py-0.5 text-amber-800">Approve on PayUnit</span>
                       ) : (
                         <span className="text-muted">Over 30 min</span>
@@ -423,6 +427,55 @@ export default function AdminHome() {
         </div>
       </div>
     </div>
+  );
+}
+
+function ReviewPayout({ txId, reason }: { txId: string; reason?: string }) {
+  const client = useQueryClient();
+  const [state, setState] = useState<"idle" | "busy" | string>("idle");
+  async function act(action: "approve" | "reject") {
+    if (action === "reject" && !window.confirm("Reject this withdrawal and refund the wallet?")) return;
+    setState("busy");
+    const res = await fetch("/api/admin/payouts/review", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ txId, action }),
+    }).catch(() => null);
+    const data = res ? ((await res.json().catch(() => ({}))) as { ok?: boolean; status?: string; error?: string; message?: string }) : null;
+    setState(
+      !data
+        ? "Couldn't reach the server."
+        : data.ok
+          ? action === "reject"
+            ? "Rejected, wallet refunded."
+            : `Sent to PayUnit: ${data.status}${data.message ? ` (${data.message})` : ""}`
+          : data.error || "Couldn't do that.",
+    );
+    client.invalidateQueries({ queryKey: ["admin-overview"] });
+  }
+  if (state !== "idle" && state !== "busy") return <span className="text-muted">{state}</span>;
+  return (
+    <span className="flex flex-col gap-1">
+      <span className="rounded-full bg-sky-100 px-2 py-0.5 text-sky-800">Review{reason ? `: ${reason}` : ""}</span>
+      <span className="flex gap-2">
+        <button
+          type="button"
+          disabled={state === "busy"}
+          onClick={() => act("approve")}
+          className="rounded-full bg-ink px-3 py-1 text-white disabled:opacity-60"
+        >
+          Approve
+        </button>
+        <button
+          type="button"
+          disabled={state === "busy"}
+          onClick={() => act("reject")}
+          className="rounded-full border border-line px-3 py-1 disabled:opacity-60"
+        >
+          Reject
+        </button>
+      </span>
+    </span>
   );
 }
 

@@ -14,6 +14,9 @@ const lastAsked = new Map<string, number>();
 export type StuckPayout = Pick<StoredTx, "id" | "userId" | "kind" | "amount" | "fee" | "counterparty" | "railRef" | "createdAt"> & {
   /** Waiting for a manual approval on the PayUnit dashboard. */
   awaitingApproval?: boolean;
+  /** Held in LBPay for an admin to approve or reject. */
+  heldForReview?: boolean;
+  reviewReason?: string;
 };
 
 /**
@@ -29,6 +32,8 @@ export async function reconcilePayouts(opts: { userId?: string; limit?: number }
     const age = now - +new Date(t.createdAt);
     if (age < MIN_AGE_MS) return false;
     if (now - (lastAsked.get(t.id) || 0) < RECHECK_MS) return false;
+    // Held for review in LBPay: the gateway has never seen it, so there is nothing to ask.
+    if (t.meta?.heldForReview) return false;
     if (PAYOUT_KINDS.has(t.kind) || t.kind === "cross_network") return true;
     if (COLLECT_KINDS.has(t.kind) && t.rail === "payunit" && age <= MAX_COLLECT_AGE_MS) return true;
     return false;
@@ -78,7 +83,7 @@ export async function stuckPayouts(): Promise<StuckPayout[]> {
         t.status === "pending" &&
         PAYOUT_KINDS.has(t.kind) &&
         // Ones waiting for approval show at once: only a person can move them.
-        (t.meta?.awaitingApproval || now - +new Date(t.createdAt) > STUCK_MS),
+        (t.meta?.awaitingApproval || t.meta?.heldForReview || now - +new Date(t.createdAt) > STUCK_MS),
     )
     .slice(0, 50)
     .map(({ id, userId, kind, amount, fee, counterparty, railRef, createdAt, meta }) => ({
@@ -91,6 +96,8 @@ export async function stuckPayouts(): Promise<StuckPayout[]> {
       railRef,
       createdAt,
       awaitingApproval: Boolean(meta?.awaitingApproval),
+      heldForReview: Boolean(meta?.heldForReview),
+      reviewReason: meta?.reviewReason,
     }));
 }
 

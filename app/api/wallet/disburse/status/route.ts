@@ -31,6 +31,15 @@ export async function GET(request: Request) {
       });
     }
 
+    if (existing.meta?.heldForReview) {
+      return NextResponse.json({
+        ok: true,
+        status: "pending",
+        review: true,
+        transactionId: existing.railRef || txId,
+        message: "Your withdrawal is being checked by our team before it is sent. This usually takes a few minutes during the day. Your money is safe, and if it is not approved it comes straight back to your wallet.",
+      });
+    }
     if (railKindOf(existing) !== "disburse") {
       return NextResponse.json({ ok: true, status: existing.status, transactionId: existing.railRef || txId });
     }

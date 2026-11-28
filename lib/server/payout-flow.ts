@@ -1,6 +1,8 @@
 import { findTxById, patchTx, recordLedgerMove, settleRailTx, type StoredTx } from "@/lib/server/db";
 import { payunitReference } from "@/lib/server/crypto";
 import type { PaymentRail, RailResult } from "@/lib/providers/types";
+import { payoutReviewReason } from "@/lib/server/payout-review";
+import { alertPayoutReview } from "@/lib/server/ops-alerts";
 
 /**
  * The one safe way to send money out of LBPay:
@@ -51,6 +53,42 @@ export async function runPayout(input: {
     throw error;
   }
   const txId = reserved.tx.id;
+
+  // Risky payouts wait for a person in LBPay admin; nothing is sent to the gateway yet.
+  const reason = await payoutReviewReason(input.userId, input.amount + input.fee, txId);
+  if (reason) {
+    await patchTx(txId, {
+      meta: { ...(reserved.tx.meta || {}), payoutRef: reference, heldForReview: true, reviewReason: reason, beneficiaryName: input.beneficiaryName },
+    });
+    await alertPayoutReview({ txId, amount: input.amount, phone: input.phone, reason }).catch(() => undefined);
+    const tx = (await findTxById(txId)) ?? reserved.tx;
+    return { outcome: "ok", status: "pending", tx, balance: reserved.balance, transactionId: reference, provider: "payunit" };
+  }
+
+  return sendReservedPayout({ ...input, txId, reference, reservedTx: reserved.tx, balance: reserved.balance });
+}
+
+/**
+ * Asks the gateway to pay a payout already taken from the wallet. Used right
+ * away for ordinary payouts, and by admin when a held payout is approved.
+ */
+export async function sendReservedPayout(input: {
+  rail: PaymentRail;
+  txId: string;
+  reference: string;
+  reservedTx: StoredTx;
+  balance: number;
+  beneficiaryName: string;
+  amount: number;
+  network: "mtn" | "orange";
+  phone: string;
+  note: string;
+}): Promise<
+  | { outcome: "failed"; message?: string }
+  | { outcome: "ok"; status: "success" | "pending"; tx: StoredTx; balance: number; transactionId: string; provider: RailResult["provider"] }
+> {
+  const { txId, reference } = input;
+  const reserved = { tx: input.reservedTx, balance: input.balance };
 
   let result: RailResult;
   try {

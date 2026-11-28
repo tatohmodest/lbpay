@@ -59,3 +59,9 @@ test("chunk load failures are recognised", () => {
   assert.ok(isChunkError(Object.assign(new Error("x"), { name: "ChunkLoadError" })));
   assert.ok(!isChunkError(new Error("Insufficient wallet balance")));
 });
+
+test("large payouts are held for review before reaching the gateway", async () => {
+  const { payoutReviewReason, PAYOUT_REVIEW } = await import("./payout-review");
+  const reason = await payoutReviewReason("usr_any", PAYOUT_REVIEW.above);
+  assert.match(String(reason), /review limit/);
+});
