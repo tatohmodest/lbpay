@@ -19,15 +19,14 @@ export default function CodePage() {
 
   useEffect(() => {
     const token = window.location.hash.slice(1);
-    if (!token) {
-      setState("expired");
-      return;
-    }
-    fetch("/api/auth/code", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token }),
-    })
+    (token
+      ? fetch("/api/auth/code", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token }),
+        })
+      : Promise.reject(new Error("no token"))
+    )
       .then(async (res) => {
         const data = (await res.json().catch(() => ({}))) as Partial<Reveal>;
         if (!res.ok || !data.code) throw new Error("expired");
