@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { silentRestriction } from "@/lib/server/fake-accounts";
 import { addLog, findKeyBySecret, findUserById, getWallet, regenerateApiKey } from "@/lib/server/db";
 import { issueApiKey } from "@/lib/server/crypto";
 import { uid } from "@/lib/format";
@@ -21,7 +22,7 @@ export async function authenticateApiKey(request: Request): Promise<
     return { ok: false, error: NextResponse.json({ error: "Invalid API key" }, { status: 401 }) };
   }
   const user = await findUserById(key.userId);
-  if (!user || user.status === "frozen" || !user.emailVerified) {
+  if (!user || user.status === "frozen" || !user.emailVerified || silentRestriction(user)) {
     return { ok: false, error: NextResponse.json({ error: "Account unavailable" }, { status: 403 }) };
   }
   if (key.env === "live" && user.kyc.developer !== "verified" && !isAdmin(user)) {

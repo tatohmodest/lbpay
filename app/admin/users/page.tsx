@@ -24,6 +24,8 @@ type AdminUser = {
   balance: number;
   owner?: boolean;
   adminScopes?: string[];
+  /** Why the account is silently kept from moving money; the person is never told. */
+  silentBlock?: string | null;
 };
 
 export default function AdminUsersPage() {
@@ -39,7 +41,7 @@ function UsersInner() {
   const client = useQueryClient();
   const params = useSearchParams();
   const [q, setQ] = useState(params.get("q") ?? "");
-  const [filter, setFilter] = useState<"all" | "staff" | "business" | "developer" | "frozen">("all");
+  const [filter, setFilter] = useState<"all" | "staff" | "business" | "developer" | "frozen" | "blocked">("all");
   const users = useQuery({
     queryKey: ["admin-users"],
     queryFn: async () =>
@@ -80,7 +82,9 @@ function UsersInner() {
           ? user.roles.includes("admin")
           : filter === "frozen"
             ? user.status === "frozen"
-            : user.roles.includes(filter),
+            : filter === "blocked"
+              ? Boolean(user.silentBlock)
+              : user.roles.includes(filter),
     );
     const needle = q.trim().toLowerCase();
     if (!needle) return list;
@@ -95,7 +99,7 @@ function UsersInner() {
       <InviteAdmin canGive={canGive} />
       <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name, email, or ID" />
       <div className="flex flex-wrap gap-1.5">
-        {(["all", "staff", "business", "developer", "frozen"] as const).map((key) => (
+        {(["all", "staff", "business", "developer", "frozen", "blocked"] as const).map((key) => (
           <button
             key={key}
             type="button"
@@ -147,6 +151,11 @@ function UsersInner() {
                   <p className={`text-[11px] font-bold uppercase ${user.status === "frozen" ? "text-danger" : "text-brand"}`}>
                     {user.status}
                   </p>
+                  {user.silentBlock ? (
+                    <p className="mt-1 max-w-[12rem] text-[11px] font-semibold text-amber-700" title="They are not told. Money actions show a 'service busy' message.">
+                      Blocked silently: {user.silentBlock}
+                    </p>
+                  ) : null}
                 </div>
               </div>
               {user.roles.includes("admin") && !user.owner ? (
@@ -194,6 +203,22 @@ function UsersInner() {
                   }
                 >
                   {user.status === "frozen" ? "Unfreeze" : "Freeze"}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => {
+                    if (user.silentBlock) {
+                      if (window.confirm(`Allow ${user.name} to move money? Only do this after checking the account is real.`)) {
+                        mutate.mutate({ userId: user.id, action: "allow" });
+                      }
+                      return;
+                    }
+                    const reason = window.prompt(`Why block ${user.name} silently? They won't be told.`);
+                    if (reason) mutate.mutate({ userId: user.id, action: "block", reason });
+                  }}
+                >
+                  {user.silentBlock ? "Allow" : "Block silently"}
                 </Button>
                 {!user.owner && user.id !== users.data?.viewer?.id ? (
                   <Button

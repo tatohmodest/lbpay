@@ -4,11 +4,13 @@ import {
   clearOtp,
   findUserByEmail,
   isHandleTaken,
+  listUsers,
   nextAvailableHandle,
   saveOtp,
   upsertUser,
 } from "@/lib/server/db";
-import { rateLimitByIp } from "@/lib/server/rate-limit";
+import { clientIp, rateLimitByIp } from "@/lib/server/rate-limit";
+import { canonicalEmail, fakeAccountReason } from "@/lib/server/fake-accounts";
 import { isDisposableEmail } from "@/lib/disposable-email";
 import { hashSecret, randomOtp } from "@/lib/server/crypto";
 import { MailSendError, mailConfigured, sendOtpEmail } from "@/lib/server/mail";
@@ -96,6 +98,13 @@ export async function POST(request: Request) {
     user.name = name;
     user.phone = phone;
     user.lbpayId = handle;
+    // Fake or duplicate accounts are created like any other, flagged, and silently
+    // kept from moving money. The response below is identical, so there is nothing to learn.
+    const inbox = canonicalEmail(email);
+    const twin = (await listUsers()).find((u) => u.id !== user.id && canonicalEmail(u.email) === inbox);
+    const flag = fakeAccountReason({ name, email, lbpayId: handle }) || (twin ? `same inbox as @${twin.lbpayId}` : null);
+    if (flag && !user.allowListed) user.restricted = flag;
+    user.signupIp = clientIp(request);
     user.passwordHash = await hashSecret(password);
 
     const skipEmail = !mailConfigured() && process.env.NODE_ENV !== "production";

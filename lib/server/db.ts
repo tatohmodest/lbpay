@@ -43,6 +43,11 @@ import type {
 } from "@/lib/types";
 
 export type StoredUser = {
+  /** Silently blocked from moving money, with the reason (never shown to them). */
+  restricted?: string;
+  /** An admin checked this account and cleared it; detection rules no longer apply. */
+  allowListed?: boolean;
+  signupIp?: string;
   id: string;
   name: string;
   lbpayId: string;

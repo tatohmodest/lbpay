@@ -12,6 +12,7 @@ import {
 } from "@/lib/server/db";
 import { ADMIN_SCOPES, adminScopesFor, isAdminOwner, type AdminScope } from "@/lib/roles";
 import { requireAdmin } from "@/lib/server/guard";
+import { silentRestriction } from "@/lib/server/fake-accounts";
 import type { AccountKind } from "@/lib/types";
 import { pushAccount } from "@/lib/server/push";
 
@@ -28,6 +29,7 @@ export async function GET() {
       createdAt: user.createdAt,
       owner: isAdminOwner(user),
       adminScopes: adminScopesFor(user),
+      silentBlock: silentRestriction(user),
     }));
   return NextResponse.json({
     users: rows,
@@ -99,6 +101,18 @@ export async function POST(request: Request) {
       "Your LBPay account is frozen. Money cannot move until an admin restores it.",
       "/wallet/profile",
     );
+  } else if (body.action === "allow") {
+    // Admin checked a silently blocked account and cleared it.
+    target.allowListed = true;
+    // An empty string, not undefined: undefined vanishes in JSON and an older copy could bring the flag back.
+    target.restricted = "";
+    await upsertUser(target);
+    await writeAudit({ actorId: auth.user.id, action: "user.allow", targetType: "user", targetId: target.id });
+  } else if (body.action === "block") {
+    target.allowListed = false;
+    target.restricted = String(body.reason || "blocked by admin").slice(0, 120);
+    await upsertUser(target);
+    await writeAudit({ actorId: auth.user.id, action: "user.block", targetType: "user", targetId: target.id, note: target.restricted });
   } else if (body.action === "unfreeze") {
     target.status = "active";
     await upsertUser(target);

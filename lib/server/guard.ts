@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { SILENT_BLOCK_MESSAGE, silentRestriction } from "@/lib/server/fake-accounts";
 import { findUserById } from "@/lib/server/db";
 import { readAdminSession, readSession } from "@/lib/server/session";
 import { hasKind, isAdmin, shouldSkipAdminOtp, ADMIN_SCOPE_INFO, hasAdminScope, isAdminOwner, type AdminScope } from "@/lib/roles";
@@ -29,6 +30,9 @@ export async function requireActiveUser() {
       error: NextResponse.json({ error: "This account is frozen. Contact support." }, { status: 403 }),
       user: null,
     };
+  }
+  if (silentRestriction(result.user)) {
+    return { error: NextResponse.json({ error: SILENT_BLOCK_MESSAGE }, { status: 503 }), user: null };
   }
   // No deposit, payment, transfer or withdrawal until the email is proven.
   if (!result.user.emailVerified) {

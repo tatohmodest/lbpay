@@ -1,4 +1,5 @@
 import { checkoutFee } from "@/lib/fees";
+import { SILENT_BLOCK_MESSAGE, silentRestriction } from "@/lib/server/fake-accounts";
 import { payunitReference } from "@/lib/server/crypto";
 import {
   findLinkBySlug,
@@ -76,6 +77,9 @@ export async function startCheckoutPayment(input: {
     }
     const payer = input.payer;
     if (!payer) return { error: "Sign in to pay from your wallet.", status: 401 as const };
+    if (silentRestriction(payer)) {
+      return { error: SILENT_BLOCK_MESSAGE, status: 503 as const };
+    }
     if (!payer.emailVerified) {
       return { error: "Verify your email before you pay from your wallet.", status: 403 as const };
     }
