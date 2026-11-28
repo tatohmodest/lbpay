@@ -22,16 +22,19 @@ export async function POST(request: Request) {
     }
     const user = await findUserById(preauth.userId);
     if (!user) return jsonError("Account not found.", 404);
+    if (user.status === "frozen") return jsonError("This account is frozen. Contact support.", 403);
 
     user.pinHash = await hashSecret(pin);
     user.pinFailCount = 0;
     user.pinLockedUntil = 0;
+    user.pinLockCount = 0;
+    user.sessionEpoch = (user.sessionEpoch || 0) + 1;
     await upsertUser(user);
     await clearPreauth();
 
     const session = await readSession();
     if (session?.userId === user.id) {
-      await createSession(user.id, SESSION_TTL_SEC);
+      await createSession(user.id, SESSION_TTL_SEC, user.sessionEpoch);
     }
 
     return NextResponse.json({ ok: true, user: publicUser(user) });

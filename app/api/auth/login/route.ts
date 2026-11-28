@@ -1,17 +1,18 @@
 import { NextResponse } from "next/server";
 import { catchRoute, jsonError } from "@/lib/server/api";
-import { findUserByEmail, saveOtp, upsertUser } from "@/lib/server/db";
-import { hashSecret, randomOtp, verifySecret } from "@/lib/server/crypto";
+import { findUserByEmail, saveOtp } from "@/lib/server/db";
+import { hashSecret, randomOtp } from "@/lib/server/crypto";
 import { sendOtpEmail } from "@/lib/server/mail";
 import { applyPreauthCookie } from "@/lib/server/session";
 import { localeFromRequest } from "@/lib/i18n/locale";
-import { pinLockSeconds, waitCopy } from "@/lib/server/pin";
-
-const LOGIN_MAX_FAILS = 10;
-const LOGIN_LOCK_MS = 15 * 60 * 1000;
+import { verifyUserPassword } from "@/lib/server/pin";
+import { rateLimitByIp } from "@/lib/server/rate-limit";
 
 export async function POST(request: Request) {
   try {
+    const throttled = rateLimitByIp(request, "auth-login", 25, 5 * 60_000);
+    if (throttled) return throttled;
+
     const locale = localeFromRequest(request);
     const body = await request.json().catch(() => ({}));
     const email = String(body.email || "").trim().toLowerCase();
@@ -20,22 +21,12 @@ export async function POST(request: Request) {
     if (!user) {
       return jsonError("Incorrect email or password.", 401);
     }
-    if ((user.loginLockedUntil || 0) > Date.now()) {
-      return jsonError(`Too many incorrect passwords. Try again in ${waitCopy(pinLockSeconds(user.loginLockedUntil!))}, or reset your password.`, 429);
+    const pwdCheck = await verifyUserPassword(user, password);
+    if (!pwdCheck.ok) {
+      return jsonError(pwdCheck.error, pwdCheck.status);
     }
-    const ok = await verifySecret(password, user.passwordHash);
-    if (!ok) {
-      // Ten wrong passwords lock sign-in for 15 minutes, so passwords can't be guessed at speed.
-      const fails = (user.loginFailCount || 0) + 1;
-      user.loginFailCount = fails >= LOGIN_MAX_FAILS ? 0 : fails;
-      if (fails >= LOGIN_MAX_FAILS) user.loginLockedUntil = Date.now() + LOGIN_LOCK_MS;
-      await upsertUser(user);
-      return jsonError("Incorrect email or password.", 401);
-    }
-    if (user.loginFailCount || user.loginLockedUntil) {
-      user.loginFailCount = 0;
-      user.loginLockedUntil = 0;
-      await upsertUser(user);
+    if (user.status === "frozen") {
+      return jsonError("This account is frozen. Contact support.", 403);
     }
     if (!user.emailVerified) {
       const otp = randomOtp();

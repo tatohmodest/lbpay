@@ -47,7 +47,7 @@ export default function ForgotPinPage() {
       setEmail(data.email || target);
       setSent(true);
       setStep("otp");
-      notify.info("Check your email", data.message || "If an account exists, we sent a 6-digit code.");
+      notify.info("Check your email", data.message || "If an account exists, we emailed you a link to your code.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not send the code");
     } finally {
@@ -167,7 +167,7 @@ export default function ForgotPinPage() {
             title="Verify it is you"
             subtitle={
               sent
-                ? `We sent a 6-digit code to ${email || "your inbox"}.`
+                ? `We emailed a link to ${email || "your inbox"}. Open it to see your 6-digit code.`
                 : "We will send a 6-digit code to confirm it is you."
             }
           />

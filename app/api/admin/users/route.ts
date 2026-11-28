@@ -90,6 +90,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, deletedUserId: target.id });
   } else if (body.action === "freeze") {
     target.status = "frozen";
+    target.sessionEpoch = (target.sessionEpoch || 0) + 1;
     await upsertUser(target);
     await writeAudit({ actorId: auth.user.id, action: "user.freeze", targetType: "user", targetId: target.id });
     void pushAccount(

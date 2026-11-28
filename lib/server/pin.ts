@@ -120,3 +120,64 @@ async function checkPinFor(user: StoredUser, pin: string): Promise<PinCheck> {
   }
   return { ok: true };
 }
+
+export const LOGIN_MAX_FAILS = 10;
+export const LOGIN_LOCK_MS = 15 * 60 * 1000;
+
+export type PasswordCheck =
+  | { ok: true }
+  | { ok: false; status: number; error: string; retryAfter?: number };
+
+/**
+ * Serialized per-account password check so concurrent login or PIN-reset guesses
+ * cannot race past loginFailCount and bypass the 15-minute lockout.
+ */
+export async function verifyUserPassword(given: StoredUser, password: string): Promise<PasswordCheck> {
+  return serialByKey(`pwd:${given.id}`, async () => {
+    const fresh = await findUserById(given.id);
+    const user = fresh || given;
+    const lockedUntil = user.loginLockedUntil || 0;
+    if (lockedUntil > Date.now()) {
+      const retryAfter = pinLockSeconds(lockedUntil);
+      return {
+        ok: false,
+        status: 429,
+        retryAfter,
+        error: `Too many incorrect passwords. Try again in ${waitCopy(retryAfter)}, or reset your password.`,
+      };
+    }
+
+    const ok = await verifySecret(String(password || ""), user.passwordHash);
+    if (!ok) {
+      const fails = (user.loginFailCount || 0) + 1;
+      user.loginFailCount = fails >= LOGIN_MAX_FAILS ? 0 : fails;
+      if (fails >= LOGIN_MAX_FAILS) user.loginLockedUntil = Date.now() + LOGIN_LOCK_MS;
+      await upsertUser(user);
+      if (fresh && fresh !== given) {
+        given.loginFailCount = user.loginFailCount;
+        given.loginLockedUntil = user.loginLockedUntil;
+      }
+      if (fails >= LOGIN_MAX_FAILS) {
+        const retryAfter = Math.ceil(LOGIN_LOCK_MS / 1000);
+        return {
+          ok: false,
+          status: 429,
+          retryAfter,
+          error: `Too many incorrect passwords. Try again in ${waitCopy(retryAfter)}, or reset your password.`,
+        };
+      }
+      return { ok: false, status: 401, error: "Incorrect email or password." };
+    }
+
+    if (user.loginFailCount || user.loginLockedUntil) {
+      user.loginFailCount = 0;
+      user.loginLockedUntil = 0;
+      await upsertUser(user);
+      if (fresh && fresh !== given) {
+        given.loginFailCount = 0;
+        given.loginLockedUntil = 0;
+      }
+    }
+    return { ok: true };
+  });
+}

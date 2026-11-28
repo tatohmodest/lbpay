@@ -2,7 +2,7 @@ import { PayunitClient } from "@payunit/nodejs-sdk";
 import { httpsCallbackUrl, payunitGatewayUrl } from "@/lib/site";
 import { cameroonMsisdn } from "@/lib/phone";
 import { publicPaymentError } from "@/lib/public-error";
-import { reportRailProblem } from "@/lib/server/ops-alerts";
+import { alertPayoutApproval, reportRailProblem } from "@/lib/server/ops-alerts";
 import { payoutSwitch } from "@/lib/server/db";
 import type { PaymentRail, RailCollectInput, RailDisburseInput, RailResult, RailStatusOptions } from "./types";
 import {
@@ -270,6 +270,10 @@ export class PayUnitRail implements PaymentRail {
       let status = approvalRequired
         ? "pending"
         : railStatus(pickStatusRaw(confirmed) || String(body.status || ""));
+      if (approvalRequired) {
+        // Larger payouts can wait for a manual approval on the PayUnit dashboard: tell the team now.
+        await alertPayoutApproval({ reference: input.reference, payToken, amount, phone: accountNumber });
+      }
       if (status === "failed") {
         // Only believe "failed" when the gateway's own status lookup agrees.
         const check = await this.readDisbursementStatus(input.reference, payToken).catch(() => null);
@@ -280,6 +284,7 @@ export class PayUnitRail implements PaymentRail {
         reference: pickTransactionId(confirmed, input.reference),
         providerRef: payToken,
         status: status === "failed" ? "failed" : status === "success" ? "success" : "pending",
+        awaitingApproval: approvalRequired,
         message: approvalRequired
           ? "Your withdrawal is being reviewed and usually completes shortly. We'll notify you when it lands."
           : status === "failed"

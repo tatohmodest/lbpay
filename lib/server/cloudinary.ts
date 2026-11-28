@@ -57,6 +57,7 @@ function inferCloudName(url: string) {
 
 export function isOurCloudinaryUrl(url: string) {
   if (!url) return false;
+  if (url.startsWith("/api/media/")) return true;
   // If it is our Cloudflare R2 URL, accept it
   if (isOurR2Url(url)) return true;
 
@@ -68,6 +69,29 @@ export function isOurCloudinaryUrl(url: string) {
   } catch {
     return false;
   }
+}
+
+/**
+ * Verifies that a KYC document URL belongs specifically to `userId`'s private KYC prefix,
+ * preventing cross-user KYC document substitution.
+ */
+export function isUserOwnKycUrl(url: string | undefined, userId: string): boolean {
+  const raw = String(url || "").trim();
+  if (!raw || !userId || !isOurCloudinaryUrl(raw)) return false;
+
+  if (raw.startsWith("/api/media/")) {
+    const decoded = decodeURIComponent(raw.slice("/api/media/".length));
+    return !decoded.includes("..") && decoded.startsWith(`kyc/${userId}/`);
+  }
+
+  if (isOurR2Url(raw)) {
+    const key = r2Key(raw);
+    return Boolean(key && !key.includes("..") && key.startsWith(`kyc/${userId}/`));
+  }
+
+  const publicId = cloudinaryPublicId(raw);
+  const expectedPrefix = `${process.env.CLOUDINARY_FOLDER || "lbpay/kyc"}/${userId}/`;
+  return Boolean(publicId && !publicId.includes("..") && publicId.startsWith(expectedPrefix));
 }
 
 function isTransformSegment(part: string) {

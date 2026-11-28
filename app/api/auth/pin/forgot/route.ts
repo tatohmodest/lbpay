@@ -4,9 +4,12 @@ import { findUserByEmail, findUserById, pinResetOtpKey, saveOtp } from "@/lib/se
 import { hashSecret, randomOtp } from "@/lib/server/crypto";
 import { sendOtpEmail } from "@/lib/server/mail";
 import { readPreauth, readSession } from "@/lib/server/session";
+import { rateLimitByIp } from "@/lib/server/rate-limit";
 
 export async function POST(request: Request) {
   try {
+    const throttled = rateLimitByIp(request, "auth-pin-forgot", 10, 10 * 60_000);
+    if (throttled) return throttled;
     const body = await request.json().catch(() => ({}));
     const session = await readSession();
     const preauth = await readPreauth();
@@ -30,7 +33,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       ok: true,
       email: user?.email || email,
-      message: "If this account exists, we sent a 6-digit code.",
+      message: "If this account exists, we emailed a link to your 6-digit code.",
     });
   } catch (error) {
     return catchRoute("pin-forgot", error);

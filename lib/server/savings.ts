@@ -332,6 +332,9 @@ export async function updatePlanSettings(
         }
       }
       if (target !== null && target < plan.amount) throw new Error("The goal must be at least one cycle amount.");
+      if (plan.target === null && target !== null && target <= plan.balance) {
+        throw new Error("New savings goal must be higher than your current pot balance.");
+      }
       plan.target = target;
       if (target && plan.balance >= target) {
         plan.status = "completed";

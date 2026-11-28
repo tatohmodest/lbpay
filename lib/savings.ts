@@ -130,14 +130,18 @@ export function durationLabel(frequency: SavingsFrequency, count: number): strin
 
 /** Checks whether a plan's savings objective (target amount or maturity date) has been met. */
 export function isObjectiveMet(
-  plan: Pick<SavingsPlan, "balance" | "target"> & { targetDate?: string },
+  plan: Pick<SavingsPlan, "balance" | "target"> & { targetDate?: string; createdAt?: string },
   now = new Date(),
 ) {
   // If target amount is set and reached
   if (plan.target && plan.target > 0 && plan.balance >= plan.target) return true;
-  // If target date is set and has arrived (maturity reached) with funds
-  if (plan.targetDate && +now >= +new Date(plan.targetDate) && plan.balance > 0) {
-    return true;
+  // If target date is set, valid, strictly after creation time, and has arrived with funds
+  if (plan.targetDate && plan.balance > 0) {
+    const targetMs = +new Date(plan.targetDate);
+    const createdMs = plan.createdAt ? +new Date(plan.createdAt) : 0;
+    if (Number.isFinite(targetMs) && targetMs > createdMs && +now >= targetMs) {
+      return true;
+    }
   }
   // Open pot with no target amount and no target date
   if (!plan.target && !plan.targetDate) return true;
@@ -270,6 +274,18 @@ export function validatePlanInput(input: Partial<SavingsInput>) {
   if (input.target != null && input.target !== 0) {
     const target = Number(input.target);
     if (!Number.isInteger(target) || target < amount) return "The goal must be at least one cycle amount.";
+  }
+  if (input.targetDate != null && String(input.targetDate).trim() !== "") {
+    const targetMs = +new Date(String(input.targetDate));
+    if (!Number.isFinite(targetMs) || targetMs < Date.now() + 12 * 3600_000) {
+      return "Maturity date must be a valid future date.";
+    }
+  }
+  if (input.durationCycles != null) {
+    const cycles = Number(input.durationCycles);
+    if (!Number.isInteger(cycles) || cycles < 1 || cycles > 1000) {
+      return "Duration must be between 1 and 1,000 cycles.";
+    }
   }
   if (input.penaltyRate != null) {
     const rate = Number(input.penaltyRate);

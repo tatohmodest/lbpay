@@ -3,6 +3,7 @@ import { requireActiveUser } from "@/lib/server/guard";
 import { catchRoute } from "@/lib/server/api";
 import { isKycImageKind, MAX_KYC_UPLOAD_BYTES } from "@/lib/kyc";
 import { uploadKycImage } from "@/lib/server/cloudinary";
+import { sniffImageMime } from "@/lib/server/image-magic";
 
 export const runtime = "nodejs";
 
@@ -30,11 +31,15 @@ export async function POST(request: Request) {
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
+    const realMime = sniffImageMime(buffer);
+    if (!realMime) {
+      return NextResponse.json({ error: "Upload a valid JPG, PNG, or WEBP photo." }, { status: 400 });
+    }
     const stored = await uploadKycImage({
       buffer,
       userId: auth.user.id,
       kind: kindRaw,
-      mime: file.type,
+      mime: realMime,
     });
     return NextResponse.json({
       ok: true,

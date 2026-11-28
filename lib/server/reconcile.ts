@@ -11,7 +11,10 @@ const STUCK_MS = 30 * 60_000;
 const RECHECK_MS = 30_000;
 const lastAsked = new Map<string, number>();
 
-export type StuckPayout = Pick<StoredTx, "id" | "userId" | "kind" | "amount" | "fee" | "counterparty" | "railRef" | "createdAt">;
+export type StuckPayout = Pick<StoredTx, "id" | "userId" | "kind" | "amount" | "fee" | "counterparty" | "railRef" | "createdAt"> & {
+  /** Waiting for a manual approval on the PayUnit dashboard. */
+  awaitingApproval?: boolean;
+};
 
 /**
  * Settle pending payouts by asking the gateway, so the ledger is right even when
@@ -70,9 +73,25 @@ export async function reconcilePayouts(opts: { userId?: string; limit?: number }
 export async function stuckPayouts(): Promise<StuckPayout[]> {
   const now = Date.now();
   return (await listAllTx())
-    .filter((t) => t.status === "pending" && PAYOUT_KINDS.has(t.kind) && now - +new Date(t.createdAt) > STUCK_MS)
+    .filter(
+      (t) =>
+        t.status === "pending" &&
+        PAYOUT_KINDS.has(t.kind) &&
+        // Ones waiting for approval show at once: only a person can move them.
+        (t.meta?.awaitingApproval || now - +new Date(t.createdAt) > STUCK_MS),
+    )
     .slice(0, 50)
-    .map(({ id, userId, kind, amount, fee, counterparty, railRef, createdAt }) => ({ id, userId, kind, amount, fee, counterparty, railRef, createdAt }));
+    .map(({ id, userId, kind, amount, fee, counterparty, railRef, createdAt, meta }) => ({
+      id,
+      userId,
+      kind,
+      amount,
+      fee,
+      counterparty,
+      railRef,
+      createdAt,
+      awaitingApproval: Boolean(meta?.awaitingApproval),
+    }));
 }
 
 /** Don't let a slow gateway hold a page load hostage. */

@@ -69,7 +69,7 @@ export async function POST(request: Request) {
       fee,
       network,
       phone,
-      kind: note.toLowerCase().includes("payout") ? "payout" : "withdraw",
+      kind: "withdraw",
       note,
       label: fee ? `Disbursement to ${network.toUpperCase()} · ${fee} XAF fee` : `Disbursement to ${network.toUpperCase()}`,
       prefix: "DISB",

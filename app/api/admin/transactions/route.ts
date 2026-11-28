@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { adminSnapshot, deleteTx, findTxById, findUserById, getWallet, patchTx, recordLedgerMove, settleRailTx, writeAudit } from "@/lib/server/db";
+import { adminSnapshot, deleteTx, findTxById, getWallet, patchTx, recordLedgerMove, reverseTransaction, settleRailTx, writeAudit } from "@/lib/server/db";
 import { requireAdmin } from "@/lib/server/guard";
 import { dispatchWebhooksForTx } from "@/lib/server/webhooks";
 
@@ -117,33 +117,11 @@ export async function POST(request: Request) {
       meta: { status },
     });
   } else if (body.action === "reverse") {
-    const user = await findUserById(tx.userId);
-    if (!user) return NextResponse.json({ error: "Wallet owner missing." }, { status: 404 });
-    const isOut = ["send", "withdraw", "airtime", "bill", "cross_network", "payout", "international"].includes(tx.kind);
-    await recordLedgerMove({
-      userId: user.id,
-      amount: tx.amount,
-      direction: isOut ? "credit" : "debit",
-      kind: "reversal",
-      method: tx.method,
-      counterparty: tx.counterparty,
-      note: `Reversal of ${tx.id}: ${reason}`,
-      status: "success",
-      rail: "internal",
-    });
-    await patchTx(tx.id, { status: "cancelled", note: `${tx.note || ""} · reversed: ${reason}` });
-    if (tx.counterpartyId) {
-      await recordLedgerMove({
-        userId: tx.counterpartyId,
-        amount: tx.amount,
-        direction: isOut ? "debit" : "credit",
-        kind: "reversal",
-        method: "wallet",
-        counterparty: `@${user.lbpayId}`,
-        note: `Counterparty reversal of ${tx.id}`,
-        status: "success",
-        rail: "internal",
-      }).catch(() => null);
+    try {
+      await reverseTransaction(tx.id, reason);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Could not reverse transaction.";
+      return NextResponse.json({ error: message }, { status: 409 });
     }
     await writeAudit({
       actorId: auth.user.id,

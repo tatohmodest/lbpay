@@ -26,9 +26,9 @@ export function applyPreauthCookie(response: NextResponse, userId: string, step:
   response.cookies.set(PREAUTH, token, cookieOpts(10 * 60));
 }
 
-export function applySessionCookie(response: NextResponse, userId: string, maxAgeSec: number) {
+export function applySessionCookie(response: NextResponse, userId: string, maxAgeSec: number, epoch = 0) {
   const exp = Date.now() + maxAgeSec * 1000;
-  const token = signValue(JSON.stringify({ userId, exp } satisfies SessionPayload), secret());
+  const token = signValue(JSON.stringify({ userId, exp, epoch } satisfies SessionPayload), secret());
   response.cookies.set(COOKIE, token, cookieOpts(maxAgeSec));
 }
 
@@ -49,11 +49,12 @@ function secret() {
 export type SessionPayload = {
   userId: string;
   exp: number;
+  epoch?: number;
 };
 
-export async function createSession(userId: string, maxAgeSec: number) {
+export async function createSession(userId: string, maxAgeSec: number, epoch = 0) {
   const exp = Date.now() + maxAgeSec * 1000;
-  const token = signValue(JSON.stringify({ userId, exp } satisfies SessionPayload), secret());
+  const token = signValue(JSON.stringify({ userId, exp, epoch } satisfies SessionPayload), secret());
   const jar = await cookies();
   jar.set(COOKIE, token, cookieOpts(maxAgeSec));
 }
@@ -97,12 +98,16 @@ export async function readSession() {
   if (parsed.step !== undefined || parsed.scope !== undefined) return null;
   if (typeof parsed.userId !== "string" || typeof parsed.exp !== "number") return null;
   if (parsed.exp < Date.now()) return null;
-  return { userId: parsed.userId, exp: parsed.exp };
+  return {
+    userId: parsed.userId,
+    exp: parsed.exp,
+    epoch: typeof parsed.epoch === "number" ? parsed.epoch : 0,
+  };
 }
 
-export async function createAdminSession(userId: string, maxAgeSec = 8 * 60 * 60) {
+export async function createAdminSession(userId: string, maxAgeSec = 8 * 60 * 60, epoch = 0) {
   const exp = Date.now() + maxAgeSec * 1000;
-  const token = signValue(JSON.stringify({ userId, exp, scope: "admin" }), secret());
+  const token = signValue(JSON.stringify({ userId, exp, scope: "admin", epoch }), secret());
   const jar = await cookies();
   jar.set(ADMIN, token, {
     httpOnly: true,
@@ -119,10 +124,10 @@ export async function readAdminSession() {
   if (!raw) return null;
   const value = unsignValue(raw, secret());
   if (!value) return null;
-  const parsed = JSON.parse(value) as { userId: string; exp: number; scope?: string };
+  const parsed = JSON.parse(value) as { userId: string; exp: number; scope?: string; epoch?: number };
   if (parsed.scope !== "admin" || typeof parsed.exp !== "number") return null;
   if (parsed.exp < Date.now()) return null;
-  return parsed;
+  return { ...parsed, epoch: typeof parsed.epoch === "number" ? parsed.epoch : 0 };
 }
 
 export async function clearAdminSession() {

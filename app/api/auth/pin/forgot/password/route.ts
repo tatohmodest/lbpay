@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { catchRoute, jsonError } from "@/lib/server/api";
 import { findUserById } from "@/lib/server/db";
-import { verifySecret } from "@/lib/server/crypto";
+import { verifyUserPassword } from "@/lib/server/pin";
 import { readPreauth, setPreauth } from "@/lib/server/session";
 
 export async function POST(request: Request) {
@@ -14,8 +14,15 @@ export async function POST(request: Request) {
     }
     const user = await findUserById(preauth.userId);
     if (!user) return jsonError("Account not found.", 404);
-    const ok = await verifySecret(password, user.passwordHash);
-    if (!ok) return jsonError("Incorrect password.");
+    if (user.status === "frozen") return jsonError("This account is frozen. Contact support.", 403);
+
+    const pwdCheck = await verifyUserPassword(user, password);
+    if (!pwdCheck.ok) {
+      return jsonError(
+        pwdCheck.status === 429 ? pwdCheck.error : "Incorrect password.",
+        pwdCheck.status,
+      );
+    }
     await setPreauth(user.id, "pin-reset-pin");
     return NextResponse.json({ ok: true, step: "pin" });
   } catch (error) {

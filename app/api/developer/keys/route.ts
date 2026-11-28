@@ -22,6 +22,9 @@ export async function POST(request: Request) {
   if (auth.error || !auth.user) return auth.error!;
   const body = await request.json().catch(() => ({}));
   const env = body.env === "live" ? "live" : "sandbox";
+  if (env === "live" && auth.user.kyc.developer !== "verified" && !isAdmin(auth.user)) {
+    return NextResponse.json({ error: "Live keys need approved developer KYC." }, { status: 403 });
+  }
   const issued = await issueKeyForEnv(auth.user, env);
   return NextResponse.json({
     ok: true,

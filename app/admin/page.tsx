@@ -44,6 +44,7 @@ type Overview = {
     counterparty: string;
     railRef?: string;
     createdAt: string;
+    awaitingApproval?: boolean;
     user: { name: string; lbpayId: string } | null;
   }>;
   refundedPayouts?: Array<{
@@ -113,8 +114,8 @@ export default function AdminHome() {
 
       {(data?.stuckPayouts || []).length ? (
         <AdminPanel
-          title="Payouts stuck over 30 minutes"
-          copy="The money is already taken from the wallet. Find each reference on the PayUnit dashboard: if it's paid, mark it success in Transactions; if PayUnit shows it failed, mark it failed and the wallet is refunded."
+          title="Payouts waiting or stuck"
+          copy="The money is already taken from the wallet. “Approve on PayUnit” means PayUnit is holding it until you approve it in the PayUnit dashboard (Disbursements); LBPay picks up the result by itself. For the others, find the reference on PayUnit: if it's paid, mark it success in Transactions; if PayUnit shows it failed, mark it failed and the wallet is refunded."
         >
           <div className="overflow-x-auto px-2 pb-2">
             <table className="w-full min-w-[560px] text-left text-sm">
@@ -125,6 +126,13 @@ export default function AdminHome() {
                     <td className="py-2 pr-3 font-semibold">{r.user ? `${r.user.name} @${r.user.lbpayId}` : "Unknown"}</td>
                     <td className="py-2 pr-3 font-mono text-xs">{r.counterparty}</td>
                     <td className="py-2 pr-3 text-right font-mono font-bold">{xaf(r.amount)}</td>
+                    <td className="py-2 pr-3 text-xs font-semibold">
+                      {r.awaitingApproval ? (
+                        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-amber-800">Approve on PayUnit</span>
+                      ) : (
+                        <span className="text-muted">Over 30 min</span>
+                      )}
+                    </td>
                     <td className="py-2 font-mono text-xs">
                       <Link href={`/admin/transactions?q=${encodeURIComponent(r.id)}`} className="underline">
                         {r.railRef || r.id}

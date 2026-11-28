@@ -2,9 +2,12 @@ import { NextResponse } from "next/server";
 import { currentUser } from "@/lib/server/guard";
 import { startCheckoutPayment } from "@/lib/server/checkout";
 import { payHandlePath, payLinkPath, requestOrigin, sameOriginReturnUrl } from "@/lib/origin";
+import { rateLimitByIp } from "@/lib/server/rate-limit";
 import type { PaymentMethod } from "@/lib/types";
 
 export async function POST(request: Request) {
+  const throttled = rateLimitByIp(request, "pay-checkout", 20, 5 * 60_000);
+  if (throttled) return throttled;
   const body = await request.json().catch(() => ({}));
   const origin = requestOrigin(request);
   const handle = String(body.handle || "")

@@ -22,12 +22,13 @@ export async function POST(request: Request) {
     }
     const user = await findUserById(preauth.userId);
     if (!user) return jsonError("Account not found.", 404);
+    if (user.status === "frozen") return jsonError("This account is frozen. Contact support.", 403);
 
     user.pinHash = await hashSecret(pin);
     await upsertUser(user);
     const response = NextResponse.json({ ok: true, user: publicUser(user) });
     clearAuthCookies(response);
-    applySessionCookie(response, user.id, SESSION_TTL_SEC);
+    applySessionCookie(response, user.id, SESSION_TTL_SEC, user.sessionEpoch || 0);
     return response;
   } catch (error) {
     return catchRoute("set-pin", error);

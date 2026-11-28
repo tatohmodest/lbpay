@@ -86,6 +86,7 @@ export async function runPayout(input: {
       ...(current?.meta || {}),
       payoutRef: reference,
       ...(result.providerRef ? { payToken: result.providerRef } : {}),
+      ...(result.awaitingApproval ? { awaitingApproval: true } : {}),
     },
   });
   let balance = reserved.balance;

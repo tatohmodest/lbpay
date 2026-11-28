@@ -7,7 +7,10 @@ import type { AccountKind } from "@/lib/types";
 export async function currentUser() {
   const session = await readSession();
   if (!session) return null;
-  return findUserById(session.userId);
+  const user = await findUserById(session.userId);
+  if (!user) return null;
+  if ((session.epoch || 0) < (user.sessionEpoch || 0)) return null;
+  return user;
 }
 
 export async function requireUser() {
@@ -24,6 +27,16 @@ export async function requireActiveUser() {
   if (result.user.status === "frozen") {
     return {
       error: NextResponse.json({ error: "This account is frozen. Contact support." }, { status: 403 }),
+      user: null,
+    };
+  }
+  // No deposit, payment, transfer or withdrawal until the email is proven.
+  if (!result.user.emailVerified) {
+    return {
+      error: NextResponse.json(
+        { error: "Verify your email before you move money. Open the link we emailed you.", needEmailVerify: true },
+        { status: 403 },
+      ),
       user: null,
     };
   }
@@ -62,6 +75,9 @@ export async function requireAdmin(scope?: AdminScope | "owner") {
   if (!isAdmin(result.user)) {
     return { error: NextResponse.json({ error: "Admin only." }, { status: 403 }), user: null };
   }
+  if (result.user.status === "frozen" && !isAdminOwner(result.user)) {
+    return { error: NextResponse.json({ error: "This admin account is frozen." }, { status: 403 }), user: null };
+  }
   if (scope === "owner" && !isAdminOwner(result.user)) {
     return { error: NextResponse.json({ error: "Only an owner can do that." }, { status: 403 }), user: null };
   }
@@ -75,7 +91,7 @@ export async function requireAdmin(scope?: AdminScope | "owner") {
     return result;
   }
   const step = await readAdminSession();
-  if (!step || step.userId !== result.user.id) {
+  if (!step || step.userId !== result.user.id || (step.epoch || 0) < (result.user.sessionEpoch || 0)) {
     return {
       error: NextResponse.json({ error: "Admin OTP required.", needOtp: true }, { status: 401 }),
       user: null,

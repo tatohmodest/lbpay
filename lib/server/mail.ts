@@ -1,5 +1,6 @@
 import type { Locale } from "@/lib/i18n/locale";
 import { SITE_URL } from "@/lib/site";
+import { sealCode } from "@/lib/server/otp-link";
 
 function isWorkersRuntime() {
   return typeof (globalThis as { WebSocketPair?: unknown }).WebSocketPair === "function";
@@ -56,32 +57,32 @@ const OTP_COPY = {
   en: {
     verify: {
       title: "Verify your email",
-      body: "Use this code to confirm your LBPay account. It expires in 10 minutes.",
-      subject: (otp: string) => `${otp} is your LBPay verification code`,
+      body: "Open the button below to see your code. Use it to confirm your LBPay account. It expires in 10 minutes.",
+      subject: () => "Your LBPay verification code",
       kind: "verification",
       spamTip: "💡 Tip: If this email landed in your spam or junk folder, please mark it as 'Not Spam' or move it to your inbox to ensure you receive future transaction alerts and receipts without delay.",
       footer: "If you did not create an LBPay account, ignore this email.",
     },
     admin: {
       title: "Admin access code",
-      body: "Use this code to open the LBPay admin console. It expires in 10 minutes.",
-      subject: (otp: string) => `${otp} is your LBPay admin code`,
+      body: "Open the button below to see your code. Use it to open the LBPay admin console. It expires in 10 minutes.",
+      subject: () => "Your LBPay admin code",
       kind: "admin",
       spamTip: "💡 Tip: If this email landed in spam, please mark it as 'Not Spam'.",
       footer: "If you did not request admin access, ignore this email.",
     },
     reset: {
       title: "Reset your password",
-      body: "Use this code to reset your LBPay password. It expires in 10 minutes.",
-      subject: (otp: string) => `${otp} is your LBPay password reset code`,
+      body: "Open the button below to see your code. Use it to reset your LBPay password. It expires in 10 minutes.",
+      subject: () => "Your LBPay password reset code",
       kind: "password reset",
       spamTip: "💡 Tip: If this email landed in spam, please mark it as 'Not Spam'.",
       footer: "If you did not ask to reset your password, ignore this email.",
     },
     pin: {
       title: "Reset your PIN",
-      body: "Use this code to confirm it is you, then you can set a new PIN. It expires in 10 minutes.",
-      subject: (otp: string) => `${otp} is your LBPay PIN reset code`,
+      body: "Open the button below to see your code. Use it to confirm it is you, then you can set a new PIN. It expires in 10 minutes.",
+      subject: () => "Your LBPay PIN reset code",
       kind: "PIN reset",
       spamTip: "💡 Tip: If this email landed in spam, please mark it as 'Not Spam'.",
       footer: "If you did not ask to reset your PIN, ignore this email.",
@@ -90,32 +91,32 @@ const OTP_COPY = {
   fr: {
     verify: {
       title: "Vérifiez votre email",
-      body: "Utilisez ce code pour confirmer votre compte LBPay. Il expire dans 10 minutes.",
-      subject: (otp: string) => `${otp} est votre code de vérification LBPay`,
+      body: "Ouvrez le bouton ci-dessous pour voir votre code. Utilisez-le pour confirmer votre compte LBPay. Il expire dans 10 minutes.",
+      subject: () => "Votre code de vérification LBPay",
       kind: "vérification",
       spamTip: "💡 Astuce : Si ce message est arrivé dans vos spams ou courriers indésirables, marquez-le comme 'Non spam' ou déplacez-le dans votre boîte de réception pour recevoir vos futurs reçus.",
       footer: "Si vous n'avez pas créé de compte LBPay, ignorez cet email.",
     },
     admin: {
       title: "Code d'accès admin",
-      body: "Utilisez ce code pour ouvrir la console admin LBPay. Il expire dans 10 minutes.",
-      subject: (otp: string) => `${otp} est votre code admin LBPay`,
+      body: "Ouvrez le bouton ci-dessous pour voir votre code. Utilisez-le pour ouvrir la console admin LBPay. Il expire dans 10 minutes.",
+      subject: () => "Votre code admin LBPay",
       kind: "admin",
       spamTip: "💡 Astuce : Si ce message est arrivé dans vos spams, marquez-le comme 'Non spam'.",
       footer: "Si vous n'avez pas demandé l'accès admin, ignorez cet email.",
     },
     reset: {
       title: "Réinitialiser le mot de passe",
-      body: "Utilisez ce code pour réinitialiser votre mot de passe LBPay. Il expire dans 10 minutes.",
-      subject: (otp: string) => `${otp} est votre code de réinitialisation LBPay`,
+      body: "Ouvrez le bouton ci-dessous pour voir votre code. Utilisez-le pour réinitialiser votre mot de passe LBPay. Il expire dans 10 minutes.",
+      subject: () => "Votre code de réinitialisation LBPay",
       kind: "réinitialisation",
       spamTip: "💡 Astuce : Si ce message est arrivé dans vos spams, marquez-le comme 'Non spam'.",
       footer: "Si vous n'avez pas demandé à réinitialiser le mot de passe, ignorez cet email.",
     },
     pin: {
       title: "Réinitialiser le PIN",
-      body: "Utilisez ce code pour confirmer que c'est vous, puis choisissez un nouveau PIN. Il expire dans 10 minutes.",
-      subject: (otp: string) => `${otp} est votre code PIN LBPay`,
+      body: "Ouvrez le bouton ci-dessous pour voir votre code. Utilisez-le pour confirmer que c'est vous, puis choisissez un nouveau PIN. Il expire dans 10 minutes.",
+      subject: () => "Votre code PIN LBPay",
       kind: "PIN",
       spamTip: "💡 Astuce : Si ce message est arrivé dans vos spams, marquez-le comme 'Non spam'.",
       footer: "Si vous n'avez pas demandé à réinitialiser le PIN, ignorez cet email.",
@@ -126,7 +127,7 @@ const OTP_COPY = {
 function otpHtml(
   name: string | undefined,
   copy: { title: string; body: string; spamTip?: string; footer: string },
-  otp: string,
+  link: string,
   locale: Locale,
 ) {
   const hello = locale === "fr" ? `Bonjour ${name || ""}`.trim() : `Hi ${name || "there"}`;
@@ -144,7 +145,10 @@ function otpHtml(
     <div style="padding:28px;">
       <p style="margin:0 0 12px;">${hello},</p>
       <p style="margin:0 0 20px;color:#5c6f66;">${copy.body}</p>
-      <div style="letter-spacing:10px;font-size:32px;font-weight:800;text-align:center;background:#e6f8ef;color:#007a47;padding:16px;border-radius:16px;">${otp}</div>
+      <div style="text-align:center;">
+        <a href="${link}" style="display:inline-block;background:#00b369;color:#fff;font-weight:800;font-size:16px;text-decoration:none;padding:14px 28px;border-radius:999px;">${locale === "fr" ? "Voir mon code" : "Show my code"}</a>
+      </div>
+      <p style="margin:14px 0 0;font-size:12px;color:#5c6f66;text-align:center;">${locale === "fr" ? "Le lien s'ouvre sur lbpay.loopingbinary.com. LBPay ne vous demandera jamais ce code par téléphone ou WhatsApp." : "The link opens on lbpay.loopingbinary.com. LBPay will never ask you for this code by phone or WhatsApp."}</p>
       ${spamBox}
       <p style="margin:20px 0 0;font-size:12px;color:#5c6f66;">${copy.footer}</p>
     </div>
@@ -249,10 +253,12 @@ export async function sendOtpEmail(
   locale: Locale = "en",
 ) {
   const copy = OTP_COPY[locale === "fr" ? "fr" : "en"][purpose];
-  const html = otpHtml(name, copy, otp, locale);
+  // The email carries a link, never the digits: the code shows on LBPay's own page.
+  const link = `${SITE_URL}/code#${sealCode(otp, purpose, Date.now() + 10 * 60 * 1000)}`;
+  const html = otpHtml(name, copy, link, locale);
   const text = locale === "fr"
-    ? `Votre code LBPay (${copy.kind}) est ${otp}. Il expire dans 10 minutes.\n\n${copy.spamTip}`
-    : `Your LBPay ${copy.kind} code is ${otp}. It expires in 10 minutes.\n\n${copy.spamTip}`;
+    ? `Ouvrez ce lien pour voir votre code LBPay (${copy.kind}). Il expire dans 10 minutes.\n\n${link}\n\n${copy.spamTip}`
+    : `Open this link to see your LBPay ${copy.kind} code. It expires in 10 minutes.\n\n${link}\n\n${copy.spamTip}`;
 
   if (!mailConfigured()) {
     if (process.env.NODE_ENV === "production") {
@@ -264,7 +270,7 @@ export async function sendOtpEmail(
 
   const sent = await sendRawEmail({
     to,
-    subject: copy.subject(otp),
+    subject: copy.subject(),
     html,
     text,
   });

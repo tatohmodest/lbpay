@@ -76,6 +76,9 @@ export async function startCheckoutPayment(input: {
     }
     const payer = input.payer;
     if (!payer) return { error: "Sign in to pay from your wallet.", status: 401 as const };
+    if (!payer.emailVerified) {
+      return { error: "Verify your email before you pay from your wallet.", status: 403 as const };
+    }
     if (payer.status === "frozen") {
       return { error: "This account is frozen. Contact support.", status: 403 as const };
     }

@@ -2,7 +2,8 @@ import { mkdir, readFile, writeFile } from "fs/promises";
 import path from "path";
 import { randomToken, verifySecret } from "./crypto";
 import { defaultKyc, isBootstrapAdmin } from "@/lib/roles";
-import { uid } from "@/lib/format";
+import { formatXAF, uid } from "@/lib/format";
+import { cameroonDay, dailyOutboundCap, outboundKinds } from "@/lib/limits";
 import { handleBase, isReservedHandle, normalizeHandle, numberedHandle } from "@/lib/handle";
 import { cameroonMsisdn } from "@/lib/phone";
 import { normalizeLinkTemplate } from "@/lib/link-templates";
@@ -72,6 +73,8 @@ export type StoredUser = {
   adminScopes?: string[];
   /** Set when an admin changes roles or permissions, so the newest decision wins over older copies. */
   rolesUpdatedAt?: string;
+  /** Incremented on password reset, PIN reset, or freeze to revoke all older session cookies. */
+  sessionEpoch?: number;
   createdAt: string;
 };
 
@@ -99,6 +102,8 @@ export type StoredTx = Transaction & {
   counterpartyId?: string;
   rail?: "internal" | "payunit" | "sandbox" | "partner";
   meta?: {
+    /** PayUnit holds the payout until it is approved on the PayUnit dashboard. */
+    awaitingApproval?: boolean;
     from?: string;
     to?: string;
     fromNetwork?: "mtn" | "orange";
@@ -525,6 +530,7 @@ function mergePrivileges(base: StoredUser, next: StoredUser): StoredUser {
     verifiedBadge: pickKycState(older.verifiedBadge, newer.verifiedBadge),
     businessName: newer.businessName || older.businessName,
     businessKind: newer.businessKind || older.businessKind,
+    sessionEpoch: Math.max(older.sessionEpoch || 0, newer.sessionEpoch || 0) || undefined,
   };
 }
 
@@ -1024,13 +1030,46 @@ export async function listTx(userId: string) {
     .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt));
 }
 
+function assertSafeLedgerAmount(amount: number) {
+  if (!Number.isFinite(amount) || !Number.isInteger(amount) || amount <= 0) {
+    throw new Error("Enter a whole amount in XAF.");
+  }
+  if (amount > 50_000_000) {
+    throw new Error("Amount exceeds maximum safe ledger limit.");
+  }
+}
+
+function enforceDailyCapInDb(db: DbShape, userId: string, amount: number) {
+  const user = db.users.find((u) => u.id === userId);
+  const cap = dailyOutboundCap(user?.kyc?.personal);
+  if (!cap) return;
+  const today = cameroonDay();
+  const used = db.transactions
+    .filter(
+      (tx) =>
+        tx.userId === userId &&
+        outboundKinds(tx.kind) &&
+        cameroonDay(tx.createdAt) === today &&
+        (tx.status === "success" || tx.status === "pending"),
+    )
+    .reduce((sum, tx) => sum + tx.amount, 0);
+  if (used + amount > cap) {
+    const left = Math.max(0, cap - used);
+    throw new Error(
+      left
+        ? `Daily limit remaining is ${formatXAF(left)}. Try a lower amount or wait until tomorrow.`
+        : `Daily limit of ${formatXAF(cap)} reached. Try again tomorrow.`,
+    );
+  }
+}
+
 export async function recordTransfer(params: {
   from: StoredUser;
   to: StoredUser;
   amount: number;
   note?: string;
 }) {
-  // Locked so two transfers sent at the same moment can't both pass the balance check.
+  // Locked so two transfers sent at the same moment can't both pass the balance or daily-cap check.
   return withLedgerLock(() => recordTransferUnlocked(params));
 }
 
@@ -1040,7 +1079,20 @@ async function recordTransferUnlocked(params: {
   amount: number;
   note?: string;
 }) {
+  assertSafeLedgerAmount(params.amount);
+  if (params.from.id === params.to.id) {
+    throw new Error("You cannot transfer to yourself.");
+  }
   const db = await getDb();
+  const senderRow = db.users.find((u) => u.id === params.from.id);
+  const recipientRow = db.users.find((u) => u.id === params.to.id);
+  if (senderRow?.status === "frozen" || params.from.status === "frozen") {
+    throw new Error("This account is frozen.");
+  }
+  if (recipientRow?.status === "frozen" || params.to.status === "frozen") {
+    throw new Error("This recipient account cannot receive money right now.");
+  }
+  enforceDailyCapInDb(db, params.from.id, params.amount);
   const source = db.wallets.find((w) => w.userId === params.from.id);
   const dest = db.wallets.find((w) => w.userId === params.to.id);
   if (!source || !dest) throw new Error("Wallet missing");
@@ -1122,6 +1174,7 @@ async function recordLedgerMoveUnlocked(params: {
   fee?: number;
   meta?: StoredTx["meta"];
 }) {
+  assertSafeLedgerAmount(params.amount);
   if (params.railRef) {
     const existing = await findTxByRailRef(params.railRef);
     if (existing && existing.userId === params.userId && existing.kind === params.kind) {
@@ -1130,6 +1183,9 @@ async function recordLedgerMoveUnlocked(params: {
     }
   }
   const db = await getDb();
+  if (params.direction === "debit" && outboundKinds(params.kind)) {
+    enforceDailyCapInDb(db, params.userId, params.amount);
+  }
   const wallet = db.wallets.find((w) => w.userId === params.userId);
   if (!wallet) throw new Error("Wallet missing");
   const status = params.status ?? "success";
@@ -1307,6 +1363,146 @@ export async function deleteTx(id: string) {
     db.deletedTransactionIds = uniqueIds([db.deletedTransactionIds, [id]]);
     await saveDb(db);
     return tx;
+  });
+}
+
+const NON_REVERSIBLE_KINDS = new Set<string>([
+  "reversal",
+  "cross_network",
+  "savings_in",
+  "savings_out",
+  "penalty",
+]);
+
+const OUTBOUND_REVERSAL_KINDS = new Set<string>([
+  "send",
+  "withdraw",
+  "airtime",
+  "data",
+  "bill",
+  "payout",
+  "international",
+  "shop_slots",
+]);
+
+/**
+ * Atomically reverses a completed transaction once under the ledger lock.
+ * Prevents double-reversal, reversing failed/pending rows, reversing non-wallet
+ * quick transfers, or crediting a sender when the P2P recipient lacks balance.
+ */
+export async function reverseTransaction(id: string, reason: string) {
+  return withLedgerLock(async () => {
+    const db = await getDb();
+    const tx = db.transactions.find((item) => item.id === id);
+    if (!tx) throw new Error("Transaction not found.");
+    if (tx.status !== "success") {
+      throw new Error("Only completed (paid) transactions can be reversed.");
+    }
+    if (tx.meta?.refunded) {
+      throw new Error("This transaction has already been reversed.");
+    }
+    if (NON_REVERSIBLE_KINDS.has(tx.kind)) {
+      throw new Error(`Transactions of kind "${tx.kind}" cannot be reversed directly.`);
+    }
+
+    const wallet = db.wallets.find((w) => w.userId === tx.userId);
+    if (!wallet) throw new Error("Wallet owner missing.");
+
+    const isOut = OUTBOUND_REVERSAL_KINDS.has(tx.kind);
+    const now = new Date().toISOString();
+
+    // For P2P transfers, locate the paired leg and require the recipient wallet to cover the reversal.
+    if (tx.counterpartyId && (tx.kind === "send" || tx.kind === "receive")) {
+      const peerWallet = db.wallets.find((w) => w.userId === tx.counterpartyId);
+      if (!peerWallet) throw new Error("Counterparty wallet missing.");
+      const debitWallet = isOut ? peerWallet : wallet;
+      const creditWallet = isOut ? wallet : peerWallet;
+      if (debitWallet.balance < tx.amount) {
+        throw new Error("Recipient no longer has enough wallet balance to reverse this transfer.");
+      }
+
+      const pairedId = tx.id.endsWith("R") ? tx.id.slice(0, -1) : `${tx.id}R`;
+      const pairedTx = db.transactions.find((item) => item.id === pairedId);
+      if (pairedTx?.meta?.refunded || (pairedTx && pairedTx.status !== "success")) {
+        throw new Error("The paired leg of this transfer was already reversed.");
+      }
+
+      debitWallet.balance -= tx.amount;
+      creditWallet.balance += tx.amount;
+
+      tx.status = "cancelled";
+      tx.note = `${tx.note || ""} · reversed: ${reason}`.trim();
+      tx.meta = { ...tx.meta, refunded: true };
+
+      if (pairedTx) {
+        pairedTx.status = "cancelled";
+        pairedTx.note = `${pairedTx.note || ""} · reversed: ${reason}`.trim();
+        pairedTx.meta = { ...pairedTx.meta, refunded: true };
+      }
+
+      const user = db.users.find((u) => u.id === tx.userId);
+      const peerUser = db.users.find((u) => u.id === tx.counterpartyId);
+      db.transactions.unshift(
+        {
+          id: uid("TXN"),
+          userId: tx.userId,
+          kind: "reversal",
+          amount: tx.amount,
+          fee: 0,
+          status: "success",
+          method: "wallet",
+          counterparty: tx.counterparty,
+          note: `Reversal of ${tx.id}: ${reason}`,
+          createdAt: now,
+          rail: "internal",
+          meta: { from: tx.id, refunded: true },
+        },
+        {
+          id: uid("TXN"),
+          userId: tx.counterpartyId,
+          kind: "reversal",
+          amount: tx.amount,
+          fee: 0,
+          status: "success",
+          method: "wallet",
+          counterparty: user ? `@${user.lbpayId}` : peerUser?.lbpayId || "LBPay",
+          note: `Counterparty reversal of ${tx.id}: ${reason}`,
+          createdAt: now,
+          rail: "internal",
+          meta: { from: pairedTx?.id || tx.id, refunded: true },
+        },
+      );
+      await saveDb(db);
+      return { tx, balance: wallet.balance };
+    }
+
+    if (!isOut && wallet.balance < tx.amount) {
+      throw new Error("Wallet does not hold enough balance to debit this reversal.");
+    }
+
+    const creditBack = isOut ? tx.amount + (tx.fee || 0) : -tx.amount;
+    wallet.balance += creditBack;
+    tx.status = "cancelled";
+    tx.note = `${tx.note || ""} · reversed: ${reason}`.trim();
+    tx.meta = { ...tx.meta, refunded: true };
+
+    db.transactions.unshift({
+      id: uid("TXN"),
+      userId: tx.userId,
+      kind: "reversal",
+      amount: isOut ? tx.amount + (tx.fee || 0) : tx.amount,
+      fee: 0,
+      status: "success",
+      method: tx.method,
+      counterparty: tx.counterparty,
+      note: `Reversal of ${tx.id}: ${reason}`,
+      createdAt: now,
+      rail: "internal",
+      meta: { from: tx.id, refunded: true },
+    });
+
+    await saveDb(db);
+    return { tx, balance: wallet.balance };
   });
 }
 

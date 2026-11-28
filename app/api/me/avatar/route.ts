@@ -8,6 +8,7 @@ import {
   isOurCloudinaryUrl,
   uploadAvatarImage,
 } from "@/lib/server/cloudinary";
+import { sniffImageMime } from "@/lib/server/image-magic";
 import { publicUser, upsertUser } from "@/lib/server/db";
 
 export const runtime = "nodejs";
@@ -35,10 +36,14 @@ export async function POST(request: Request) {
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
+    const realMime = sniffImageMime(buffer);
+    if (!realMime) {
+      return NextResponse.json({ error: "Upload a valid JPG, PNG, or WEBP photo." }, { status: 400 });
+    }
     const stored = await uploadAvatarImage({
       buffer,
       userId: auth.user.id,
-      mime: file.type,
+      mime: realMime,
     });
     const previous = auth.user.avatar;
     auth.user.avatar = stored.url;

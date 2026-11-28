@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createKyc, listKycForUser, upsertUser } from "@/lib/server/db";
 import { requireActiveUser } from "@/lib/server/guard";
-import { isOurCloudinaryUrl } from "@/lib/server/cloudinary";
+import { isUserOwnKycUrl } from "@/lib/server/cloudinary";
 import { alertNewKyc } from "@/lib/server/kyc-alerts";
 import { isBusinessKind, kycDocsComplete, type KycDocuments, type KycDocumentType } from "@/lib/kyc";
 import type { KycApplicationTrack } from "@/lib/types";
@@ -92,8 +92,8 @@ export async function POST(request: Request) {
       );
     }
     const urls = [documents.idFrontUrl, documents.idBackUrl, documents.selfieUrl];
-    if (urls.some((url) => !isOurCloudinaryUrl(url))) {
-      return NextResponse.json({ error: "Upload the photos through LBPay." }, { status: 400 });
+    if (urls.some((url) => !isUserOwnKycUrl(url, auth.user!.id))) {
+      return NextResponse.json({ error: "Upload your own KYC photos through LBPay." }, { status: 400 });
     }
     storedDocs = {
       idFrontUrl: documents.idFrontUrl,

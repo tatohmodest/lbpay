@@ -19,11 +19,12 @@ export async function POST(request: Request) {
 
     const user = await findUserById(userId);
     if (!user) return jsonError("Sign in first.", 401);
+    if (user.status === "frozen") return jsonError("This account is frozen. Contact support.", 403);
     const pinCheck = await verifyUserPin(user, pin);
     if (!pinCheck.ok) return pinFailResponse(pinCheck);
 
     await clearPreauth();
-    await createSession(user.id, SESSION_TTL_SEC);
+    await createSession(user.id, SESSION_TTL_SEC, user.sessionEpoch || 0);
     return NextResponse.json({ ok: true, user: publicUser(user) });
   } catch (error) {
     return catchRoute("pin", error);

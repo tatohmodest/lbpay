@@ -12,8 +12,8 @@ export async function POST(request: Request) {
     const password = String(body.password || "");
     const confirm = String(body.confirm || "");
 
-    if (password.length < 6) {
-      return jsonError("Password must be at least 6 characters.");
+    if (password.length < 8) {
+      return jsonError("Password must be at least 8 characters.");
     }
     if (password !== confirm) {
       return jsonError("Passwords do not match.");
@@ -31,6 +31,7 @@ export async function POST(request: Request) {
     user.emailVerified = true;
     user.loginFailCount = 0;
     user.loginLockedUntil = 0;
+    user.sessionEpoch = (user.sessionEpoch || 0) + 1;
     await upsertUser(user);
     await clearPreauth();
     await sendPasswordChangedEmail(user.email, user.name, await getRequestLocale()).catch(() => undefined);

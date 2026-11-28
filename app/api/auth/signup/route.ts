@@ -1,12 +1,15 @@
 import { NextResponse } from "next/server";
 import { catchRoute, jsonError } from "@/lib/server/api";
 import {
+  clearOtp,
   findUserByEmail,
   isHandleTaken,
   nextAvailableHandle,
   saveOtp,
   upsertUser,
 } from "@/lib/server/db";
+import { rateLimitByIp } from "@/lib/server/rate-limit";
+import { isDisposableEmail } from "@/lib/disposable-email";
 import { hashSecret, randomOtp } from "@/lib/server/crypto";
 import { MailSendError, mailConfigured, sendOtpEmail } from "@/lib/server/mail";
 import { applyPreauthCookie } from "@/lib/server/session";
@@ -20,6 +23,8 @@ import { localeFromRequest } from "@/lib/i18n/locale";
 import { translate } from "@/lib/i18n/messages";
 
 export async function POST(request: Request) {
+  const throttled = rateLimitByIp(request, "auth-signup", 12, 10 * 60_000);
+  if (throttled) return throttled;
   const locale = localeFromRequest(request);
   const t = (path: string, vars?: Record<string, string | number>) => translate(locale, path, vars);
   try {
@@ -32,8 +37,18 @@ export async function POST(request: Request) {
     const fallback = shortHandleOptions(name)[0] || cleanHandleInput(email.split("@")[0]);
     let requested = chosen || fallback;
 
-    if (!name || !email || !password || password.length < 6) {
+    if (!name || !email || !password || password.length < 8) {
       return jsonError(t("errors.requiredSignup"));
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
+      return jsonError(locale === "fr" ? "Entrez une adresse email valide." : "Enter a valid email address.");
+    }
+    if (isDisposableEmail(email)) {
+      return jsonError(
+        locale === "fr"
+          ? "Utilisez votre propre adresse email, pas une adresse temporaire."
+          : "Use your own email address, not a temporary one.",
+      );
     }
     if (!isCameroonMsisdn(phone)) {
       return jsonError(t("errors.phone"));
@@ -116,6 +131,9 @@ export async function POST(request: Request) {
       return response;
     }
 
+    if (existing && !existing.emailVerified) {
+      await clearOtp(email);
+    }
     const otp = randomOtp();
     await saveOtp({
       email,

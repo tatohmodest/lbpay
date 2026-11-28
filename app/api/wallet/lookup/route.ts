@@ -8,7 +8,7 @@ export async function GET(request: Request) {
   const q = String(searchParams.get("q") || "").trim();
   if (!q) return NextResponse.json({ error: "Missing handle" }, { status: 400 });
   const user = await findUserByHandle(q);
-  if (!user) return NextResponse.json({ found: false });
+  if (!user || user.status === "frozen") return NextResponse.json({ found: false });
   const products = publicProductsFromLinks(await listLinks(user.id));
   return NextResponse.json({
     found: true,

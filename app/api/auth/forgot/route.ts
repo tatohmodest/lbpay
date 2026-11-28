@@ -3,9 +3,12 @@ import { catchRoute, jsonError } from "@/lib/server/api";
 import { findUserByEmail, resetOtpKey, saveOtp } from "@/lib/server/db";
 import { hashSecret, randomOtp } from "@/lib/server/crypto";
 import { sendOtpEmail } from "@/lib/server/mail";
+import { rateLimitByIp } from "@/lib/server/rate-limit";
 
 export async function POST(request: Request) {
   try {
+    const throttled = rateLimitByIp(request, "auth-forgot", 10, 10 * 60_000);
+    if (throttled) return throttled;
     const body = await request.json().catch(() => ({}));
     const email = String(body.email || "").trim().toLowerCase();
     if (!email || !email.includes("@")) {
@@ -27,7 +30,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       ok: true,
       email,
-      message: "If an account exists for that email, we sent a 6-digit code.",
+      message: "If an account exists for that email, we emailed a link to your 6-digit code.",
     });
   } catch (error) {
     return catchRoute("forgot", error);

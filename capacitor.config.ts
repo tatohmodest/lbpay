@@ -8,7 +8,7 @@ const config: CapacitorConfig = {
   webDir: "www",
   backgroundColor: "#f3f7f4",
   android: {
-    allowMixedContent: true,
+    allowMixedContent: process.env.NODE_ENV !== "production",
     backgroundColor: "#f3f7f4",
   },
   plugins: {

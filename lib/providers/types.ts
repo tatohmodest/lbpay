@@ -27,6 +27,8 @@ export type RailResult = {
   message?: string;
   raw?: unknown;
   hostedUrl?: string;
+  /** The gateway is holding this payout until someone approves it on its dashboard. */
+  awaitingApproval?: boolean;
 };
 
 export type RailStatusOptions = {

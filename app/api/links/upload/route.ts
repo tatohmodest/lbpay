@@ -5,6 +5,7 @@ import { requireActiveUser } from "@/lib/server/guard";
 import { catchRoute } from "@/lib/server/api";
 import { MAX_KYC_UPLOAD_BYTES } from "@/lib/kyc";
 import { cloudinaryConfigured, uploadProductImage } from "@/lib/server/cloudinary";
+import { sniffImageMime } from "@/lib/server/image-magic";
 import { uid } from "@/lib/format";
 
 export const runtime = "nodejs";
@@ -57,12 +58,16 @@ export async function POST(request: Request) {
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
+    const realMime = sniffImageMime(buffer);
+    if (!realMime) {
+      return NextResponse.json({ error: "Upload a valid JPG, PNG, or WEBP photo." }, { status: 400 });
+    }
     try {
       const stored = cloudinaryConfigured()
         ? await uploadProductImage({
             buffer,
             userId: auth.user.id,
-            mime: file.type,
+            mime: realMime,
           })
         : await saveLocalProductImage(auth.user.id, buffer);
       return NextResponse.json({

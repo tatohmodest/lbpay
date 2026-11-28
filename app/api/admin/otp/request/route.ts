@@ -35,7 +35,7 @@ export async function POST() {
       attempts: 0,
     });
     await sendOtpEmail(auth.user.email, otp, auth.user.name, "admin");
-    return NextResponse.json({ ok: true, message: "We sent a 6-digit code to your email." });
+    return NextResponse.json({ ok: true, message: "We emailed you a link to your 6-digit code." });
   } catch (error) {
     return catchRoute("admin-otp-request", error);
   }

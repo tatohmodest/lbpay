@@ -29,6 +29,6 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
-  await createAdminSession(auth.user.id);
+  await createAdminSession(auth.user.id, 8 * 60 * 60, auth.user.sessionEpoch || 0);
   return NextResponse.json({ ok: true });
 }
